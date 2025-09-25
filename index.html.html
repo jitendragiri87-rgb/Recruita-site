@@ -1,0 +1,103 @@
+<!--
+  recruita_in_index.html
+  Final simple landing page for Recruita Hiring Solutions.
+-->
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Recruita Hiring Solutions — Connecting Talent, Building Teams</title>
+  <meta name="description" content="Recruita Hiring Solutions — Recruitment and hiring support for insurance and financial services. Volume hiring, mid-level hiring, screening, onboarding.">
+  <meta name="theme-color" content="#0f172a">
+
+  <style>
+    :root{--bg:#f7fafc;--card:#ffffff;--accent:#0b5cff;--muted:#6b7280}
+    *{box-sizing:border-box}
+    body{font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; margin:0; background:var(--bg); color:#0f172a}
+    .wrap{max-width:980px;margin:36px auto;padding:22px}
+    header{display:flex;align-items:center;gap:18px}
+    header img{height:72px;width:auto;border-radius:8px;background:none}
+    h1{margin:0;font-size:22px}
+    p.lead{margin:6px 0 0;color:var(--muted)}
+
+    .card{background:var(--card);padding:20px;border-radius:10px;box-shadow:0 6px 18px rgba(12,15,30,0.06);margin-top:18px}
+    .grid{display:grid;grid-template-columns:1fr 320px;gap:18px}
+    @media (max-width:820px){.grid{grid-template-columns:1fr}}
+
+    ul.services{padding-left:18px;margin:6px 0}
+    .contact-item{margin-bottom:10px}
+    a.button{display:inline-block;padding:10px 14px;border-radius:8px;background:var(--accent);color:white;text-decoration:none}
+
+    footer{margin-top:22px;text-align:center;color:var(--muted);font-size:13px}
+    .small{font-size:13px;color:var(--muted)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <img src="logo.png" alt="Recruita logo">
+      <div>
+        <h1>Recruita Hiring Solutions</h1>
+        <p class="lead">Connecting Talent, Building Teams</p>
+      </div>
+    </header>
+
+    <main class="grid">
+      <section>
+        <div class="card">
+          <h2>About us</h2>
+          <p>
+            Founded in 2020, Recruita Hiring Solutions is a recruitment consultancy focused on insurance and financial service companies. We deliver reliable manpower, reduce hiring turnaround time, and ensure quality candidates who join and perform.
+          </p>
+
+          <h3 style="margin-top:14px">Services</h3>
+          <ul class="services">
+            <li>Hiring for Individual & Team Handling Roles</li>
+            <li>Volume Hiring (frontline sales executives, relationship managers, field staff)</li>
+            <li>Mid-level Hiring (team leaders, assistant managers, operational staff)</li>
+            <li>Screening & Shortlisting</li>
+            <li>Onboarding Support</li>
+          </ul>
+
+          <h3 style="margin-top:14px">Why choose us</h3>
+          <p class="small">Proven insurance-industry experience, quick turnaround on bulk hiring, high joining ratio through candidate validation, and a pan-India sourcing network.</p>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <h3>Quick facts</h3>
+          <p class="small">5+ years in recruitment consulting • 15+ satisfied clients • 1000+ candidates placed</p>
+        </div>
+      </section>
+
+      <aside>
+        <div class="card">
+          <h3>Contact</h3>
+          <p class="contact-item"><strong>Email</strong><br>
+            <a href="mailto:hr@recruita.in">hr@recruita.in</a>
+          </p>
+
+          <p class="contact-item"><strong>Office</strong><br>
+            04/09, Janiya compound, Poisar, Kandivali East, Mumbai City, Maharashtra, 400101
+          </p>
+
+          <a class="button" href="mailto:hr@recruita.in">Get in touch</a>
+
+          <hr style="margin:12px 0">
+          <p class="small"><strong>GSTIN:</strong> 27BEXPG2840C1ZH</p>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <h4>Follow</h4>
+          <p class="small">LinkedIn / Instagram / X (replace with real links)</p>
+        </div>
+      </aside>
+    </main>
+
+    <footer>
+      <p class="small">Recruita Hiring Solutions — Connecting Talent, Building Teams</p>
+    </footer>
+  </div>
+</body>
+</html>
