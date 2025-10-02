@@ -306,20 +306,33 @@
           </div>
         </section>
 
-        <!-- 7 Process -->
-        <!-- 7 Process -->
+<!-- 7 Process -->
 <section class="slide" data-i="6">
   <style>
     @media (max-width: 768px) {
+      /* Make the section fill full mobile screen */
       .slide[data-i="6"] {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        min-height: 100svh; /* full screen height on mobile */
         height: auto !important;
-        overflow-y: auto !important;
-        padding-bottom: 80px; /* space at bottom so last line isn't cut off */
+        overflow: hidden !important;
       }
 
-      body, html {
+      /* Scroll inside content area */
+      .slide[data-i="6"] .pad {
+        flex: 1;
+        overflow-y: auto;
+        padding-bottom: 80px; /* space at bottom so last line isn't cut off */
+        -webkit-overflow-scrolling: touch; /* smooth scrolling on iOS */
+      }
+
+      html, body {
+        min-height: 100%;
         height: auto;
         overflow-y: auto;
+        align-items: stretch !important;
       }
     }
   </style>
