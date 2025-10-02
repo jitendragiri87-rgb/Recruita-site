@@ -310,29 +310,22 @@
 <section class="slide" data-i="6">
   <style>
     @media (max-width: 768px) {
-      /* Make the section fill full mobile screen */
+      /* Fill the screen, but don't affect other slides */
       .slide[data-i="6"] {
         position: relative;
         display: flex;
         flex-direction: column;
-        min-height: 100svh; /* full screen height on mobile */
-        height: auto !important;
-        overflow: hidden !important;
+        min-height: 100svh;   /* full mobile viewport height */
+        overflow: hidden;     /* container itself doesn't scroll */
       }
 
-      /* Scroll inside content area */
+      /* Put scroll only on the content area */
       .slide[data-i="6"] .pad {
         flex: 1;
         overflow-y: auto;
-        padding-bottom: 80px; /* space at bottom so last line isn't cut off */
-        -webkit-overflow-scrolling: touch; /* smooth scrolling on iOS */
-      }
-
-      html, body {
-        min-height: 100%;
-        height: auto;
-        overflow-y: auto;
-        align-items: stretch !important;
+        padding-bottom: 24px; /* small safety space */
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain; /* stop scroll chaining to page */
       }
     }
   </style>
@@ -395,8 +388,7 @@
     </div>
   </div>
 </section>
-
-
+        
         <!-- 8 Why Choose -->
         <section class="slide" data-i="7">
           <div class="pad">
