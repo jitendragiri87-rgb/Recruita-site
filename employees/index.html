@@ -27,28 +27,35 @@
   .status-ok{background:#e6ffef;color:#084b2b;border:1px solid #b7f3d0}
   .status-error{background:#ffecec;color:#7a1414;border:1px solid #f2c6c6}
   .badge{display:inline-block;padding:6px 10px;border-radius:8px;background:#f1f5ff;color:var(--blue);font-weight:600;margin-left:8px}
+
   .msg{margin-top:12px;padding:10px;border-radius:8px;border:1px solid #eee;background:#fff;color:#333}
   .msg.error{border-color:#f2c6c6;background:#fff0f0;color:#7a1414}
   .msg.ok{border-color:#d1f0d8;background:#f6fff8;color:#0b5d2e}
+
   @media(max-width:820px){ .row{flex-direction:column} header{flex-direction:column;align-items:flex-start} }
   </style>
 
-  <!--
-    Load compat SDKs first (app, auth, firestore).
-    Then load your firebase-config.js (must set window.firebaseConfig or firebaseConfig variable).
-    Then the main script runs (after DOM load).
-  -->
+  <!-- load Firebase compat SDKs first (order matters) -->
   <script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-firestore-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-  <!-- your plain-script firebase config file (in the same /employees folder).
-       It must define window.firebaseConfig or firebaseConfig (not `export`).
-       Example content of firebase-config.js:
-       window.firebaseConfig = { apiKey: "...", authDomain: "...", projectId: "...", ... };
-  -->
-  <script src="firebase-config.js"></script>
+  <!-- inline firebase config to avoid "script order" and cross-file issues -->
+  <script>
+    // Replace with your project's config if it changes. This is the same config you already used.
+    window.firebaseConfig = {
+      apiKey: "AIzaSyCQi68RIeS4L5SwNQuAYFbK7KB3awrADV0",
+      authDomain: "authentication-114b0.firebaseapp.com",
+      projectId: "authentication-114b0",
+      storageBucket: "authentication-114b0.appspot.com",
+      messagingSenderId: "332309567366",
+      appId: "1:332309567366:web:0312c801fe2193e3debe07",
+      measurementId: "G-F9PQ3DE71D"
+    };
+    console.log('firebase-config loaded — window.firebaseConfig set:', !!window.firebaseConfig);
+  </script>
+
 </head>
 <body>
 <div class="wrap">
@@ -59,15 +66,17 @@
     </div>
   </header>
 
-  <!-- global firebase status (updated by script) -->
-  <div id="globalStatus" class="status-global status-error">Checking Firebase SDK... <span id="sdkType" class="badge">...</span></div>
+  <!-- global firebase status -->
+  <div id="globalStatus" class="status-global status-error">
+    Checking Firebase SDK... <span id="sdkType" class="badge">...</span>
+  </div>
 
   <div style="display:flex;gap:12px;margin-bottom:12px">
     <button id="tabEmployee" class="small-btn">Employee Login</button>
     <button id="tabAdmin" class="small-btn">Admin Login</button>
   </div>
 
-  <!-- EMPLOYEE LOGIN -->
+  <!-- Employee -->
   <div id="employeeSection">
     <div id="empAuth" class="auth grid">
       <strong>Employee Login (ID + Password)</strong>
@@ -93,7 +102,6 @@
       </div>
 
       <hr/>
-
       <div class="grid">
         <div class="card">
           <strong>Submit Candidate Entry</strong>
@@ -102,18 +110,15 @@
               <div style="flex:1"><label class="muted">Name</label><input name="candidateName"></div>
               <div style="width:150px"><label class="muted">Contact</label><input name="contactNo"></div>
             </div>
-
             <div class="row" style="margin-top:8px">
               <div style="width:100px"><label class="muted">Age</label><input name="age"></div>
               <div style="flex:1"><label class="muted">CTC</label><input name="currentCTC"></div>
               <div style="flex:1"><label class="muted">Company</label><input name="currentCompany"></div>
             </div>
-
             <div style="margin-top:8px;display:flex;gap:8px">
               <button type="submit">Submit</button>
               <button id="empClear" type="button" class="small-btn">Clear</button>
             </div>
-
             <div id="empFormMsg" class="msg"></div>
           </form>
         </div>
@@ -126,7 +131,7 @@
     </div>
   </div>
 
-  <!-- ADMIN -->
+  <!-- Admin -->
   <div id="adminSection" class="hide">
     <div id="adminAuth" class="auth grid">
       <strong>Admin Login</strong>
@@ -180,21 +185,20 @@
 </div>
 
 <script>
-/*
-  Main app script.
-  - Expects firebase SDKs loaded (compat) and firebase-config.js to set window.firebaseConfig
-  - Defensive checks + clear UI messages
+/* Main app script
+   - SDKs and window.firebaseConfig are loaded in head (order matters)
+   - This script runs after DOM load and safely initializes firebase
 */
 
-// UI helpers
 function setGlobalStatus(ok, text) {
   const el = document.getElementById('globalStatus');
   if(!el) return;
   el.classList.remove('status-error','status-ok');
   el.classList.add(ok ? 'status-ok' : 'status-error');
   const hasFirebase = (typeof firebase !== 'undefined');
-  el.innerHTML = (text || '') + ' <span id="sdkType" class="badge">' + (hasFirebase ? 'firebase: yes' : 'firebase: no') + '</span>';
+  el.innerHTML = text + ' <span id="sdkType" class="badge">' + (hasFirebase ? 'firebase: yes' : 'firebase: no') + '</span>';
 }
+
 function setMsg(id, text, type='') {
   const el = document.getElementById(id);
   if(!el) return;
@@ -203,37 +207,44 @@ function setMsg(id, text, type='') {
 }
 
 window.addEventListener('load', async ()=>{
-  console.log('startup check — firebase typeof:', typeof firebase, 'window.firebaseConfig present?', !!window.firebaseConfig);
+
+  // quick checks
   const sdkPresent = (typeof firebase !== 'undefined');
-  if(!sdkPresent) {
+  document.getElementById('sdkType').textContent = sdkPresent ? 'firebase: yes' : 'firebase: no';
+
+  if(!sdkPresent){
     setGlobalStatus(false, 'Firebase SDK not loaded. Check script order.');
     setMsg('empAuthMsg','Firebase not available. Login disabled.','error');
     setMsg('adminAuthMsg','Firebase not available. Login disabled.','error');
+    console.error('Firebase SDK missing — ensure the firebase-app-compat and other scripts are included before this script.');
     return;
   }
 
-  // config must be defined (window.firebaseConfig or firebaseConfig)
+  // require config
   const cfg = (typeof firebaseConfig !== 'undefined') ? firebaseConfig : (window.firebaseConfig || null);
-  if(!cfg) {
-    setGlobalStatus(false, 'Firebase configuration not found (firebase-config.js).');
+  if(!cfg){
+    setGlobalStatus(false, 'Firebase configuration not found.');
     setMsg('empAuthMsg','Firebase config missing. Login disabled.','error');
     setMsg('adminAuthMsg','Firebase config missing. Login disabled.','error');
+    console.error('firebaseConfig missing (window.firebaseConfig).');
     return;
   }
 
   try {
+    // initialize
     firebase.initializeApp(cfg);
     const auth = firebase.auth();
     const db = firebase.firestore();
+
     setGlobalStatus(true, 'Firebase loaded — auth & firestore available.');
 
-    // tabs
+    // UI toggles
     const tabEmployee = document.getElementById('tabEmployee');
     const tabAdmin = document.getElementById('tabAdmin');
     tabEmployee.onclick = ()=>{ document.getElementById('employeeSection').style.display="block"; document.getElementById('adminSection').style.display="none"; };
     tabAdmin.onclick = ()=>{ document.getElementById('employeeSection').style.display="none"; document.getElementById('adminSection').style.display="block"; };
 
-    /* EMPLOYEE LOGIN */
+    /* Employee login */
     const empIdInput = document.getElementById('empId');
     const empPassInput = document.getElementById('empPassword');
     const empLoginBtn = document.getElementById('empLoginBtn');
@@ -241,12 +252,11 @@ window.addEventListener('load', async ()=>{
     const empLogoutTop = document.getElementById('empLogoutTop');
     const empPanel = document.getElementById('empPanel');
 
-    empLoginBtn.addEventListener('click', async () => {
-      setMsg('empAuthMsg', 'Checking credentials...');
+    empLoginBtn.addEventListener('click', async ()=>{
+      setMsg('empAuthMsg','Checking credentials...');
       const id = empIdInput.value.trim();
       const pwd = empPassInput.value.trim();
-      if(!id || !pwd) { setMsg('empAuthMsg','Enter ID & Password','error'); return; }
-
+      if(!id || !pwd){ setMsg('empAuthMsg','Enter ID & Password','error'); return; }
       try {
         const doc = await db.collection("employees").doc(id).get();
         if(!doc.exists){ setMsg('empAuthMsg','Employee not found','error'); return; }
@@ -254,7 +264,6 @@ window.addEventListener('load', async ()=>{
         const actualPwd = data.password || data.pwd || data.pass;
         if(actualPwd !== pwd){ setMsg('empAuthMsg','Incorrect password','error'); return; }
 
-        // success
         setMsg('empAuthMsg','Login success','ok');
         const currentEmployee = { employeeId: id, name: data.name || '' };
         localStorage.setItem("employeeSession", JSON.stringify(currentEmployee));
@@ -264,13 +273,21 @@ window.addEventListener('load', async ()=>{
         empLogoutTop.classList.remove("hide");
         document.getElementById('empWelcome').textContent = "Welcome " + (currentEmployee.name || currentEmployee.employeeId);
         document.getElementById('empWelcomeSub').textContent = currentEmployee.employeeId;
-
         startEmployeeListener(db, id);
       } catch(err){
-        console.error('employee login err', err);
-        setMsg('empAuthMsg', 'Error: ' + (err.message || err), 'error');
+        console.error('employee login error', err);
+        setMsg('empAuthMsg','Error: '+(err.message||err),'error');
       }
     });
+
+    empLogoutBtn.onclick = empLogoutTop.onclick = ()=>{
+      localStorage.removeItem('employeeSession');
+      if(document.getElementById('empAuth')) document.getElementById('empAuth').classList.remove('hide');
+      empPanel.classList.add('hide');
+      empLogoutBtn.classList.add('hide');
+      empLogoutTop.classList.add('hide');
+      document.getElementById('empEntries').innerHTML = '';
+    };
 
     function startEmployeeListener(dbRef, id){
       dbRef.collection("entries")
@@ -293,7 +310,7 @@ window.addEventListener('load', async ()=>{
           });
         }, err=>{
           console.error('listener err', err);
-          setMsg('empFormMsg','Listener failed: ' + (err.message||err),'error');
+          setMsg('empFormMsg','Listener error: '+(err.message||err),'error');
         });
     }
 
@@ -303,7 +320,7 @@ window.addEventListener('load', async ()=>{
       if(!stored){ setMsg('empFormMsg','Login required','error'); return; }
       const currentEmployee = JSON.parse(stored);
       const formData = Object.fromEntries(new FormData(e.target).entries());
-      for(const k in formData){ if(formData[k]==="") formData[k]=null; }
+      for(const k in formData) if(formData[k]==="") formData[k]=null;
       try {
         await db.collection("entries").add({
           employeeId: currentEmployee.employeeId,
@@ -314,14 +331,14 @@ window.addEventListener('load', async ()=>{
         setMsg('empFormMsg','Saved','ok');
         e.target.reset();
       } catch(err){
-        console.error('save entry err', err);
+        console.error('save err', err);
         setMsg('empFormMsg','Save failed: '+(err.message||err),'error');
       }
     });
 
     document.getElementById('empClear').onclick = ()=> document.getElementById('empForm').reset();
 
-    /* ADMIN */
+    /* Admin */
     const adminEmail = document.getElementById('adminEmail');
     const adminPwd = document.getElementById('adminPwd');
     const adminLoginBtn = document.getElementById('adminLoginBtn');
@@ -343,55 +360,55 @@ window.addEventListener('load', async ()=>{
         adminLogoutBtnEl.classList.remove('hide');
         document.getElementById('adminWelcome').textContent = 'Admin: ' + user.email;
         setMsg('adminAuthMsg','Signed in as admin','ok');
-      } catch(err){ console.error('admin auth state error', err); setMsg('adminAuthMsg','Error fetching admin record','error'); }
+      } catch(err){
+        console.error('admin auth error', err);
+        setMsg('adminAuthMsg','Error fetching admin: '+(err.message||err),'error');
+      }
     });
 
     adminLoginBtn.addEventListener('click', async ()=>{
       setMsg('adminAuthMsg','Signing in...');
-      try { await auth.signInWithEmailAndPassword(adminEmail.value.trim(), adminPwd.value.trim()); }
-      catch(err){ console.error('admin sign in err', err); setMsg('adminAuthMsg', err.message || 'Sign-in failed','error'); }
+      try {
+        await auth.signInWithEmailAndPassword(adminEmail.value.trim(), adminPwd.value.trim());
+      } catch(err){
+        console.error('admin sign in err', err);
+        setMsg('adminAuthMsg', err.message || 'Sign-in failed', 'error');
+      }
     });
+
     adminLogoutBtnEl.onclick = ()=> auth.signOut();
 
-    // admin features (create/update/delete)
+    // CRUD and exports (same as earlier)
     document.getElementById('createEmpBtn').onclick = async ()=>{
       const id = document.getElementById('newEmpId').value.trim();
       const name = document.getElementById('newEmpName').value.trim();
       const pwd = document.getElementById('newEmpPwd').value.trim();
       if(!id || !pwd){ setMsg('createEmpMsg','ID + Password required','error'); return; }
       try { await db.collection('employees').doc(id).set({name, password:pwd, pwd:pwd}); setMsg('createEmpMsg','Saved','ok'); }
-      catch(err){ console.error('create emp err', err); setMsg('createEmpMsg','Save failed: '+(err.message||err),'error'); }
+      catch(err){ console.error(err); setMsg('createEmpMsg','Save failed: '+(err.message||err),'error'); }
     };
+
     document.getElementById('deleteEmpBtn').onclick = async ()=>{
       const id = document.getElementById('newEmpId').value.trim();
       if(!id){ setMsg('createEmpMsg','Provide Employee ID','error'); return; }
-      try{ await db.collection('employees').doc(id).delete(); setMsg('createEmpMsg','Deleted','ok'); }
-      catch(err){ console.error('delete emp err', err); setMsg('createEmpMsg','Delete failed: '+(err.message||err),'error'); }
+      try { await db.collection('employees').doc(id).delete(); setMsg('createEmpMsg','Deleted','ok'); }
+      catch(err){ console.error(err); setMsg('createEmpMsg','Delete failed: '+(err.message||err),'error'); }
     };
+
     document.getElementById('resetPwdBtn').onclick = async ()=>{
       const id = document.getElementById('resetEmpId').value.trim();
       const pwd = document.getElementById('resetNewPwd').value.trim();
       if(!id || !pwd){ setMsg('resetMsg','Provide ID + New password','error'); return; }
-      try{ await db.collection('employees').doc(id).update({password:pwd, pwd:pwd}); setMsg('resetMsg','Updated','ok'); }
-      catch(err){ console.error('reset pwd err', err); setMsg('resetMsg','Update failed: '+(err.message||err),'error'); }
+      try { await db.collection('employees').doc(id).update({password:pwd, pwd:pwd}); setMsg('resetMsg','Updated','ok'); }
+      catch(err){ console.error(err); setMsg('resetMsg','Update failed: '+(err.message||err),'error'); }
     };
 
     document.getElementById('showAllEntriesBtn').onclick = async ()=>{
       try {
         const snap = await db.collection('entries').orderBy('createdAt','asc').get();
-        const allEntries = document.getElementById('allEntries');
-        allEntries.innerHTML = '';
-        snap.forEach(doc=>{
-          const d = doc.data();
-          const created = d.createdAt && d.createdAt.toDate ? d.createdAt.toDate().toLocaleString() : '';
-          const block = document.createElement('div');
-          block.className = 'entry';
-          block.innerHTML = `<strong>${d.candidateName||'-'}</strong>
-            <div class='muted'>${created}</div>
-            <div class='muted'>${d.employeeId} — ${d.employeeName}</div>`;
-          allEntries.appendChild(block);
-        });
-      } catch(err){ console.error('show all entries err', err); setMsg('createEmpMsg','Failed to fetch entries: '+(err.message||err),'error'); }
+        const allEntries = document.getElementById('allEntries'); allEntries.innerHTML = '';
+        snap.forEach(doc=>{ const d=doc.data(); const created = d.createdAt && d.createdAt.toDate ? d.createdAt.toDate().toLocaleString() : ''; const block = document.createElement('div'); block.className='entry'; block.innerHTML = `<strong>${d.candidateName||'-'}</strong><div class='muted'>${created}</div><div class='muted'>${d.employeeId} — ${d.employeeName}</div>`; allEntries.appendChild(block); });
+      } catch(err){ console.error(err); setMsg('createEmpMsg','Failed to fetch entries: '+(err.message||err),'error'); }
     };
 
     document.getElementById('clearAllDisplay').onclick = ()=> document.getElementById('allEntries').innerHTML='';
@@ -400,39 +417,30 @@ window.addEventListener('load', async ()=>{
       try {
         const snap = await db.collection('entries').orderBy('createdAt','asc').get();
         const rows=[["createdAt","employeeId","employeeName","candidateName","contactNo","currentCompany"]];
-        snap.forEach(doc=>{
-          const d=doc.data();
-          rows.push([ d.createdAt ? d.createdAt.toDate().toISOString() : "", d.employeeId, d.employeeName, d.candidateName, d.contactNo, d.currentCompany ]);
-        });
+        snap.forEach(doc=>{ const d=doc.data(); rows.push([ d.createdAt ? d.createdAt.toDate().toISOString() : "", d.employeeId, d.employeeName, d.candidateName, d.contactNo, d.currentCompany ]); });
         const csv = rows.map(r=>r.map(v=> (typeof v === 'string' && v.includes(',')) ? `"${v.replace(/"/g,'""')}"` : v ).join(",")).join("\n");
-        const blob = new Blob([csv],{type:'text/csv'});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = 'recruita_entries.csv'; a.click(); URL.revokeObjectURL(url);
-      } catch(err){ console.error('csv err', err); setMsg('createEmpMsg','CSV export failed: '+(err.message||err),'error'); }
+        const blob = new Blob([csv],{type:'text/csv'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'recruita_entries.csv'; a.click(); URL.revokeObjectURL(url);
+      } catch(err){ console.error(err); setMsg('createEmpMsg','CSV export failed: '+(err.message||err),'error'); }
     };
 
     document.getElementById('downloadAllXlsx').onclick = async ()=>{
       try {
         const snap = await db.collection('entries').orderBy('createdAt','asc').get();
         const rows=[["createdAt","employeeId","employeeName","candidateName","contactNo","currentCompany"]];
-        snap.forEach(doc=>{
-          const d=doc.data();
-          rows.push([ d.createdAt ? d.createdAt.toDate().toISOString() : "", d.employeeId, d.employeeName, d.candidateName, d.contactNo, d.currentCompany ]);
-        });
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.aoa_to_sheet(rows);
-        XLSX.utils.book_append_sheet(wb, ws, 'entries');
-        XLSX.writeFile(wb, 'recruita_entries.xlsx');
-      } catch(err){ console.error('xlsx err', err); setMsg('createEmpMsg','Excel export failed: '+(err.message||err),'error'); }
+        snap.forEach(doc=>{ const d=doc.data(); rows.push([ d.createdAt ? d.createdAt.toDate().toISOString() : "", d.employeeId, d.employeeName, d.candidateName, d.contactNo, d.currentCompany ]); });
+        const wb = XLSX.utils.book_new(); const ws = XLSX.utils.aoa_to_sheet(rows); XLSX.utils.book_append_sheet(wb, ws, 'entries'); XLSX.writeFile(wb, 'recruita_entries.xlsx');
+      } catch(err){ console.error(err); setMsg('createEmpMsg','Excel export failed: '+(err.message||err),'error'); }
     };
 
   } catch(initErr){
     console.error('Firebase init error:', initErr);
-    setGlobalStatus(false, 'Firebase initialization failed. Check config and console.');
+    setGlobalStatus(false, 'Firebase initialization failed. Check config.');
     setMsg('empAuthMsg','Auth not available. Check Firebase setup.','error');
     setMsg('adminAuthMsg','Auth not available. Check Firebase setup.','error');
   }
+
 });
 </script>
+
 </body>
 </html>
