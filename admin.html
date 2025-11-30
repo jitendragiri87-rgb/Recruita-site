@@ -51,7 +51,7 @@ input, select {
 }
 .light input, .light select { background:white; color:#222; border:1px solid #ccc; }
 
-.tableBox { overflow-x:auto; }
+.tableBox { overflow-x:auto; margin-top:20px; }
 
 table {
     width:100%;
@@ -63,6 +63,14 @@ th, td {
     padding:10px;
 }
 .light th, .light td { border:1px solid #ccc; }
+
+.filterBox {
+    margin-top:20px;
+    padding:20px;
+    background:#111;
+    border-radius:12px;
+}
+.light .filterBox { background:white; border:1px solid #ccc; }
 
 .editInput {
     background:#222;
@@ -127,8 +135,56 @@ th, td {
 
 <button class="blueBtn" onclick="saveData()">Submit Entry</button>
 
+<!-- FILTER + CSV BUTTONS -->
+<div style="display:flex; gap:12px; margin-top:25px;">
+    <button class="blueBtn" onclick="exportCSV()">Download CSV</button>
+    <button id="filterToggleBtn" class="greyBtn" onclick="toggleFilters()">Filter</button>
+</div>
+
+<!-- COLLAPSIBLE FILTER PANEL -->
+<div id="filterPanel" style="display:none;">
+    <div class="filterBox">
+
+        <input id="f_name" placeholder="Filter by Name">
+        <input id="f_number" placeholder="Filter by Number">
+        <input id="f_company" placeholder="Filter by Company">
+        <input id="f_location" placeholder="Filter by Location">
+
+        <select id="f_channel">
+            <option value="">Filter by Channel</option>
+            <option>Banca</option>
+            <option>Agency</option>
+            <option>Direct</option>
+            <option>Tele calling</option>
+        </select>
+
+        <select id="f_status">
+            <option value="">Filter by Call Status</option>
+            <option>Interested</option>
+            <option>Not Interested</option>
+            <option>Not Answered</option>
+        </select>
+
+        <input id="f_empid" placeholder="Filter by EmpID">
+
+        <input id="f_minAge" placeholder="Min Age">
+        <input id="f_maxAge" placeholder="Max Age">
+
+        <input id="f_minCTC" placeholder="Min CTC">
+        <input id="f_maxCTC" placeholder="Max CTC">
+
+        <label>Start Date</label>
+        <input id="f_dateStart" type="date">
+
+        <label>End Date</label>
+        <input id="f_dateEnd" type="date">
+
+        <button class="blueBtn" onclick="applyFilters()">Apply Filters</button>
+        <button class="greyBtn" onclick="resetFilters()">Reset</button>
+    </div>
+</div>
+
 <h2>All Entries</h2>
-<button class="greyBtn" onclick="exportCSV()">Download Full CSV</button>
 
 <div class="tableBox">
 <table>
@@ -166,6 +222,7 @@ let all = [];
 let adminEmpID = "";
 let adminEmail = "";
 let editingID = null;
+let filteredData = [];
 
 // Format timestamp
 function formatTS(d){
@@ -192,8 +249,8 @@ function loadEntries(){
     onSnapshot(collection(db,"callLogs"), snap=>{
         all = [];
         snap.forEach(d => all.push({ id:d.id, ...d.data() }));
-        renderTable();
         renderDashboard();
+        renderTable();
     });
 }
 
@@ -221,6 +278,20 @@ function renderDashboard(){
             </tr>
         `;
     });
+}
+
+// Toggle filter panel
+function toggleFilters(){
+    const panel = document.getElementById("filterPanel");
+    const btn = document.getElementById("filterToggleBtn");
+
+    if(panel.style.display === "none"){
+        panel.style.display = "block";
+        btn.textContent = "Hide Filters";
+    } else {
+        panel.style.display = "none";
+        btn.textContent = "Filter";
+    }
 }
 
 // Save new entry
@@ -270,94 +341,170 @@ async function saveData(){
     alert("Entry Saved");
 }
 
-// Render table
+// Apply Filters (AND logic)
+function applyFilters(){
+    let data = all;
+
+    if(f_name.value)
+        data = data.filter(x => x.name.toLowerCase().includes(f_name.value.toLowerCase()));
+
+    if(f_number.value)
+        data = data.filter(x => x.number.includes(f_number.value));
+
+    if(f_company.value)
+        data = data.filter(x => x.comp.toLowerCase().includes(f_company.value.toLowerCase()));
+
+    if(f_location.value)
+        data = data.filter(x => x.loc.toLowerCase().includes(f_location.value.toLowerCase()));
+
+    if(f_channel.value)
+        data = data.filter(x => x.channel === f_channel.value);
+
+    if(f_status.value)
+        data = data.filter(x => x.callStatus === f_status.value);
+
+    if(f_empid.value)
+        data = data.filter(x => x.empID === f_empid.value);
+
+    if(f_minAge.value)
+        data = data.filter(x => Number(x.age) >= Number(f_minAge.value));
+
+    if(f_maxAge.value)
+        data = data.filter(x => Number(x.age) <= Number(f_maxAge.value));
+
+    if(f_minCTC.value)
+        data = data.filter(x => Number(x.ctc) >= Number(f_minCTC.value));
+
+    if(f_maxCTC.value)
+        data = data.filter(x => Number(x.ctc) <= Number(f_maxCTC.value));
+
+    if(f_dateStart.value)
+        data = data.filter(x => new Date(x.ts) >= new Date(f_dateStart.value));
+
+    if(f_dateEnd.value)
+        data = data.filter(x => new Date(x.ts) <= new Date(f_dateEnd.value));
+
+    filteredData = data;
+    renderTableFiltered();
+}
+
+// Reset Filters
+function resetFilters(){
+    f_name.value="";
+    f_number.value="";
+    f_company.value="";
+    f_location.value="";
+    f_channel.value="";
+    f_status.value="";
+    f_empid.value="";
+    f_minAge.value="";
+    f_maxAge.value="";
+    f_minCTC.value="";
+    f_maxCTC.value="";
+    f_dateStart.value="";
+    f_dateEnd.value="";
+
+    filteredData = [];
+    renderTable();
+}
+
+// Render full table
 function renderTable(){
     listBody.innerHTML = "";
 
     all.forEach(d=>{
-        if(editingID === d.id){
-
-            listBody.innerHTML += `
-            <tr>
-                <td><a href="tel:${d.number}" class="callBtn">📞</a></td>
-                <td>${d.ts}</td>
-                <td>${d.empID}</td>
-
-                <td><input class="editInput" id="e_name" value="${d.name}"></td>
-                <td><input class="editInput" id="e_number" value="${d.number}"></td>
-                <td><input class="editInput" id="e_age" value="${d.age}"></td>
-                <td><input class="editInput" id="e_exp" value="${d.exp}"></td>
-                <td><input class="editInput" id="e_loc" value="${d.loc}"></td>
-                <td><input class="editInput" id="e_ctc" value="${d.ctc}"></td>
-                <td><input class="editInput" id="e_comp" value="${d.comp}"></td>
-
-                <td>
-                    <select id="e_channel" class="editInput">
-                        <option ${d.channel=="Banca"?"selected":""}>Banca</option>
-                        <option ${d.channel=="Agency"?"selected":""}>Agency</option>
-                        <option ${d.channel=="Direct"?"selected":""}>Direct</option>
-                        <option ${d.channel=="Tele calling"?"selected":""}>Tele calling</option>
-                    </select>
-                </td>
-
-                <td>
-                    <select id="e_status" class="editInput">
-                        <option ${d.callStatus=="Interested"?"selected":""}>Interested</option>
-                        <option ${d.callStatus=="Not Interested"?"selected":""}>Not Interested</option>
-                        <option ${d.callStatus=="Not Answered"?"selected":""}>Not Answered</option>
-                    </select>
-                </td>
-
-                <td><input class="editInput" id="e_remark" value="${d.remarks}"></td>
-
-                <td><button class="blueBtn" onclick="saveEdit('${d.id}')">Save</button></td>
-                <td><button class="greyBtn" onclick="cancelEdit()">Cancel</button></td>
-            </tr>
-            `;
-
-        } else {
-
-            listBody.innerHTML += `
-            <tr>
-                <td><a href="tel:${d.number}" class="callBtn">📞</a></td>
-                <td>${d.ts}</td>
-                <td>${d.empID}</td>
-                <td>${d.name}</td>
-                <td>${d.number}</td>
-                <td>${d.age}</td>
-                <td>${d.exp}</td>
-                <td>${d.loc}</td>
-                <td>${d.ctc}</td>
-                <td>${d.comp}</td>
-                <td>${d.channel}</td>
-                <td>${d.callStatus}</td>
-                <td>${d.remarks}</td>
-
-                <td>
-                    <button class="blueBtn" onclick="startEdit('${d.id}')">Edit</button>
-                </td>
-                <td>
-                    <button class="redBtn" onclick="deleteEntry('${d.id}')">Delete</button>
-                </td>
-            </tr>
-            `;
-        }
+        renderRow(d);
     });
 }
 
-// Start edit
+// Render filtered table
+function renderTableFiltered(){
+    listBody.innerHTML = "";
+    filteredData.forEach(d=>{
+        renderRow(d);
+    });
+}
+
+// Render row
+function renderRow(d){
+    if(editingID === d.id){
+
+        listBody.innerHTML += `
+        <tr>
+            <td><a href="tel:${d.number}" class="callBtn">📞</a></td>
+            <td>${d.ts}</td>
+            <td>${d.empID}</td>
+
+            <td><input class="editInput" id="e_name" value="${d.name}"></td>
+            <td><input class="editInput" id="e_number" value="${d.number}"></td>
+            <td><input class="editInput" id="e_age" value="${d.age}"></td>
+            <td><input class="editInput" id="e_exp" value="${d.exp}"></td>
+            <td><input class="editInput" id="e_loc" value="${d.loc}"></td>
+            <td><input class="editInput" id="e_ctc" value="${d.ctc}"></td>
+            <td><input class="editInput" id="e_comp" value="${d.comp}"></td>
+
+            <td>
+                <select id="e_channel" class="editInput">
+                    <option ${d.channel=="Banca"?"selected":""}>Banca</option>
+                    <option ${d.channel=="Agency"?"selected":""}>Agency</option>
+                    <option ${d.channel=="Direct"?"selected":""}>Direct</option>
+                    <option ${d.channel=="Tele calling"?"selected":""}>Tele calling</option>
+                </select>
+            </td>
+
+            <td>
+                <select id="e_status" class="editInput">
+                    <option ${d.callStatus=="Interested"?"selected":""}>Interested</option>
+                    <option ${d.callStatus=="Not Interested"?"selected":""}>Not Interested</option>
+                    <option ${d.callStatus=="Not Answered"?"selected":""}>Not Answered</option>
+                </select>
+            </td>
+
+            <td><input class="editInput" id="e_remark" value="${d.remarks}"></td>
+
+            <td><button class="blueBtn" onclick="saveEdit('${d.id}')">Save</button></td>
+            <td><button class="greyBtn" onclick="cancelEdit()">Cancel</button></td>
+        </tr>
+        `;
+
+    } else {
+
+        listBody.innerHTML += `
+        <tr>
+            <td><a href="tel:${d.number}" class="callBtn">📞</a></td>
+            <td>${d.ts}</td>
+            <td>${d.empID}</td>
+            <td>${d.name}</td>
+            <td>${d.number}</td>
+            <td>${d.age}</td>
+            <td>${d.exp}</td>
+            <td>${d.loc}</td>
+            <td>${d.ctc}</td>
+            <td>${d.comp}</td>
+            <td>${d.channel}</td>
+            <td>${d.callStatus}</td>
+            <td>${d.remarks}</td>
+
+            <td>
+                <button class="blueBtn" onclick="startEdit('${d.id}')">Edit</button>
+            </td>
+            <td>
+                <button class="redBtn" onclick="deleteEntry('${d.id}')">Delete</button>
+            </td>
+        </tr>
+        `;
+    }
+}
+
+// Edit
 function startEdit(id){
     editingID = id;
     renderTable();
 }
-
-// Cancel edit
 function cancelEdit(){
     editingID = null;
     renderTable();
 }
-
-// Save edited entry
 async function saveEdit(id){
     let ref = doc(db,"callLogs",id);
 
@@ -387,14 +534,17 @@ async function deleteEntry(id){
 
 // CSV
 function exportCSV(){
+    let data = filteredData.length > 0 ? filteredData : all;
+
     let csv = "Time,EmpID,Name,Number,Age,Experience,Location,CTC,Company,Channel,Status,Remarks\n";
 
-    all.forEach(d=>{
-        csv += `${d.ts},${d.empID},${d.name},${d.number},${d.age},${d.exp},${d.loc},${d.ctc},${d.comp},${d.channel},${d.callStatus},${d.remarks}\n`;
+    data.forEach(d=>{
+        csv += `${formatTS(new Date(d.ts))},${d.empID},${d.name},${d.number},${d.age},${d.exp},${d.loc},${d.ctc},${d.comp},${d.channel},${d.callStatus},${d.remarks}\n`;
     });
 
+    let blob = new Blob([csv],{type:"text/csv"});
     let a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+    a.href = URL.createObjectURL(blob);
     a.download = "Recruita_Full_Data.csv";
     a.click();
 }
@@ -412,13 +562,16 @@ function toggleTheme(){
 
 // Expose
 window.saveData = saveData;
+window.applyFilters = applyFilters;
+window.resetFilters = resetFilters;
 window.startEdit = startEdit;
 window.saveEdit = saveEdit;
 window.cancelEdit = cancelEdit;
 window.deleteEntry = deleteEntry;
 window.exportCSV = exportCSV;
-window.logout = logout;
+window.toggleFilters = toggleFilters;
 window.toggleTheme = toggleTheme;
+window.logout = logout;
 
 </script>
 </body>
