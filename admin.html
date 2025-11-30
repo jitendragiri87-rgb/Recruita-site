@@ -10,7 +10,6 @@ body {
     background:#0b0b0c;
     color:white;
     font-family:Inter, sans-serif;
-    margin:0;
     padding:20px;
 }
 .light { background:#f2f2f2; color:#222; }
@@ -33,31 +32,37 @@ button {
 .redBtn { background:#e74c3c; color:white; }
 .greyBtn { background:#555; color:white; }
 
-table {
-    width:100%;
-    border-collapse:collapse;
-    margin-top:15px;
+.callBtn {
+    padding:6px 10px;
+    background:#2B7FFF;
+    color:white;
+    border-radius:6px;
+    text-decoration:none;
 }
-th, td {
-    padding:10px;
-    border:1px solid #333;
-}
-.light th, .light td { border:1px solid #ccc; }
 
 input, select {
     width:100%;
     padding:12px;
     background:#111;
     color:white;
-    border-radius:8px;
     border:none;
+    border-radius:8px;
     margin-top:8px;
 }
-.light input, .light select {
-    background:white;
-    color:#222;
-    border:1px solid #ccc;
+.light input, .light select { background:white; color:#222; border:1px solid #ccc; }
+
+.tableBox { overflow-x:auto; }
+
+table {
+    width:100%;
+    margin-top:15px;
+    border-collapse:collapse;
 }
+th, td {
+    border:1px solid #333;
+    padding:10px;
+}
+.light th, .light td { border:1px solid #ccc; }
 
 .editInput {
     background:#222;
@@ -66,12 +71,7 @@ input, select {
     border-radius:6px;
     width:100%;
 }
-.light .editInput { background:#fff; color:black; }
-
-td button {
-    padding:6px 12px;
-    font-size:14px;
-}
+.light .editInput { background:#fff; color:#222; }
 
 </style>
 </head>
@@ -85,16 +85,18 @@ td button {
 
 <h2>Admin Dashboard</h2>
 
+<div class="tableBox">
 <table>
-  <thead>
-    <tr>
-      <th>EmpID</th>
-      <th>Today's Count</th>
-      <th>Total Count</th>
-    </tr>
-  </thead>
-  <tbody id="dashBody"></tbody>
+    <thead>
+        <tr>
+            <th>EmpID</th>
+            <th>Today</th>
+            <th>Total</th>
+        </tr>
+    </thead>
+    <tbody id="dashBody"></tbody>
 </table>
+</div>
 
 <h2>Add Candidate Entry</h2>
 
@@ -114,6 +116,13 @@ td button {
     <option>Tele calling</option>
 </select>
 
+<select id="statusInput">
+    <option value="">Call Status</option>
+    <option>Interested</option>
+    <option>Not Interested</option>
+    <option>Not Answered</option>
+</select>
+
 <input id="remarkInput" placeholder="Remarks">
 
 <button class="blueBtn" onclick="saveData()">Submit Entry</button>
@@ -121,9 +130,11 @@ td button {
 <h2>All Entries</h2>
 <button class="greyBtn" onclick="exportCSV()">Download Full CSV</button>
 
+<div class="tableBox">
 <table>
   <thead>
     <tr>
+      <th>Call</th>
       <th>Time</th>
       <th>EmpID</th>
       <th>Name</th>
@@ -134,6 +145,7 @@ td button {
       <th>CTC</th>
       <th>Company</th>
       <th>Channel</th>
+      <th>Status</th>
       <th>Remarks</th>
       <th>Edit</th>
       <th>Delete</th>
@@ -141,6 +153,7 @@ td button {
   </thead>
   <tbody id="listBody"></tbody>
 </table>
+</div>
 
 <script type="module">
 import { auth, db } from "./firebase.js";
@@ -149,66 +162,79 @@ import {
   updateDoc, doc, query, where, getDocs
 } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
-let allData = [];
+let all = [];
 let adminEmpID = "";
 let adminEmail = "";
 let editingID = null;
-let userMeta = {};
 
-
-// -------------------- Format Timestamp --------------------- //
+// Format timestamp
 function formatTS(d){
-    const pad = n => n.toString().padStart(2,"0");
-    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} `
-         + `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    const p=n=>n.toString().padStart(2,"0");
+    return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 }
 
-
-// -------------------- Load user metadata --------------------- //
-onSnapshot(collection(db,"users"), snap=>{
-    userMeta = {};
-    snap.forEach(d => userMeta[d.id] = d.data());
-});
-
-
-// -------------------- Auth Check --------------------- //
+// Auth
 auth.onAuthStateChanged(async user=>{
     if(!user){ location.href="login.html"; return; }
 
     adminEmail = user.email;
 
-    let q = query(collection(db,"users"), where("email","==", user.email));
+    let ref = collection(db,"users");
+    let q = query(ref, where("email","==", adminEmail));
     let snap = await getDocs(q);
     snap.forEach(d => adminEmpID = d.data().empID);
 
-    loadAllEntries();
+    loadEntries();
 });
 
-
-// -------------------- Load Entries --------------------- //
-function loadAllEntries(){
+// Load all entries
+function loadEntries(){
     onSnapshot(collection(db,"callLogs"), snap=>{
-        allData = [];
-        snap.forEach(d=> allData.push({ id:d.id, ...d.data() }));
+        all = [];
+        snap.forEach(d => all.push({ id:d.id, ...d.data() }));
         renderTable();
         renderDashboard();
     });
 }
 
+// Dashboard
+function renderDashboard(){
+    dashBody.innerHTML = "";
 
-// ---------------------- Save Data --------------------- //
+    let stats = {};
+
+    all.forEach(d=>{
+        if(!stats[d.empID]) stats[d.empID] = {today:0, total:0};
+
+        let today = new Date().toDateString();
+        if(new Date(d.ts).toDateString() === today) stats[d.empID].today++;
+
+        stats[d.empID].total++;
+    });
+
+    Object.keys(stats).forEach(id=>{
+        dashBody.innerHTML += `
+            <tr>
+                <td>${id}</td>
+                <td>${stats[id].today}</td>
+                <td>${stats[id].total}</td>
+            </tr>
+        `;
+    });
+}
+
+// Save new entry
 async function saveData(){
-
     let num = numberInput.value.trim();
     if(num.length !== 10){
-        alert("Enter valid 10 digit number");
+        alert("Enter 10 digit number");
         return;
     }
 
-    // duplicate check (self only)
-    let duplicate = allData.find(e => e.number === num && e.empID === adminEmpID);
+    // Duplicate check (admin self-only)
+    let duplicate = all.find(e => e.number===num && e.empID===adminEmpID);
     if(duplicate){
-        let ok = confirm("This number already exists in your entries. Do you still want to add?");
+        let ok = confirm("This number already exists in your entries. Still add?");
         if(!ok) return;
     }
 
@@ -217,7 +243,7 @@ async function saveData(){
         empID: adminEmpID,
         email: adminEmail,
 
-        name: nameInput.value || "",
+        name: nameInput.value,
         number: num,
         age: ageInput.value || "",
         exp: expInput.value || "",
@@ -225,14 +251,11 @@ async function saveData(){
         ctc: ctcInput.value || "",
         comp: compInput.value || "",
         channel: channelInput.value || "",
+        callStatus: statusInput.value || "",
         remarks: remarkInput.value || ""
     });
 
-    clearForm();
-    alert("Entry Saved");
-}
-
-function clearForm(){
+    // Reset
     nameInput.value="";
     numberInput.value="";
     ageInput.value="";
@@ -241,65 +264,62 @@ function clearForm(){
     ctcInput.value="";
     compInput.value="";
     channelInput.value="";
+    statusInput.value="";
     remarkInput.value="";
+
+    alert("Entry Saved");
 }
 
-
-// ---------------------- Render Dashboard --------------------- //
-function renderDashboard(){
-    dashBody.innerHTML = "";
-
-    let map = {};
-
-    allData.forEach(d=>{
-        if(!map[d.empID]) map[d.empID] = { today:0, total:0 };
-
-        let today = new Date().toDateString();
-        let day = new Date(d.ts).toDateString();
-
-        if(today === day) map[d.empID].today++;
-        map[d.empID].total++;
-    });
-
-    Object.keys(map).forEach(id=>{
-        dashBody.innerHTML += `
-            <tr>
-                <td>${id}</td>
-                <td>${map[id].today}</td>
-                <td>${map[id].total}</td>
-            </tr>
-        `;
-    });
-}
-
-
-// ---------------------- Render Table --------------------- //
+// Render table
 function renderTable(){
     listBody.innerHTML = "";
 
-    allData.forEach(d=>{
-        let row = document.createElement("tr");
-
+    all.forEach(d=>{
         if(editingID === d.id){
-            row.innerHTML = `
+
+            listBody.innerHTML += `
+            <tr>
+                <td><a href="tel:${d.number}" class="callBtn">📞</a></td>
                 <td>${d.ts}</td>
                 <td>${d.empID}</td>
 
-                <td><input class="editInput" id="edit_name" value="${d.name}"></td>
-                <td><input class="editInput" id="edit_number" value="${d.number}"></td>
-                <td><input class="editInput" id="edit_age" value="${d.age}"></td>
-                <td><input class="editInput" id="edit_exp" value="${d.exp}"></td>
-                <td><input class="editInput" id="edit_loc" value="${d.loc}"></td>
-                <td><input class="editInput" id="edit_ctc" value="${d.ctc}"></td>
-                <td><input class="editInput" id="edit_comp" value="${d.comp}"></td>
-                <td><input class="editInput" id="edit_channel" value="${d.channel}"></td>
-                <td><input class="editInput" id="edit_remarks" value="${d.remarks}"></td>
+                <td><input class="editInput" id="e_name" value="${d.name}"></td>
+                <td><input class="editInput" id="e_number" value="${d.number}"></td>
+                <td><input class="editInput" id="e_age" value="${d.age}"></td>
+                <td><input class="editInput" id="e_exp" value="${d.exp}"></td>
+                <td><input class="editInput" id="e_loc" value="${d.loc}"></td>
+                <td><input class="editInput" id="e_ctc" value="${d.ctc}"></td>
+                <td><input class="editInput" id="e_comp" value="${d.comp}"></td>
+
+                <td>
+                    <select id="e_channel" class="editInput">
+                        <option ${d.channel=="Banca"?"selected":""}>Banca</option>
+                        <option ${d.channel=="Agency"?"selected":""}>Agency</option>
+                        <option ${d.channel=="Direct"?"selected":""}>Direct</option>
+                        <option ${d.channel=="Tele calling"?"selected":""}>Tele calling</option>
+                    </select>
+                </td>
+
+                <td>
+                    <select id="e_status" class="editInput">
+                        <option ${d.callStatus=="Interested"?"selected":""}>Interested</option>
+                        <option ${d.callStatus=="Not Interested"?"selected":""}>Not Interested</option>
+                        <option ${d.callStatus=="Not Answered"?"selected":""}>Not Answered</option>
+                    </select>
+                </td>
+
+                <td><input class="editInput" id="e_remark" value="${d.remarks}"></td>
 
                 <td><button class="blueBtn" onclick="saveEdit('${d.id}')">Save</button></td>
                 <td><button class="greyBtn" onclick="cancelEdit()">Cancel</button></td>
+            </tr>
             `;
+
         } else {
-            row.innerHTML = `
+
+            listBody.innerHTML += `
+            <tr>
+                <td><a href="tel:${d.number}" class="callBtn">📞</a></td>
                 <td>${d.ts}</td>
                 <td>${d.empID}</td>
                 <td>${d.name}</td>
@@ -310,87 +330,87 @@ function renderTable(){
                 <td>${d.ctc}</td>
                 <td>${d.comp}</td>
                 <td>${d.channel}</td>
+                <td>${d.callStatus}</td>
                 <td>${d.remarks}</td>
 
-                <td><button class="blueBtn" onclick="startEdit('${d.id}')">Edit</button></td>
-                <td><button class="redBtn" onclick="deleteEntry('${d.id}')">Delete</button></td>
+                <td>
+                    <button class="blueBtn" onclick="startEdit('${d.id}')">Edit</button>
+                </td>
+                <td>
+                    <button class="redBtn" onclick="deleteEntry('${d.id}')">Delete</button>
+                </td>
+            </tr>
             `;
         }
-
-        listBody.appendChild(row);
     });
 }
 
-
-// ---------------------- Edit Entry --------------------- //
+// Start edit
 function startEdit(id){
     editingID = id;
     renderTable();
 }
 
+// Cancel edit
 function cancelEdit(){
     editingID = null;
     renderTable();
 }
 
+// Save edited entry
 async function saveEdit(id){
-    let ref = doc(db,"callLogs", id);
+    let ref = doc(db,"callLogs",id);
 
-    await updateDoc(ref, {
-        name: edit_name.value,
-        number: edit_number.value,
-        age: edit_age.value,
-        exp: edit_exp.value,
-        loc: edit_loc.value,
-        ctc: edit_ctc.value,
-        comp: edit_comp.value,
-        channel: edit_channel.value,
-        remarks: edit_remarks.value
+    await updateDoc(ref,{
+        name: e_name.value,
+        number: e_number.value,
+        age: e_age.value,
+        exp: e_exp.value,
+        loc: e_loc.value,
+        ctc: e_ctc.value,
+        comp: e_comp.value,
+        channel: e_channel.value,
+        callStatus: e_status.value,
+        remarks: e_remark.value
     });
 
+    alert("Updated");
     editingID = null;
-    alert("Updated Successfully");
     renderTable();
 }
 
-
-// ---------------------- Delete --------------------- //
+// Delete
 async function deleteEntry(id){
     if(!confirm("Delete this entry?")) return;
     await deleteDoc(doc(db,"callLogs",id));
 }
 
-
-// ---------------------- Export CSV --------------------- //
+// CSV
 function exportCSV(){
-    let csv = "Time,EmpID,Name,Number,Age,Experience,Location,CTC,Company,Channel,Remarks\n";
+    let csv = "Time,EmpID,Name,Number,Age,Experience,Location,CTC,Company,Channel,Status,Remarks\n";
 
-    allData.forEach(d=>{
-        csv += `${d.ts},${d.empID},${d.name},${d.number},${d.age},${d.exp},${d.loc},${d.ctc},${d.comp},${d.channel},${d.remarks}\n`;
+    all.forEach(d=>{
+        csv += `${d.ts},${d.empID},${d.name},${d.number},${d.age},${d.exp},${d.loc},${d.ctc},${d.comp},${d.channel},${d.callStatus},${d.remarks}\n`;
     });
 
-    let blob = new Blob([csv],{ type:"text/csv" });
     let a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
+    a.href = URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
     a.download = "Recruita_Full_Data.csv";
     a.click();
 }
 
-
-// ---------------------- Logout --------------------- //
+// Logout
 function logout(){
     auth.signOut();
     location.href="login.html";
 }
 
-
-// ---------------------- Theme Toggle --------------------- //
+// Theme toggle
 function toggleTheme(){
     document.body.classList.toggle("light");
 }
 
-
-// Expose globals
+// Expose
 window.saveData = saveData;
 window.startEdit = startEdit;
 window.saveEdit = saveEdit;
@@ -399,7 +419,7 @@ window.deleteEntry = deleteEntry;
 window.exportCSV = exportCSV;
 window.logout = logout;
 window.toggleTheme = toggleTheme;
-</script>
 
+</script>
 </body>
 </html>
