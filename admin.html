@@ -24,24 +24,22 @@ button:active{
   background:#1f63cc;
 }
 .container{
-  max-width:900px;margin:auto;
+  max-width:1000px;margin:auto;
 }
-.entry{
-  background:#111;padding:16px;border-radius:12px;margin-top:16px;
-}
-.entry small{color:#aaa;}
-
-.tableBox{
-  background:#111;padding:16px;border-radius:12px;margin-top:20px;
+.tableWrap{
+  background:#111;padding:16px;border-radius:12px;margin-top:20px;overflow-x:auto;
 }
 table{
-  width:100%;border-collapse:collapse;margin-top:10px;
+  width:100%;border-collapse:collapse;margin-top:10px;font-size:14px;
 }
 th,td{
-  border-bottom:1px solid #333;padding:10px;text-align:left;
+  border:1px solid #333;padding:10px;text-align:left;
 }
 th{
-  color:#2B7FFF;font-weight:700;font-size:17px;
+  background:#1d1d1d;color:#2B7FFF;font-weight:700;
+}
+.entryTable th, .entryTable td{
+  white-space:nowrap;
 }
 .filterBox{
   background:#111;padding:16px;border-radius:12px;margin-top:20px;
@@ -55,13 +53,16 @@ th{
 
 <!-- ===================== DASHBOARD ======================= -->
 <h2>Recruiter Dashboard</h2>
-<div class="tableBox">
+<div class="tableWrap">
   <table id="dashTable">
-    <tr>
-      <th>EmpID</th>
-      <th>Today's Count</th>
-      <th>All-Time Count</th>
-    </tr>
+    <thead>
+      <tr>
+        <th>EmpID</th>
+        <th>Today's Count</th>
+        <th>All-Time Count</th>
+      </tr>
+    </thead>
+    <tbody id="dashBody"></tbody>
   </table>
 </div>
 
@@ -69,9 +70,9 @@ th{
 <h2>Add Candidate Entry</h2>
 
 <input id="name" placeholder="Candidate Name">
-<input id="number" placeholder="Candidate Number">
+<input id="number" placeholder="Candidate Number (10 digits)">
 <input id="age" placeholder="Age">
-<input id="exp" placeholder="Total Experience (Years)">
+<input id="experienceYears" placeholder="Total Experience (Years)">
 <input id="loc" placeholder="Location">
 <input id="ctc" placeholder="Current CTC">
 <input id="comp" placeholder="Current Company">
@@ -85,6 +86,7 @@ th{
 </select>
 
 <input id="remarks" placeholder="Remarks">
+
 <button id="submitBtn" onclick="saveData()">Submit Entry</button>
 
 
@@ -106,11 +108,11 @@ th{
 </select>
 
 <select id="filterLocation">
-  <option value="">Filter by Location (Auto)</option>
+  <option value="">Filter by Location</option>
 </select>
 
 <select id="filterRecruiter">
-  <option value="">Filter by Recruiter (Auto)</option>
+  <option value="">Filter by Recruiter (EmpID)</option>
 </select>
 
 <input id="minAge" placeholder="Min Age">
@@ -119,18 +121,37 @@ th{
 <input id="minCTC" placeholder="Min CTC">
 <input id="maxCTC" placeholder="Max CTC">
 
-<input id="dateStart" type="date" placeholder="Start Date">
-<input id="dateEnd" type="date" placeholder="End Date">
+<input id="dateStart" type="date">
+<input id="dateEnd" type="date">
 
 <button onclick="applyFilters()">Apply Filters</button>
-<button onclick="resetFilters()">Reset Filters</button>
+<button onclick="resetFilters()">Reset</button>
 </div>
 
-<!-- ===================== CSV ======================= -->
+<!-- ===================== TABLE ======================= -->
 <h2>All Recruiter Entries</h2>
 <button onclick="downloadCSV()">Download CSV</button>
 
-<div id="logs"></div>
+<div class="tableWrap">
+  <table class="entryTable">
+    <thead>
+      <tr>
+        <th>Timestamp</th>
+        <th>EmpID</th>
+        <th>Name</th>
+        <th>Number</th>
+        <th>Age</th>
+        <th>Experience (Years)</th>
+        <th>Location</th>
+        <th>CTC</th>
+        <th>Company</th>
+        <th>Channel</th>
+        <th>Remarks</th>
+      </tr>
+    </thead>
+    <tbody id="logs"></tbody>
+  </table>
+</div>
 
 </div>
 
@@ -138,35 +159,36 @@ th{
 <script type="module">
 import { auth, db } from "./firebase.js";
 import {
-  addDoc, collection, query, where, onSnapshot
+  addDoc, collection, onSnapshot, doc, getDoc
 } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
 let all = [];
-let empID = localStorage.getItem("empID");  // logged in recruiter/Admin
 
 // ===================== SAVE ENTRY =======================
 async function saveData(){
-  const btn = document.getElementById("submitBtn");
+  let btn = document.getElementById("submitBtn");
 
-  // VALIDATION (only number required)
   if(!number.value || number.value.length !== 10){
-    alert("Enter a valid 10-digit Contact Number");
+    alert("Enter a valid 10-digit number");
     return;
   }
 
-  // Button animation state
   btn.innerText = "Saving...";
   btn.disabled = true;
 
+  // fetch empID
+  let userSnap = await getDoc(doc(db, "users", auth.currentUser.uid));
+  let empID = userSnap.data().empID;
+
   await addDoc(collection(db,"callLogs"),{
-    empID,                                 // instead of UID
+    loginID: empID,
     ts: new Date().toISOString(),
     name: name.value || "",
     number: number.value,
-    age: age.value ? Number(age.value) : "",
-    exp: exp.value || "",
+    age: age.value || "",
+    experienceYears: experienceYears.value || "",
     loc: loc.value || "",
-    ctc: ctc.value ? Number(ctc.value) : "",
+    ctc: ctc.value || "",
     comp: comp.value || "",
     channel: channel.value || "",
     remarks: remarks.value || ""
@@ -177,11 +199,11 @@ async function saveData(){
 
   alert("Entry Saved");
 
-  // Clear form
+  // Clear inputs
   name.value = "";
   number.value = "";
   age.value = "";
-  exp.value = "";
+  experienceYears.value = "";
   loc.value = "";
   ctc.value = "";
   comp.value = "";
@@ -193,41 +215,31 @@ async function saveData(){
 onSnapshot(collection(db,"callLogs"),(snap)=>{
   all = [];
   snap.forEach(doc => all.push(doc.data()));
-  autoFilters();
-  render(all);
+  fillAutoFilters();
+  renderTable(all);
   buildDashboard();
 });
 
 // ===================== DASHBOARD =======================
 function buildDashboard(){
-  let table = document.getElementById("dashTable");
-
-  // Reset table except headers
-  table.innerHTML = `
-    <tr>
-      <th>EmpID</th>
-      <th>Today's Count</th>
-      <th>All-Time Count</th>
-    </tr>
-  `;
-
-  // Group by empID
-  let map = {};
-
   let today = new Date().toISOString().slice(0,10);
 
-  all.forEach(e=>{
-    if(!map[e.empID]) map[e.empID] = {today:0, total:0};
+  let map = {};
 
-    map[e.empID].total++;
+  all.forEach(e=>{
+    if(!map[e.loginID]) map[e.loginID] = {today:0, total:0};
+    map[e.loginID].total++;
 
     if(e.ts.slice(0,10) === today){
-      map[e.empID].today++;
+      map[e.loginID].today++;
     }
   });
 
+  let body = document.getElementById("dashBody");
+  body.innerHTML = "";
+
   Object.keys(map).forEach(id=>{
-    table.innerHTML += `
+    body.innerHTML += `
       <tr>
         <td>${id}</td>
         <td>${map[id].today}</td>
@@ -237,19 +249,19 @@ function buildDashboard(){
   });
 }
 
-// ===================== AUTO FILTER VALUES =======================
-function autoFilters(){
+// ===================== AUTO FILTERS =======================
+function fillAutoFilters(){
   let locations = [...new Set(all.map(e=>e.loc).filter(e=>e))];
-  let recruiters = [...new Set(all.map(e=>e.empID).filter(e=>e))];
+  let recruiters = [...new Set(all.map(e=>e.loginID))];
 
   filterLocation.innerHTML = `<option value="">Filter by Location</option>`;
-  locations.forEach(l=> filterLocation.innerHTML += `<option>${l}</option>`);
+  locations.forEach(l => filterLocation.innerHTML += `<option>${l}</option>`);
 
   filterRecruiter.innerHTML = `<option value="">Filter by Recruiter</option>`;
-  recruiters.forEach(r=> filterRecruiter.innerHTML += `<option>${r}</option>`);
+  recruiters.forEach(r => filterRecruiter.innerHTML += `<option>${r}</option>`);
 }
 
-// ===================== APPLY FILTERS =======================
+// ===================== FILTERS =======================
 function applyFilters(){
   let data = all;
 
@@ -272,7 +284,7 @@ function applyFilters(){
     data = data.filter(d => d.loc === filterLocation.value);
 
   if(filterRecruiter.value)
-    data = data.filter(d => d.empID === filterRecruiter.value);
+    data = data.filter(d => d.loginID === filterRecruiter.value);
 
   if(minAge.value)
     data = data.filter(d => d.age >= Number(minAge.value));
@@ -292,10 +304,9 @@ function applyFilters(){
   if(dateEnd.value)
     data = data.filter(d => new Date(d.ts) <= new Date(dateEnd.value));
 
-  render(data);
+  renderTable(data);
 }
 
-// ===================== RESET FILTERS =======================
 function resetFilters(){
   filterName.value = "";
   filterNumber.value = "";
@@ -310,37 +321,39 @@ function resetFilters(){
   maxCTC.value = "";
   dateStart.value = "";
   dateEnd.value = "";
-  render(all);
+  renderTable(all);
 }
 
-// ===================== RENDER ENTRIES =======================
-function render(list){
+// ===================== RENDER TABLE =======================
+function renderTable(list){
+  let logs = document.getElementById("logs");
   logs.innerHTML = "";
+
   list.forEach(d=>{
     logs.innerHTML += `
-      <div class="entry">
-        <small>${new Date(d.ts).toLocaleString()}</small><br>
-        <b>${d.name}</b><br>
-        Number: ${d.number}<br>
-        Age: ${d.age}<br>
-        Experience: ${d.exp}<br>
-        Location: ${d.loc}<br>
-        CTC: ${d.ctc}<br>
-        Company: ${d.comp}<br>
-        Channel: ${d.channel}<br>
-        Remarks: ${d.remarks}<br>
-        Recruiter ID: ${d.empID}
-      </div>
+      <tr>
+        <td>${new Date(d.ts).toLocaleString()}</td>
+        <td>${d.loginID}</td>
+        <td>${d.name}</td>
+        <td>${d.number}</td>
+        <td>${d.age}</td>
+        <td>${d.experienceYears}</td>
+        <td>${d.loc}</td>
+        <td>${d.ctc}</td>
+        <td>${d.comp}</td>
+        <td>${d.channel}</td>
+        <td>${d.remarks}</td>
+      </tr>
     `;
   });
 }
 
-// ===================== CSV DOWNLOAD =======================
+// ===================== CSV =======================
 function downloadCSV(){
-  let csv = "Timestamp,Name,Number,Age,Experience,Location,CTC,Company,Channel,Remarks,EmpID\n";
+  let csv = "Timestamp,EmpID,Name,Number,Age,ExperienceYears,Location,CTC,Company,Channel,Remarks\n";
 
   all.forEach(d=>{
-    csv += `${d.ts},${d.name},${d.number},${d.age},${d.exp},${d.loc},${d.ctc},${d.comp},${d.channel},${d.remarks},${d.empID}\n`;
+    csv += `"${d.ts}","${d.loginID}","${d.name}","${d.number}","${d.age}","${d.experienceYears}","${d.loc}","${d.ctc}","${d.comp}","${d.channel}","${d.remarks}"\n`;
   });
 
   let blob = new Blob([csv],{type:"text/csv"});
@@ -349,12 +362,6 @@ function downloadCSV(){
   a.download = "Recruita_Data.csv";
   a.click();
 }
-
-// Expose functions
-window.downloadCSV = downloadCSV;
-window.applyFilters = applyFilters;
-window.resetFilters = resetFilters;
-window.saveData = saveData;
 
 </script>
 
