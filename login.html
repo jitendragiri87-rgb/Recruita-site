@@ -41,30 +41,34 @@ import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/1
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
 async function login(){
-  let email=document.getElementById("email").value;
-  let pass=document.getElementById("password").value;
+  let email = document.getElementById("email").value;
+  let pass = document.getElementById("password").value;
 
   try{
-    let res = await signInWithEmailAndPassword(auth,email,pass);
+    let res = await signInWithEmailAndPassword(auth, email, pass);
     let uid = res.user.uid;
 
-    let ref = doc(db,"users",uid);
+    let ref = doc(db, "users", uid);
     let snap = await getDoc(ref);
 
     if(!snap.exists()){
-      alert("User role not found!"); 
+      alert("User role not found!");
       return;
     }
 
     let role = snap.data().role;
 
-    if(role==="admin") window.location="admin.html";
-    else window.location="recruiter.html";
+    if(role === "admin") window.location = "admin.html";
+    else window.location = "recruiter.html";
 
   }catch(err){
     alert("Invalid ID or password");
   }
 }
+
+// 🔥 FIX: Expose login function globally so button can call it
+window.login = login;
+
 </script>
 
 </body>
