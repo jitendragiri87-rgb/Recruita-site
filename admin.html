@@ -87,7 +87,6 @@ th, td {
 <body>
 
 <div class="topBar">
-    <button onclick="location.href='manageUsers.html'" class="blueBtn">Manage Users</button>
     <button onclick="toggleTheme()" class="greyBtn">🌓 Theme</button>
     <button onclick="logout()" class="redBtn">Logout</button>
 </div>
@@ -136,11 +135,13 @@ th, td {
 
 <button class="blueBtn" onclick="saveData()">Submit Entry</button>
 
+<!-- FILTER + CSV BUTTONS -->
 <div style="display:flex; gap:12px; margin-top:25px;">
     <button class="blueBtn" onclick="exportCSV()">Download CSV</button>
     <button id="filterToggleBtn" class="greyBtn" onclick="toggleFilters()">Filter</button>
 </div>
 
+<!-- COLLAPSIBLE FILTER PANEL -->
 <div id="filterPanel" style="display:none;">
     <div class="filterBox">
 
@@ -180,7 +181,6 @@ th, td {
 
         <button class="blueBtn" onclick="applyFilters()">Apply Filters</button>
         <button class="greyBtn" onclick="resetFilters()">Reset</button>
-
     </div>
 </div>
 
@@ -212,18 +212,366 @@ th, td {
 </div>
 
 <script type="module">
+import { auth, db } from "./firebase.js";
+import {
+  addDoc, collection, onSnapshot, deleteDoc,
+  updateDoc, doc, query, where, getDocs
+} from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
-// THE ENTIRE JS CODE FROM PREVIOUS ADMIN VERSION
-// ✔ filtering
-// ✔ inline edit
-// ✔ delete
-// ✔ CSV
-// ✔ theme toggle
-// ✔ duplicate detection
-// ✔ formatting
-// ✔ all features
+let all = [];
+let adminEmpID = "";
+let adminEmail = "";
+let editingID = null;
+let filteredData = [];
 
-//  ⚠️  EXACT SAME JS YOU ALREADY HAVE, NO CHANGE REQUIRED  ⚠️
+// Format timestamp
+function formatTS(d){
+    const p=n=>n.toString().padStart(2,"0");
+    return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+
+// Auth
+auth.onAuthStateChanged(async user=>{
+    if(!user){ location.href="login.html"; return; }
+
+    adminEmail = user.email;
+
+    let ref = collection(db,"users");
+    let q = query(ref, where("email","==", adminEmail));
+    let snap = await getDocs(q);
+    snap.forEach(d => adminEmpID = d.data().empID);
+
+    loadEntries();
+});
+
+// Load all entries
+function loadEntries(){
+    onSnapshot(collection(db,"callLogs"), snap=>{
+        all = [];
+        snap.forEach(d => all.push({ id:d.id, ...d.data() }));
+        renderDashboard();
+        renderTable();
+    });
+}
+
+// Dashboard
+function renderDashboard(){
+    dashBody.innerHTML = "";
+
+    let stats = {};
+
+    all.forEach(d=>{
+        if(!stats[d.empID]) stats[d.empID] = {today:0, total:0};
+
+        let today = new Date().toDateString();
+        if(new Date(d.ts).toDateString() === today) stats[d.empID].today++;
+
+        stats[d.empID].total++;
+    });
+
+    Object.keys(stats).forEach(id=>{
+        dashBody.innerHTML += `
+            <tr>
+                <td>${id}</td>
+                <td>${stats[id].today}</td>
+                <td>${stats[id].total}</td>
+            </tr>
+        `;
+    });
+}
+
+// Toggle filter panel
+function toggleFilters(){
+    const panel = document.getElementById("filterPanel");
+    const btn = document.getElementById("filterToggleBtn");
+
+    if(panel.style.display === "none"){
+        panel.style.display = "block";
+        btn.textContent = "Hide Filters";
+    } else {
+        panel.style.display = "none";
+        btn.textContent = "Filter";
+    }
+}
+
+// Save new entry
+async function saveData(){
+    let num = numberInput.value.trim();
+    if(num.length !== 10){
+        alert("Enter 10 digit number");
+        return;
+    }
+
+    // Duplicate check (admin self-only)
+    let duplicate = all.find(e => e.number===num && e.empID===adminEmpID);
+    if(duplicate){
+        let ok = confirm("This number already exists in your entries. Still add?");
+        if(!ok) return;
+    }
+
+    await addDoc(collection(db,"callLogs"),{
+        ts: formatTS(new Date()),
+        empID: adminEmpID,
+        email: adminEmail,
+
+        name: nameInput.value,
+        number: num,
+        age: ageInput.value || "",
+        exp: expInput.value || "",
+        loc: locInput.value || "",
+        ctc: ctcInput.value || "",
+        comp: compInput.value || "",
+        channel: channelInput.value || "",
+        callStatus: statusInput.value || "",
+        remarks: remarkInput.value || ""
+    });
+
+    // Reset
+    nameInput.value="";
+    numberInput.value="";
+    ageInput.value="";
+    expInput.value="";
+    locInput.value="";
+    ctcInput.value="";
+    compInput.value="";
+    channelInput.value="";
+    statusInput.value="";
+    remarkInput.value="";
+
+    alert("Entry Saved");
+}
+
+// Apply Filters (AND logic)
+function applyFilters(){
+    let data = all;
+
+    if(f_name.value)
+        data = data.filter(x => x.name.toLowerCase().includes(f_name.value.toLowerCase()));
+
+    if(f_number.value)
+        data = data.filter(x => x.number.includes(f_number.value));
+
+    if(f_company.value)
+        data = data.filter(x => x.comp.toLowerCase().includes(f_company.value.toLowerCase()));
+
+    if(f_location.value)
+        data = data.filter(x => x.loc.toLowerCase().includes(f_location.value.toLowerCase()));
+
+    if(f_channel.value)
+        data = data.filter(x => x.channel === f_channel.value);
+
+    if(f_status.value)
+        data = data.filter(x => x.callStatus === f_status.value);
+
+    if(f_empid.value)
+        data = data.filter(x => x.empID === f_empid.value);
+
+    if(f_minAge.value)
+        data = data.filter(x => Number(x.age) >= Number(f_minAge.value));
+
+    if(f_maxAge.value)
+        data = data.filter(x => Number(x.age) <= Number(f_maxAge.value));
+
+    if(f_minCTC.value)
+        data = data.filter(x => Number(x.ctc) >= Number(f_minCTC.value));
+
+    if(f_maxCTC.value)
+        data = data.filter(x => Number(x.ctc) <= Number(f_maxCTC.value));
+
+    if(f_dateStart.value)
+        data = data.filter(x => new Date(x.ts) >= new Date(f_dateStart.value));
+
+    if(f_dateEnd.value)
+        data = data.filter(x => new Date(x.ts) <= new Date(f_dateEnd.value));
+
+    filteredData = data;
+    renderTableFiltered();
+}
+
+// Reset Filters
+function resetFilters(){
+    f_name.value="";
+    f_number.value="";
+    f_company.value="";
+    f_location.value="";
+    f_channel.value="";
+    f_status.value="";
+    f_empid.value="";
+    f_minAge.value="";
+    f_maxAge.value="";
+    f_minCTC.value="";
+    f_maxCTC.value="";
+    f_dateStart.value="";
+    f_dateEnd.value="";
+
+    filteredData = [];
+    renderTable();
+}
+
+// Render full table
+function renderTable(){
+    listBody.innerHTML = "";
+
+    all.forEach(d=>{
+        renderRow(d);
+    });
+}
+
+// Render filtered table
+function renderTableFiltered(){
+    listBody.innerHTML = "";
+    filteredData.forEach(d=>{
+        renderRow(d);
+    });
+}
+
+// Render row
+function renderRow(d){
+    if(editingID === d.id){
+
+        listBody.innerHTML += `
+        <tr>
+            <td><a href="tel:${d.number}" class="callBtn">📞</a></td>
+            <td>${d.ts}</td>
+            <td>${d.empID}</td>
+
+            <td><input class="editInput" id="e_name" value="${d.name}"></td>
+            <td><input class="editInput" id="e_number" value="${d.number}"></td>
+            <td><input class="editInput" id="e_age" value="${d.age}"></td>
+            <td><input class="editInput" id="e_exp" value="${d.exp}"></td>
+            <td><input class="editInput" id="e_loc" value="${d.loc}"></td>
+            <td><input class="editInput" id="e_ctc" value="${d.ctc}"></td>
+            <td><input class="editInput" id="e_comp" value="${d.comp}"></td>
+
+            <td>
+                <select id="e_channel" class="editInput">
+                    <option ${d.channel=="Banca"?"selected":""}>Banca</option>
+                    <option ${d.channel=="Agency"?"selected":""}>Agency</option>
+                    <option ${d.channel=="Direct"?"selected":""}>Direct</option>
+                    <option ${d.channel=="Tele calling"?"selected":""}>Tele calling</option>
+                </select>
+            </td>
+
+            <td>
+                <select id="e_status" class="editInput">
+                    <option ${d.callStatus=="Interested"?"selected":""}>Interested</option>
+                    <option ${d.callStatus=="Not Interested"?"selected":""}>Not Interested</option>
+                    <option ${d.callStatus=="Not Answered"?"selected":""}>Not Answered</option>
+                </select>
+            </td>
+
+            <td><input class="editInput" id="e_remark" value="${d.remarks}"></td>
+
+            <td><button class="blueBtn" onclick="saveEdit('${d.id}')">Save</button></td>
+            <td><button class="greyBtn" onclick="cancelEdit()">Cancel</button></td>
+        </tr>
+        `;
+
+    } else {
+
+        listBody.innerHTML += `
+        <tr>
+            <td><a href="tel:${d.number}" class="callBtn">📞</a></td>
+            <td>${d.ts}</td>
+            <td>${d.empID}</td>
+            <td>${d.name}</td>
+            <td>${d.number}</td>
+            <td>${d.age}</td>
+            <td>${d.exp}</td>
+            <td>${d.loc}</td>
+            <td>${d.ctc}</td>
+            <td>${d.comp}</td>
+            <td>${d.channel}</td>
+            <td>${d.callStatus}</td>
+            <td>${d.remarks}</td>
+
+            <td>
+                <button class="blueBtn" onclick="startEdit('${d.id}')">Edit</button>
+            </td>
+            <td>
+                <button class="redBtn" onclick="deleteEntry('${d.id}')">Delete</button>
+            </td>
+        </tr>
+        `;
+    }
+}
+
+// Edit
+function startEdit(id){
+    editingID = id;
+    renderTable();
+}
+function cancelEdit(){
+    editingID = null;
+    renderTable();
+}
+async function saveEdit(id){
+    let ref = doc(db,"callLogs",id);
+
+    await updateDoc(ref,{
+        name: e_name.value,
+        number: e_number.value,
+        age: e_age.value,
+        exp: e_exp.value,
+        loc: e_loc.value,
+        ctc: e_ctc.value,
+        comp: e_comp.value,
+        channel: e_channel.value,
+        callStatus: e_status.value,
+        remarks: e_remark.value
+    });
+
+    alert("Updated");
+    editingID = null;
+    renderTable();
+}
+
+// Delete
+async function deleteEntry(id){
+    if(!confirm("Delete this entry?")) return;
+    await deleteDoc(doc(db,"callLogs",id));
+}
+
+// CSV
+function exportCSV(){
+    let data = filteredData.length > 0 ? filteredData : all;
+
+    let csv = "Time,EmpID,Name,Number,Age,Experience,Location,CTC,Company,Channel,Status,Remarks\n";
+
+    data.forEach(d=>{
+        csv += `${formatTS(new Date(d.ts))},${d.empID},${d.name},${d.number},${d.age},${d.exp},${d.loc},${d.ctc},${d.comp},${d.channel},${d.callStatus},${d.remarks}\n`;
+    });
+
+    let blob = new Blob([csv],{type:"text/csv"});
+    let a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "Recruita_Full_Data.csv";
+    a.click();
+}
+
+// Logout
+function logout(){
+    auth.signOut();
+    location.href="login.html";
+}
+
+// Theme toggle
+function toggleTheme(){
+    document.body.classList.toggle("light");
+}
+
+// Expose
+window.saveData = saveData;
+window.applyFilters = applyFilters;
+window.resetFilters = resetFilters;
+window.startEdit = startEdit;
+window.saveEdit = saveEdit;
+window.cancelEdit = cancelEdit;
+window.deleteEntry = deleteEntry;
+window.exportCSV = exportCSV;
+window.toggleFilters = toggleFilters;
+window.toggleTheme = toggleTheme;
+window.logout = logout;
 
 </script>
 </body>
