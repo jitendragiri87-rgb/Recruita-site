@@ -34,6 +34,7 @@ import {
 
 let all = [];
 
+// LIVE FETCH of all logs
 onSnapshot(collection(db,"callLogs"),(snap)=>{
   let logs=document.getElementById("logs");
   logs.innerHTML="";
@@ -59,6 +60,7 @@ onSnapshot(collection(db,"callLogs"),(snap)=>{
   });
 });
 
+// CSV DOWNLOAD
 function downloadCSV(){
   let csv="Timestamp,Name,Number,Age,Location,CTC,Company,Channel,Remarks,UID\n";
 
@@ -72,6 +74,10 @@ function downloadCSV(){
   a.download="Recruita_Data.csv";
   a.click();
 }
+
+// 🔥 FIX: Make function global for button onclick
+window.downloadCSV = downloadCSV;
+
 </script>
 
 </body>
