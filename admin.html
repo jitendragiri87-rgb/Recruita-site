@@ -1,312 +1,355 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Admin Panel</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Admin Panel - Recruita</title>
 
 <style>
-:root {
-  --bg: #0b0b0c;
-  --card: #111;
-  --text: #fff;
-  --text-light: #bbb;
-  --btn: #2B7FFF;
-  --table-border: #444;
-}
+    body {
+        font-family: Inter, sans-serif;
+        padding: 20px;
+        transition: 0.3s;
+    }
 
-.light {
-  --bg: #f5f5f5;
-  --card: #fff;
-  --text: #000;
-  --text-light: #555;
-  --btn: #0066ff;
-  --table-border: #ddd;
-}
+    body.dark {
+        background: #0b0b0c;
+        color: white;
+    }
 
-body{
-  background:var(--bg);
-  color:var(--text);
-  font-family:Inter, sans-serif;
-  padding:20px;
-}
+    body.light {
+        background: #f5f5f5;
+        color: #222;
+    }
 
-.container{max-width:1100px; margin:auto;}
+    h2 {
+        margin-top: 20px;
+        margin-bottom: 10px;
+    }
 
-h2{margin-top:25px;margin-bottom:12px;}
+    input, select {
+        width: 100%;
+        padding: 12px;
+        border-radius: 8px;
+        border: 1px solid #555;
+        margin-top: 10px;
+        background: #fff;
+    }
 
-input, select{
-  width:100%;padding:12px;border-radius:8px;border:none;margin-top:10px;
-}
+    body.dark input, body.dark select {
+        background: #111;
+        color: white;
+        border: none;
+    }
 
-button{
-  padding:10px 20px;background:var(--btn);border:none;border-radius:8px;
-  color:white;font-weight:600;cursor:pointer;
-}
+    button {
+        padding: 12px 18px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 600;
+        margin-top: 10px;
+    }
 
-button:active{transform:scale(0.96);}
+    .blueBtn { background: #2B7FFF; color: white; }
+    .redBtn { background: #e74c3c; color: white; }
+    .grayBtn { background: gray; color: white; }
 
-.tableBox{
-  width:100%;overflow-x:auto;margin-top:20px;
-}
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+    th, td {
+        padding: 10px;
+        border: 1px solid #444;
+        text-align: left;
+    }
 
-table{
-  width:100%;border-collapse:collapse;margin-top:10px;
-}
-th,td{
-  padding:10px;border:1px solid var(--table-border);text-align:left;
-}
-th{background:var(--card);}
-.entryCard{
-  background:var(--card);padding:20px;border-radius:12px;margin-top:20px;
-}
-.actionBtn{
-  padding:6px 10px;font-size:13px;border-radius:6px;
-}
-.del{background:#d9534f;}
-.edit{background:#5bc0de;}
-.topBar{
-  display:flex;justify-content:flex-end;gap:10px;margin-bottom:20px;
-}
+    /* Top-right actions */
+    .topBar {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
 </style>
 </head>
 
-<body>
-
-<div class="container">
+<body class="dark">
 
 <div class="topBar">
-  <button id="themeBtn">Toggle Theme</button>
-  <button id="logoutBtn">Logout</button>
+    <button id="themeToggle" class="grayBtn">Toggle Theme</button>
+    <button onclick="logout()" class="redBtn">Logout</button>
 </div>
 
-<h2>Recruiter Performance Dashboard</h2>
-<div class="tableBox">
-<table id="dashTable">
-  <thead>
+<h2>Admin Dashboard</h2>
+<table id="dashboardTable">
     <tr>
-      <th>EmpID</th>
-      <th>Today's Count</th>
-      <th>All-Time Count</th>
+        <th>EmpID</th>
+        <th>Today's Count</th>
+        <th>All-Time Count</th>
     </tr>
-  </thead>
-  <tbody id="dashBody"></tbody>
 </table>
-</div>
 
 <h2>Add Candidate Entry</h2>
 
 <input id="name" placeholder="Candidate Name">
-<input id="number" placeholder="Candidate Number">
+<input id="number" placeholder="10 Digit Mobile Number">
 <input id="age" placeholder="Age">
-<input id="exp" placeholder="Total Experience">
+<input id="expYears" placeholder="Total Experience (Years)">
 <input id="loc" placeholder="Location">
-<input id="ctc" placeholder="Current CTC">
+<input id="ctc" placeholder="CTC">
 <input id="comp" placeholder="Current Company">
 
 <select id="channel">
-  <option value="">Select Channel</option>
-  <option>Banca</option>
-  <option>Agency</option>
-  <option>Direct</option>
-  <option>Tele calling</option>
+    <option value="">Select Channel</option>
+    <option>Banca</option>
+    <option>Agency</option>
+    <option>Direct</option>
+    <option>Tele calling</option>
 </select>
 
 <input id="remarks" placeholder="Remarks">
 
-<button id="saveBtn">Submit Entry</button>
+<button class="blueBtn" id="submitBtn" onclick="saveData()">Submit Entry</button>
+
 
 <h2>All Entries</h2>
+<button class="blueBtn" onclick="exportCSV()">Download Full CSV</button>
 
-<button id="csvBtn">Download CSV</button>
-
-<div class="tableBox">
 <table id="dataTable">
-  <thead>
-    <tr>
-      <th>Time</th>
-      <th>EmpID</th>
-      <th>Name</th>
-      <th>Number</th>
-      <th>Age</th>
-      <th>Experience</th>
-      <th>Location</th>
-      <th>CTC</th>
-      <th>Company</th>
-      <th>Channel</th>
-      <th>Remarks</th>
-      <th>Edit</th>
-      <th>Delete</th>
-    </tr>
-  </thead>
-  <tbody id="dataBody"></tbody>
+    <thead>
+        <tr>
+            <th>Time</th>
+            <th>EmpID</th>
+            <th>Name</th>
+            <th>Number</th>
+            <th>Age</th>
+            <th>Experience</th>
+            <th>Location</th>
+            <th>CTC</th>
+            <th>Company</th>
+            <th>Channel</th>
+            <th>Remarks</th>
+            <th>Edit</th>
+            <th>Delete</th>
+        </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
 </table>
-</div>
 
-</div>
 
 <script type="module">
-import { auth, db, getUserInfo } from "./firebase.js";
+import { auth, db } from "./firebase.js";
 import {
-  addDoc, collection, onSnapshot, doc, updateDoc, deleteDoc
+    addDoc, collection, getDocs, deleteDoc, updateDoc,
+    doc, onSnapshot, query, where
 } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
-// ------------------------ LOGIN CHECK -------------------------
-auth.onAuthStateChanged(async u=>{
-  if(!u) location.href="login.html";
-
-  const info = await getUserInfo();
-  if(!info || info.role!=="admin") location.href="login.html";
-
-  window.empID = info.empID;
-});
-
-// ------------------------ THEME -------------------------
-let theme = localStorage.getItem("theme") || "dark";
-applyTheme(theme);
-
-document.getElementById("themeBtn").onclick = ()=>{
-  theme = theme==="dark" ? "light" : "dark";
-  applyTheme(theme);
-};
-
-function applyTheme(t){
-  if(t==="light") document.body.classList.add("light");
-  else document.body.classList.remove("light");
-  localStorage.setItem("theme",t);
-}
-
-// ------------------------ LOGOUT -------------------------
-document.getElementById("logoutBtn").onclick = ()=>{
-  auth.signOut();
-};
-
-// ------------------------ REALTIME FETCH -------------------------
+let ADMIN_EMAIL = "";
+let EMPID = "";
 let ALL = [];
 
-onSnapshot(collection(db,"callLogs"),(snap)=>{
-  ALL = [];
-  snap.forEach(d=>{
-    ALL.push({ id: d.id, ...d.data() });
-  });
-  renderDashboard();
-  renderTable();
+/* ---------------------- AUTH CHECK --------------------- */
+auth.onAuthStateChanged(async user => {
+    if (!user) {
+        window.location = "login.html";
+        return;
+    }
+
+    ADMIN_EMAIL = user.email;
+
+    // fetch empID
+    let usersQ = query(collection(db, "users"), where("email", "==", user.email));
+    let snap = await getDocs(usersQ);
+    snap.forEach(d => EMPID = d.data().empID);
+
+    loadData();
 });
 
-// ------------------------ DUPLICATE CHECK -------------------------
-async function alreadyExists(number){
-  return ALL.some(e=> e.number === number);
+
+/* -------------------- REAL-TIME FETCH -------------------- */
+function loadData() {
+    onSnapshot(collection(db, "callLogs"), snap => {
+        ALL = [];
+        snap.forEach(d => ALL.push({ id: d.id, ...d.data() }));
+        renderTable();
+        renderDashboard();
+    });
 }
 
-// ------------------------ SAVE ENTRY -------------------------
-document.getElementById("saveBtn").onclick = async ()=>{
 
-  let number = numberInput.value.trim();
-  if(number.length!==10){
-    alert("10-digit number required");
-    return;
-  }
+/* ------------------ DASHBOARD COUNTS ------------------ */
+function renderDashboard() {
+    let map = {};
 
-  const duplicate = ALL.find(e=> e.number===number && e.empID!==window.empID);
-  if(duplicate){
-    if(!confirm("Duplicate entry exists by another recruiter. Still add?")) return;
-  }
+    ALL.forEach(e => {
+        if (!map[e.empID]) map[e.empID] = { today: 0, total: 0 };
 
-  await addDoc(collection(db,"callLogs"),{
-    ts: new Date().toISOString(),
-    empID: window.empID,
-    name: name.value,
-    number,
-    age: age.value || "",
-    exp: exp.value || "",
-    loc: loc.value || "",
-    ctc: ctc.value || "",
-    comp: comp.value || "",
-    channel: channel.value || "",
-    remarks: remarks.value || ""
-  });
+        let today = new Date().toDateString();
+        let entryDate = new Date(e.ts).toDateString();
 
-  alert("Saved");
-  name.value = numberInput.value = age.value = exp.value = loc.value =
-  ctc.value = comp.value = channel.value = remarks.value = "";
-};
+        if (today === entryDate) map[e.empID].today++;
+        map[e.empID].total++;
+    });
 
-// ------------------------ RENDER DASHBOARD -------------------------
-function renderDashboard(){
-  let map = {};
+    dashboardTable.innerHTML = `
+        <tr><th>EmpID</th><th>Today's Count</th><th>All-Time Count</th></tr>
+    `;
 
-  ALL.forEach(e=>{
-    if(!map[e.empID]) map[e.empID] = { today:0, all:0 };
-    map[e.empID].all++;
-    if(e.ts.slice(0,10) === new Date().toISOString().slice(0,10)){
-      map[e.empID].today++;
+    Object.keys(map).forEach(id => {
+        dashboardTable.innerHTML += `
+            <tr>
+                <td>${id}</td>
+                <td>${map[id].today}</td>
+                <td>${map[id].total}</td>
+            </tr>
+        `;
+    });
+}
+
+
+/* ---------------------- ADD ENTRY ---------------------- */
+async function saveData() {
+
+    let num = number.value.trim();
+    if (num.length !== 10) {
+        alert("Enter valid 10 digit number");
+        return;
     }
-  });
 
-  dashBody.innerHTML = "";
-  Object.keys(map).forEach(id=>{
-    dashBody.innerHTML += `
-      <tr>
-        <td>${id}</td>
-        <td>${map[id].today}</td>
-        <td>${map[id].all}</td>
-      </tr>
-    `;
-  });
+    // duplicate check
+    let duplicate = ALL.find(e => e.number === num && e.empID === EMPID);
+
+    if (duplicate) {
+        let ok = confirm("Duplicate entry found. Still want to add?");
+        if (!ok) return;
+    }
+
+    let data = {
+        ts: new Date().toISOString(),
+        empID: EMPID,
+        email: ADMIN_EMAIL,
+        name: name.value || "",
+        number: num,
+        age: age.value || "",
+        expYears: expYears.value || "",
+        loc: loc.value || "",
+        ctc: ctc.value || "",
+        comp: comp.value || "",
+        channel: channel.value || "",
+        remarks: remarks.value || ""
+    };
+
+    await addDoc(collection(db, "callLogs"), data);
+    alert("Entry Saved");
+
+    // Reset fields
+    name.value = "";
+    number.value = "";
+    age.value = "";
+    expYears.value = "";
+    loc.value = "";
+    ctc.value = "";
+    comp.value = "";
+    channel.value = "";
+    remarks.value = "";
 }
 
-// ------------------------ RENDER TABLE -------------------------
-function renderTable(){
-  dataBody.innerHTML = "";
-  ALL.forEach(e=>{
-    dataBody.innerHTML += `
-      <tr>
-        <td>${new Date(e.ts).toLocaleString()}</td>
-        <td>${e.empID}</td>
-        <td>${e.name}</td>
-        <td>${e.number}</td>
-        <td>${e.age}</td>
-        <td>${e.exp}</td>
-        <td>${e.loc}</td>
-        <td>${e.ctc}</td>
-        <td>${e.comp}</td>
-        <td>${e.channel}</td>
-        <td>${e.remarks}</td>
-        <td><button class="actionBtn edit" onclick="editEntry('${e.id}')">Edit</button></td>
-        <td><button class="actionBtn del" onclick="delEntry('${e.id}')">Delete</button></td>
-      </tr>
-    `;
-  });
+
+/* ---------------------- RENDER TABLE ---------------------- */
+function renderTable() {
+    tableBody.innerHTML = "";
+
+    ALL.forEach(e => {
+        tableBody.innerHTML += `
+        <tr>
+            <td>${new Date(e.ts).toLocaleString()}</td>
+            <td>${e.empID}</td>
+            <td>${e.name}</td>
+            <td>${e.number}</td>
+            <td>${e.age}</td>
+            <td>${e.expYears}</td>
+            <td>${e.loc}</td>
+            <td>${e.ctc}</td>
+            <td>${e.comp}</td>
+            <td>${e.channel}</td>
+            <td>${e.remarks}</td>
+
+            <td><button class="grayBtn" onclick="editEntry('${e.id}')">Edit</button></td>
+            <td><button class="redBtn" onclick="deleteEntry('${e.id}')">Delete</button></td>
+        </tr>`;
+    });
 }
 
-// ------------------------ DELETE -------------------------
-window.delEntry = async(id)=>{
-  if(confirm("Delete this entry?")){
-    await deleteDoc(doc(db,"callLogs",id));
-  }
+
+/* ---------------------- DELETE ---------------------- */
+window.deleteEntry = async (id) => {
+    if (!confirm("Delete this entry?")) return;
+    await deleteDoc(doc(db, "callLogs", id));
 };
 
-// ------------------------ EDIT -------------------------
-window.editEntry = async(id)=>{
-  let e = ALL.find(x=>x.id===id);
-  let newRemark = prompt("Edit remark:", e.remarks);
-  if(newRemark!==null){
-    await updateDoc(doc(db,"callLogs",id),{ remarks:newRemark });
-  }
+
+/* ---------------------- EDIT ---------------------- */
+window.editEntry = async (id) => {
+
+    let item = ALL.find(e => e.id === id);
+
+    let newName = prompt("Name:", item.name);
+    let newNum  = prompt("Number:", item.number);
+    let newAge  = prompt("Age:", item.age);
+    let newExp  = prompt("Experience (years):", item.expYears);
+    let newLoc  = prompt("Location:", item.loc);
+    let newCTC  = prompt("CTC:", item.ctc);
+    let newComp = prompt("Company:", item.comp);
+    let newCh   = prompt("Channel:", item.channel);
+    let newRem  = prompt("Remarks:", item.remarks);
+
+    await updateDoc(doc(db, "callLogs", id), {
+        name: newName,
+        number: newNum,
+        age: newAge,
+        expYears: newExp,
+        loc: newLoc,
+        ctc: newCTC,
+        comp: newComp,
+        channel: newCh,
+        remarks: newRem
+    });
 };
 
-// ------------------------ CSV DOWNLOAD -------------------------
-csvBtn.onclick = ()=>{
-  let csv = "Timestamp,EmpID,Name,Number,Age,Experience,Location,CTC,Company,Channel,Remarks\n";
-  ALL.forEach(e=>{
-    csv += `${e.ts},${e.empID},${e.name},${e.number},${e.age},${e.exp},${e.loc},${e.ctc},${e.comp},${e.channel},${e.remarks}\n`;
-  });
 
-  let blob = new Blob([csv],{type:"text/csv"});
-  let a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "Recruita_Full_Data.csv";
-  a.click();
+/* ---------------------- CSV EXPORT ---------------------- */
+window.exportCSV = () => {
+    let csv = "Time,EmpID,Name,Number,Age,Experience,Location,CTC,Company,Channel,Remarks\n";
+
+    ALL.forEach(e => {
+        csv += `${e.ts},${e.empID},${e.name},${e.number},${e.age},${e.expYears},${e.loc},${e.ctc},${e.comp},${e.channel},${e.remarks}\n`;
+    });
+
+    let blob = new Blob([csv], { type: "text/csv" });
+    let a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "Recruita_Full_Data.csv";
+    a.click();
+};
+
+
+/* ---------------------- LOGOUT ---------------------- */
+window.logout = () => {
+    auth.signOut();
+};
+
+
+/* ---------------------- THEME TOGGLE ---------------------- */
+themeToggle.onclick = () => {
+    if (document.body.classList.contains("dark")) {
+        document.body.classList.replace("dark", "light");
+    } else {
+        document.body.classList.replace("light", "dark");
+    }
 };
 </script>
 
