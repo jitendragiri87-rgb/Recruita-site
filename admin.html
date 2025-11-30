@@ -36,12 +36,15 @@ button{
 <div class="container">
 
 <h2>Add Candidate Entry</h2>
+
 <input id="name" placeholder="Candidate Name">
 <input id="number" placeholder="Candidate Number">
 <input id="age" placeholder="Age">
+<input id="exp" placeholder="Total Experience (in years)">
 <input id="loc" placeholder="Location">
 <input id="ctc" placeholder="Current CTC">
 <input id="comp" placeholder="Current Company">
+
 <select id="channel">
   <option value="">Select Channel</option>
   <option>Banca</option>
@@ -49,7 +52,9 @@ button{
   <option>Direct</option>
   <option>Tele calling</option>
 </select>
+
 <input id="remarks" placeholder="Remarks">
+
 <button onclick="saveData()">Submit Entry</button>
 
 
@@ -81,11 +86,14 @@ button{
 <input id="minAge" placeholder="Min Age">
 <input id="maxAge" placeholder="Max Age">
 
+<input id="minExp" placeholder="Min Experience">
+<input id="maxExp" placeholder="Max Experience">
+
 <input id="minCTC" placeholder="Min CTC">
 <input id="maxCTC" placeholder="Max CTC">
 
-<input id="dateStart" type="date" placeholder="Start Date">
-<input id="dateEnd" type="date" placeholder="End Date">
+<input id="dateStart" type="date">
+<input id="dateEnd" type="date">
 
 <button onclick="applyFilters()">Apply Filters</button>
 <button onclick="resetFilters()">Reset Filters</button>
@@ -100,33 +108,56 @@ button{
 </div>
 
 
+
 <script type="module">
 import { auth, db } from "./firebase.js";
 import {
-  addDoc, collection, query, where,
-  onSnapshot
+  addDoc, collection, onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
 let all = [];
 
 // ------------ SAVE ENTRY --------------
 async function saveData(){
+
+  if(!auth.currentUser){
+    alert("Not logged in");
+    return;
+  }
+
+  if(!name.value || !number.value || !channel.value){
+    alert("Name, Number & Channel are required");
+    return;
+  }
+
   let uid = auth.currentUser.uid;
 
   await addDoc(collection(db,"callLogs"),{
     uid,
     ts: new Date().toISOString(),
-    name: name.value,
-    number: number.value,
-    age: Number(age.value),
-    loc: loc.value,
-    ctc: Number(ctc.value),
-    comp: comp.value,
+
+    name: name.value.trim(),
+    number: number.value.trim(),
+    age: age.value ? Number(age.value) : null,
+    exp: exp.value ? Number(exp.value) : null,
+    loc: loc.value.trim(),
+    ctc: ctc.value ? Number(ctc.value) : null,
+    comp: comp.value.trim(),
     channel: channel.value,
-    remarks: remarks.value
+    remarks: remarks.value.trim()
   });
 
   alert("Entry Saved");
+
+  name.value="";
+  number.value="";
+  age.value="";
+  exp.value="";
+  loc.value="";
+  ctc.value="";
+  comp.value="";
+  channel.value="";
+  remarks.value="";
 }
 
 // ------------ LIVE FETCH --------------
@@ -137,37 +168,33 @@ onSnapshot(collection(db,"callLogs"),(snap)=>{
   render(all);
 });
 
-// ------------ AUTO FILL LOCATION & RECRUITER LISTS --------------
+// ------------ AUTO FILL FILTERS --------------
 function autoFillFilters(){
   let locations = [...new Set(all.map(e=>e.loc).filter(e=>e))];
-  let uids = [...new Set(all.map(e=>e.uid))];
+  let recruiters = [...new Set(all.map(e=>e.uid))];
 
   filterLocation.innerHTML = `<option value="">Filter by Location (Auto)</option>`;
-  locations.forEach(l=>{
-    filterLocation.innerHTML += `<option>${l}</option>`;
-  });
+  locations.forEach(l=> filterLocation.innerHTML += `<option>${l}</option>`);
 
   filterRecruiter.innerHTML = `<option value="">Filter by Recruiter (Auto)</option>`;
-  uids.forEach(id=>{
-    filterRecruiter.innerHTML += `<option>${id}</option>`;
-  });
+  recruiters.forEach(r=> filterRecruiter.innerHTML += `<option>${r}</option>`);
 }
 
 // ------------ APPLY FILTERS --------------
 function applyFilters(){
-  let data = all;
+  let data = [...all];
 
   if(filterName.value)
-    data = data.filter(d => d.name.toLowerCase().includes(filterName.value.toLowerCase()));
+    data = data.filter(d => d.name?.toLowerCase().includes(filterName.value.toLowerCase()));
 
   if(filterNumber.value)
-    data = data.filter(d => d.number.includes(filterNumber.value));
+    data = data.filter(d => d.number?.includes(filterNumber.value));
 
   if(filterCompany.value)
-    data = data.filter(d => d.comp.toLowerCase().includes(filterCompany.value.toLowerCase()));
+    data = data.filter(d => d.comp?.toLowerCase().includes(filterCompany.value.toLowerCase()));
 
   if(filterRemark.value)
-    data = data.filter(d => d.remarks.toLowerCase().includes(filterRemark.value.toLowerCase()));
+    data = data.filter(d => d.remarks?.toLowerCase().includes(filterRemark.value.toLowerCase()));
 
   if(filterChannel.value)
     data = data.filter(d => d.channel === filterChannel.value);
@@ -184,6 +211,12 @@ function applyFilters(){
   if(maxAge.value)
     data = data.filter(d => d.age <= Number(maxAge.value));
 
+  if(minExp.value)
+    data = data.filter(d => d.exp >= Number(minExp.value));
+
+  if(maxExp.value)
+    data = data.filter(d => d.exp <= Number(maxExp.value));
+
   if(minCTC.value)
     data = data.filter(d => d.ctc >= Number(minCTC.value));
 
@@ -199,26 +232,28 @@ function applyFilters(){
   render(data);
 }
 
-// ------------ RESET FILTERS --------------
+// ------------ RESET --------------
 function resetFilters(){
-  filterName.value = "";
-  filterNumber.value = "";
-  filterCompany.value = "";
-  filterRemark.value = "";
-  filterChannel.value = "";
-  filterLocation.value = "";
-  filterRecruiter.value = "";
-  minAge.value = "";
-  maxAge.value = "";
-  minCTC.value = "";
-  maxCTC.value = "";
-  dateStart.value = "";
-  dateEnd.value = "";
+  filterName.value="";
+  filterNumber.value="";
+  filterCompany.value="";
+  filterRemark.value="";
+  filterChannel.value="";
+  filterLocation.value="";
+  filterRecruiter.value="";
+  minAge.value="";
+  maxAge.value="";
+  minExp.value="";
+  maxExp.value="";
+  minCTC.value="";
+  maxCTC.value="";
+  dateStart.value="";
+  dateEnd.value="";
 
   render(all);
 }
 
-// ------------ RENDER ENTRIES --------------
+// ------------ RENDER UI --------------
 function render(list){
   logs.innerHTML = "";
   list.forEach(d=>{
@@ -227,9 +262,10 @@ function render(list){
         <small>${new Date(d.ts).toLocaleString()}</small><br>
         <b>${d.name}</b><br>
         Number: ${d.number}<br>
-        Age: ${d.age}<br>
+        Age: ${d.age ?? 'NA'}<br>
+        Experience: ${d.exp ?? 'NA'} years<br>
         Location: ${d.loc}<br>
-        CTC: ${d.ctc}<br>
+        CTC: ${d.ctc ?? 'NA'}<br>
         Company: ${d.comp}<br>
         Channel: ${d.channel}<br>
         Remarks: ${d.remarks}<br>
@@ -239,12 +275,12 @@ function render(list){
   });
 }
 
-// ------------ CSV DOWNLOAD --------------
+// ------------ DOWNLOAD CSV --------------
 function downloadCSV(){
-  let csv = "Timestamp,Name,Number,Age,Location,CTC,Company,Channel,Remarks,UID\n";
+  let csv = "Timestamp,Name,Number,Age,Experience,Location,CTC,Company,Channel,Remarks,UID\n";
 
   all.forEach(d=>{
-    csv += `${d.ts},${d.name},${d.number},${d.age},${d.loc},${d.ctc},${d.comp},${d.channel},${d.remarks},${d.uid}\n`;
+    csv += `"${d.ts}","${d.name}","${d.number}","${d.age}","${d.exp}","${d.loc}","${d.ctc}","${d.comp}","${d.channel}","${d.remarks}","${d.uid}"\n`;
   });
 
   let blob = new Blob([csv],{type:"text/csv"});
@@ -254,11 +290,10 @@ function downloadCSV(){
   a.click();
 }
 
-// Expose global functions
-window.downloadCSV = downloadCSV;
+window.saveData = saveData;
 window.applyFilters = applyFilters;
 window.resetFilters = resetFilters;
-window.saveData = saveData;
+window.downloadCSV = downloadCSV;
 
 </script>
 
