@@ -18,17 +18,17 @@ input{
   width:100%;padding:14px;border-radius:8px;border:none;margin-top:14px;
   background:#1a1a1a;color:white;
 }
-.passwordWrap {
+.passwordWrap{
   position:relative;
 }
-.eye {
+.eye{
   position:absolute;
   right:14px;
   top:50%;
   transform:translateY(-50%);
   cursor:pointer;
-  font-size:14px;
   color:#ccc;
+  font-size:14px;
 }
 button{
   width:100%;padding:14px;background:#2B7FFF;border:none;border-radius:10px;
@@ -62,27 +62,27 @@ import { auth, db } from "./firebase.js";
 import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
-// ⭐ SHOW / HIDE PASSWORD
+// Show/Hide password
 document.getElementById("togglePass").addEventListener("click", () => {
   const pass = document.getElementById("password");
   pass.type = pass.type === "password" ? "text" : "password";
 });
 
-// ⭐ MAIN LOGIN FUNCTION
+// Login
 async function login(){
-  let email = email.value.trim();
-  let pass  = password.value.trim();
+  let emailVal = document.getElementById("email").value.trim();
+  let passVal  = document.getElementById("password").value.trim();
 
-  if(!email || !pass){
+  if(!emailVal || !passVal){
     alert("Please enter Email and Password");
     return;
   }
 
   try{
-    let res = await signInWithEmailAndPassword(auth, email, pass);
+    let res = await signInWithEmailAndPassword(auth, emailVal, passVal);
     let uid = res.user.uid;
 
-    let ref = doc(db, "users", uid);
+    let ref = doc(db,"users",uid);
     let snap = await getDoc(ref);
 
     if(!snap.exists()){
@@ -90,24 +90,23 @@ async function login(){
       return;
     }
 
-    let { role, empID } = snap.data();
+    let data = snap.data();
+    localStorage.setItem("empID", data.empID);
+    localStorage.setItem("role", data.role);
 
-    localStorage.setItem("empID", empID);
-    localStorage.setItem("role", role);
-
-    if(role === "admin"){
+    if(data.role === "admin"){
       window.location = "admin.html";
     } else {
       window.location = "recruiter.html";
     }
 
-  } catch(err){
+  }catch(err){
     console.error(err);
     alert("Invalid login details");
   }
 }
 
-// ⭐ FIX: Expose login() globally so button can call it
+// expose globally
 window.login = login;
 
 </script>
