@@ -1,159 +1,109 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Recruiter Panel</title>
 
 <style>
-:root {
-  --bg:#0b0b0c;
-  --card:#111;
-  --text:#fff;
-  --text-light:#ccc;
-  --btn:#2B7FFF;
-  --table-border:#444;
+body {
+    background:#0b0b0c;
+    color:white;
+    font-family:Inter,sans-serif;
+    padding:20px;
+}
+.light { background:#f2f2f2; color:#222; }
+
+.topBar {
+    display:flex;
+    justify-content:flex-end;
+    gap:10px;
+    margin-bottom:18px;
 }
 
-.light {
-  --bg:#f5f5f5;
-  --card:#fff;
-  --text:#000;
-  --text-light:#444;
-  --btn:#0066ff;
-  --table-border:#ddd;
+button {
+    padding:10px 18px;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+    font-weight:600;
 }
+.blueBtn { background:#2B7FFF; color:white; }
+.redBtn { background:#e74c3c; color:white; }
+.greyBtn { background:#555; color:white; }
 
-body{
-  background:var(--bg);
-  color:var(--text);
-  font-family:Inter, sans-serif;
-  padding:20px;
+input, select {
+    width:100%;
+    padding:12px;
+    margin-top:8px;
+    background:#111;
+    color:white;
+    border:none;
+    border-radius:8px;
 }
+.light input, .light select { background:white; color:black; border:1px solid #ccc; }
 
-.container{
-  max-width:1100px;
-  margin:auto;
+table {
+    width:100%;
+    border-collapse:collapse;
+    margin-top:15px;
 }
+th, td {
+    border:1px solid #333;
+    padding:10px;
+}
+.light th, .light td { border:1px solid #ccc; }
 
-h2{
-  margin-top:25px;
-  margin-bottom:12px;
-}
+.tableBox { overflow-x:auto; }
 
-input, select{
-  width:100%;
-  padding:12px;
-  border-radius:8px;
-  border:none;
-  margin-top:10px;
-  background:#1a1a1a;
-  color:white;
-}
-
-button{
-  padding:12px 20px;
-  background:var(--btn);
-  border:none;
-  border-radius:8px;
-  margin-top:16px;
-  font-weight:600;
-  color:white;
-  cursor:pointer;
-}
-
-button:active{
-  transform:scale(0.97);
-}
-
-.tableBox{
-  overflow-x:auto;
-  margin-top:20px;
-}
-
-table{
-  width:100%;
-  border-collapse:collapse;
-}
-
-th, td{
-  border:1px solid var(--table-border);
-  padding:10px;
-  text-align:left;
-}
-
-th{
-  background:var(--card);
-  color:var(--btn);
-}
-
-.topBar{
-  display:flex;
-  justify-content:flex-end;
-  gap:10px;
-  margin-bottom:20px;
-}
-
-.filterBox{
-  background:var(--card);
-  padding:16px;
-  border-radius:12px;
-  margin-top:20px;
-}
 </style>
-
 </head>
+
 <body>
 
-<div class="container">
-
-<!-- TOP BUTTONS -->
 <div class="topBar">
-  <button id="themeBtn">🌓 Theme</button>
-  <button id="logoutBtn">Logout</button>
+    <button onclick="toggleTheme()" class="greyBtn">🌓 Theme</button>
+    <button onclick="logout()" class="redBtn">Logout</button>
 </div>
 
-<!-- DASHBOARD -->
 <h2>Your Performance</h2>
+
 <div class="tableBox">
-  <table>
+<table>
     <thead>
-      <tr>
-        <th>EmpID</th>
-        <th>Today's Count</th>
-        <th>All-Time Count</th>
-      </tr>
+        <tr>
+            <th>EmpID</th>
+            <th>Today's Count</th>
+            <th>All-Time</th>
+        </tr>
     </thead>
     <tbody id="dashBody"></tbody>
-  </table>
+</table>
 </div>
 
-<!-- ENTRY FORM -->
 <h2>Add Candidate Entry</h2>
 
-<input id="name" placeholder="Candidate Name">
-<input id="number" placeholder="Candidate Number (10 digits)">
-<input id="age" placeholder="Age">
-<input id="expYears" placeholder="Total Experience (Years)">
-<input id="loc" placeholder="Location">
-<input id="ctc" placeholder="Current CTC">
-<input id="comp" placeholder="Current Company">
+<input id="nameInput" placeholder="Name">
+<input id="numberInput" placeholder="Number (10 digits)">
+<input id="ageInput" placeholder="Age">
+<input id="expInput" placeholder="Total Experience">
+<input id="locInput" placeholder="Location">
+<input id="ctcInput" placeholder="CTC">
+<input id="compInput" placeholder="Current Company">
 
-<select id="channel">
-  <option value="">Select Channel</option>
-  <option>Banca</option>
-  <option>Agency</option>
-  <option>Direct</option>
-  <option>Tele calling</option>
+<select id="channelInput">
+    <option value="">Select Channel</option>
+    <option>Banca</option>
+    <option>Agency</option>
+    <option>Direct</option>
+    <option>Tele calling</option>
 </select>
 
-<input id="remarks" placeholder="Remarks">
+<input id="remarkInput" placeholder="Remarks">
 
-<button id="saveBtn">Submit Entry</button>
+<button class="blueBtn" onclick="saveData()">Submit Entry</button>
 
-<!-- FILTERS -->
 <h2>Filters</h2>
-<div class="filterBox">
 
 <input id="filterName" placeholder="Filter by Name">
 <input id="filterNumber" placeholder="Filter by Number">
@@ -161,15 +111,15 @@ th{
 <input id="filterRemark" placeholder="Filter by Remark">
 
 <select id="filterChannel">
-  <option value="">Filter by Channel</option>
-  <option>Banca</option>
-  <option>Agency</option>
-  <option>Direct</option>
-  <option>Tele calling</option>
+    <option value="">Filter by Channel</option>
+    <option>Banca</option>
+    <option>Agency</option>
+    <option>Direct</option>
+    <option>Tele calling</option>
 </select>
 
 <select id="filterLocation">
-  <option value="">Filter by Location</option>
+    <option value="">Filter by Location</option>
 </select>
 
 <input id="minAge" placeholder="Min Age">
@@ -181,250 +131,259 @@ th{
 <input id="dateStart" type="date">
 <input id="dateEnd" type="date">
 
-<button onclick="applyFilters()">Apply Filters</button>
-<button onclick="resetFilters()">Reset</button>
-</div>
+<button class="greyBtn" onclick="applyFilters()">Apply Filters</button>
+<button class="greyBtn" onclick="resetFilters()">Reset</button>
 
-<!-- TABLE -->
 <h2>Your Entries</h2>
-<button id="csvBtn">Download CSV (Only Your Data)</button>
+<button class="greyBtn" onclick="exportCSV()">Download CSV</button>
 
 <div class="tableBox">
-  <table id="entryTable">
+<table>
     <thead>
-      <tr>
-        <th>Timestamp</th>
-        <th>Name</th>
-        <th>Number</th>
-        <th>Age</th>
-        <th>Experience</th>
-        <th>Location</th>
-        <th>CTC</th>
-        <th>Company</th>
-        <th>Channel</th>
-        <th>Remarks</th>
-      </tr>
+        <tr>
+            <th>Time</th>
+            <th>Name</th>
+            <th>Number</th>
+            <th>Age</th>
+            <th>Experience</th>
+            <th>Location</th>
+            <th>CTC</th>
+            <th>Company</th>
+            <th>Channel</th>
+            <th>Remarks</th>
+        </tr>
     </thead>
-    <tbody id="dataBody"></tbody>
-  </table>
-</div>
-
+    <tbody id="listBody"></tbody>
+</table>
 </div>
 
 <script type="module">
-import { auth, db, getUserInfo } from "./firebase.js";
+import { auth, db } from "./firebase.js";
 import {
-  collection, query, where, addDoc, onSnapshot
+  collection, query, where, onSnapshot, addDoc
 } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
 let empID = "";
 let email = "";
 let uid = "";
-let ALL = [];
+let all = [];
 
-// AUTH CHECK
+// Timestamp formatter
+function formatTS(d){
+    const p = n => n.toString().padStart(2,"0");
+    return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+
+// Auth check
 auth.onAuthStateChanged(async user=>{
-  if(!user) location.href="login.html";
+    if(!user) location.href="login.html";
 
-  const info = await getUserInfo();
-  if(!info || info.role!=="recruiter") location.href="login.html";
+    uid = user.uid;
+    email = user.email;
 
-  empID = info.empID;
-  email = info.email;
-  uid = info.uid;
+    // load empID
+    const ref = collection(db,"users");
+    const q = query(ref, where("email","==", email));
 
-  loadData();
+    onSnapshot(q, snap=>{
+        snap.forEach(d => empID = d.data().empID);
+        loadData();
+    });
 });
 
-// LOAD OWN DATA ONLY
+// Load only own entries
 function loadData(){
-  const q = query(collection(db,"callLogs"), where("empID","==",empID));
-
-  onSnapshot(q, snap=>{
-    ALL = [];
-    snap.forEach(d=> ALL.push(d.data()));
-    buildDashboard();
-    fillFilters();
-    render(ALL);
-  });
+    const q = query(collection(db,"callLogs"), where("empID","==", empID));
+    onSnapshot(q, snap=>{
+        all = [];
+        snap.forEach(d => all.push({ id:d.id, ...d.data() }));
+        fillFilters();
+        renderTable(all);
+        renderDashboard();
+    });
 }
 
-// DASHBOARD
-function buildDashboard(){
-  let today = new Date().toISOString().slice(0,10);
+// Dashboard
+function renderDashboard(){
+    let today = new Date().toDateString();
+    let t = all.filter(e => new Date(e.ts).toDateString() === today).length;
+    let total = all.length;
 
-  let todayCount = ALL.filter(e=>e.ts.slice(0,10)==today).length;
-  let totalCount = ALL.length;
-
-  dashBody.innerHTML = `
-    <tr>
-      <td>${empID}</td>
-      <td>${todayCount}</td>
-      <td>${totalCount}</td>
-    </tr>
-  `;
-}
-
-// SAVE ENTRY
-document.getElementById("saveBtn").onclick = async()=>{
-
-  let num = number.value.trim();
-  if(num.length!==10){
-    alert("10 digit number required");
-    return;
-  }
-
-  // Duplicate check only if same recruiter already entered
-  let duplicate = ALL.find(e=> e.number===num);
-  if(duplicate){
-    let ok = confirm("Duplicate entry found for this number. Still want to add?");
-    if(!ok) return;
-  }
-
-  await addDoc(collection(db,"callLogs"),{
-    ts:new Date().toISOString(),
-    uid,
-    email,
-    empID,
-    name:name.value,
-    number:num,
-    age:age.value || "",
-    expYears:expYears.value || "",
-    loc:loc.value || "",
-    ctc:ctc.value || "",
-    comp:comp.value || "",
-    channel:channel.value || "",
-    remarks:remarks.value || ""
-  });
-
-  alert("Entry Saved");
-
-  name.value = number.value = age.value = expYears.value = loc.value =
-  ctc.value = comp.value = channel.value = remarks.value = "";
-};
-
-// FILTERS
-function fillFilters(){
-  let locs = [...new Set(ALL.map(e=>e.loc).filter(x=>x))];
-  filterLocation.innerHTML = `<option value="">Filter by Location</option>`;
-  locs.forEach(l=> filterLocation.innerHTML += `<option>${l}</option>`);
-}
-
-function applyFilters(){
-  let data = ALL;
-
-  if(filterName.value)
-    data = data.filter(d=> d.name.toLowerCase().includes(filterName.value.toLowerCase()));
-
-  if(filterNumber.value)
-    data = data.filter(d=> d.number.includes(filterNumber.value));
-
-  if(filterCompany.value)
-    data = data.filter(d=> d.comp.toLowerCase().includes(filterCompany.value.toLowerCase()));
-
-  if(filterRemark.value)
-    data = data.filter(d=> d.remarks.toLowerCase().includes(filterRemark.value.toLowerCase()));
-
-  if(filterChannel.value)
-    data = data.filter(d=> d.channel===filterChannel.value);
-
-  if(filterLocation.value)
-    data = data.filter(d=> d.loc===filterLocation.value);
-
-  if(minAge.value)
-    data = data.filter(d=> Number(d.age)>=Number(minAge.value));
-
-  if(maxAge.value)
-    data = data.filter(d=> Number(d.age)<=Number(maxAge.value));
-
-  if(minCTC.value)
-    data = data.filter(d=> Number(d.ctc)>=Number(minCTC.value));
-
-  if(maxCTC.value)
-    data = data.filter(d=> Number(d.ctc)<=Number(maxCTC.value));
-
-  if(dateStart.value)
-    data = data.filter(d=> new Date(d.ts)>=new Date(dateStart.value));
-
-  if(dateEnd.value)
-    data = data.filter(d=> new Date(d.ts)<=new Date(dateEnd.value));
-
-  render(data);
-}
-
-function resetFilters(){
-  filterName.value="";
-  filterNumber.value="";
-  filterCompany.value="";
-  filterRemark.value="";
-  filterChannel.value="";
-  filterLocation.value="";
-  minAge.value="";
-  maxAge.value="";
-  minCTC.value="";
-  maxCTC.value="";
-  dateStart.value="";
-  dateEnd.value="";
-  render(ALL);
-}
-
-// RENDER TABLE
-function render(list){
-  dataBody.innerHTML = "";
-  list.forEach(d=>{
-    dataBody.innerHTML += `
-      <tr>
-        <td>${new Date(d.ts).toLocaleString()}</td>
-        <td>${d.name}</td>
-        <td>${d.number}</td>
-        <td>${d.age}</td>
-        <td>${d.expYears}</td>
-        <td>${d.loc}</td>
-        <td>${d.ctc}</td>
-        <td>${d.comp}</td>
-        <td>${d.channel}</td>
-        <td>${d.remarks}</td>
-      </tr>
+    dashBody.innerHTML = `
+        <tr>
+            <td>${empID}</td>
+            <td>${t}</td>
+            <td>${total}</td>
+        </tr>
     `;
-  });
 }
 
-// CSV EXPORT
-csvBtn.onclick = ()=>{
-  let csv = "Timestamp,Name,Number,Age,ExpYears,Location,CTC,Company,Channel,Remarks\n";
+// Save entry with duplicate check
+async function saveData(){
+    let num = numberInput.value.trim();
+    if(num.length !== 10){
+        alert("Enter valid 10-digit number");
+        return;
+    }
 
-  ALL.forEach(e=>{
-    csv += `${e.ts},${e.name},${e.number},${e.age},${e.expYears},${e.loc},${e.ctc},${e.comp},${e.channel},${e.remarks}\n`;
-  });
+    let duplicate = all.find(e => e.number === num);
 
-  let blob = new Blob([csv],{type:"text/csv"});
-  let a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `${empID}_Recruiter_Data.csv`;
-  a.click();
-};
+    if(duplicate){
+        let ok = confirm("This number already exists in your entries. Do you still want to add?");
+        if(!ok) return;
+    }
 
-// THEME MODE
-let theme = localStorage.getItem("theme") || "dark";
-applyTheme(theme);
+    await addDoc(collection(db,"callLogs"),{
+        ts: formatTS(new Date()),
+        uid,
+        empID,
+        email,
+        name: nameInput.value || "",
+        number: num,
+        age: ageInput.value || "",
+        exp: expInput.value || "",
+        loc: locInput.value || "",
+        ctc: ctcInput.value || "",
+        comp: compInput.value || "",
+        channel: channelInput.value || "",
+        remarks: remarkInput.value || ""
+    });
 
-document.getElementById("themeBtn").onclick = ()=>{
-  theme = theme==="dark" ? "light" : "dark";
-  applyTheme(theme);
-};
+    nameInput.value="";
+    numberInput.value="";
+    ageInput.value="";
+    expInput.value="";
+    locInput.value="";
+    ctcInput.value="";
+    compInput.value="";
+    channelInput.value="";
+    remarkInput.value="";
 
-function applyTheme(t){
-  if(t==="light") document.body.classList.add("light");
-  else document.body.classList.remove("light");
-  localStorage.setItem("theme",t);
+    alert("Entry Saved");
 }
 
-// LOGOUT
-logoutBtn.onclick = ()=>{
-  auth.signOut();
-};
+// Fill location dropdown
+function fillFilters(){
+    let locs = [...new Set(all.map(e => e.loc).filter(x => x))];
+    filterLocation.innerHTML = `<option value="">Filter by Location</option>`;
+    locs.forEach(l => filterLocation.innerHTML += `<option>${l}</option>`);
+}
+
+// Apply Filters
+function applyFilters(){
+    let data = all;
+
+    if(filterName.value)
+        data = data.filter(d => d.name.toLowerCase().includes(filterName.value.toLowerCase()));
+
+    if(filterNumber.value)
+        data = data.filter(d => d.number.includes(filterNumber.value));
+
+    if(filterCompany.value)
+        data = data.filter(d => d.comp.toLowerCase().includes(filterCompany.value.toLowerCase()));
+
+    if(filterRemark.value)
+        data = data.filter(d => d.remarks.toLowerCase().includes(filterRemark.value.toLowerCase()));
+
+    if(filterChannel.value)
+        data = data.filter(d => d.channel === filterChannel.value);
+
+    if(filterLocation.value)
+        data = data.filter(d => d.loc === filterLocation.value);
+
+    if(minAge.value)
+        data = data.filter(d => Number(d.age) >= Number(minAge.value));
+
+    if(maxAge.value)
+        data = data.filter(d => Number(d.age) <= Number(maxAge.value));
+
+    if(minCTC.value)
+        data = data.filter(d => Number(d.ctc) >= Number(minCTC.value));
+
+    if(maxCTC.value)
+        data = data.filter(d => Number(d.ctc) <= Number(maxCTC.value));
+
+    if(dateStart.value)
+        data = data.filter(d => new Date(d.ts) >= new Date(dateStart.value));
+
+    if(dateEnd.value)
+        data = data.filter(d => new Date(d.ts) <= new Date(dateEnd.value));
+
+    renderTable(data);
+}
+
+// Reset Filters
+function resetFilters(){
+    filterName.value="";
+    filterNumber.value="";
+    filterCompany.value="";
+    filterRemark.value="";
+    filterChannel.value="";
+    filterLocation.value="";
+    minAge.value="";
+    maxAge.value="";
+    minCTC.value="";
+    maxCTC.value="";
+    dateStart.value="";
+    dateEnd.value="";
+    renderTable(all);
+}
+
+// Render table
+function renderTable(list){
+    listBody.innerHTML = "";
+
+    list.forEach(d=>{
+        listBody.innerHTML += `
+        <tr>
+            <td>${d.ts}</td>
+            <td>${d.name}</td>
+            <td>${d.number}</td>
+            <td>${d.age}</td>
+            <td>${d.exp}</td>
+            <td>${d.loc}</td>
+            <td>${d.ctc}</td>
+            <td>${d.comp}</td>
+            <td>${d.channel}</td>
+            <td>${d.remarks}</td>
+        </tr>
+        `;
+    });
+}
+
+// CSV Export
+function exportCSV(){
+    let csv = "Time,Name,Number,Age,Experience,Location,CTC,Company,Channel,Remarks\n";
+
+    all.forEach(d=>{
+        csv += `${d.ts},${d.name},${d.number},${d.age},${d.exp},${d.loc},${d.ctc},${d.comp},${d.channel},${d.remarks}\n`;
+    });
+
+    let a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([csv], {type:"text/csv"}));
+    a.download = `${empID}_Recruiter_Data.csv`;
+    a.click();
+}
+
+// Logout
+function logout(){
+    auth.signOut();
+    location.href="login.html";
+}
+
+// Theme Toggle
+function toggleTheme(){
+    document.body.classList.toggle("light");
+}
+
+// Expose globals
+window.applyFilters = applyFilters;
+window.resetFilters = resetFilters;
+window.saveData = saveData;
+window.exportCSV = exportCSV;
+window.logout = logout;
+window.toggleTheme = toggleTheme;
 
 </script>
-
 </body>
 </html>
