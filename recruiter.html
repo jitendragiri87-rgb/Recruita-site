@@ -1,60 +1,77 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Recruiter Panel</title>
 
 <style>
-body {
+body{
     background:#0b0b0c;
     color:white;
     font-family:Inter,sans-serif;
     padding:20px;
 }
-.light { background:#f2f2f2; color:#222; }
+.light{ background:#f2f2f2; color:#222; }
 
-.topBar {
+.topBar{
     display:flex;
     justify-content:flex-end;
     gap:10px;
-    margin-bottom:18px;
+    margin-bottom:20px;
 }
 
-button {
+button{
     padding:10px 18px;
     border:none;
     border-radius:6px;
-    cursor:pointer;
     font-weight:600;
+    cursor:pointer;
 }
-.blueBtn { background:#2B7FFF; color:white; }
-.redBtn { background:#e74c3c; color:white; }
-.greyBtn { background:#555; color:white; }
+.blueBtn{ background:#2B7FFF; color:white; }
+.greyBtn{ background:#555; color:white; }
+.redBtn{ background:#e74c3c; color:white; }
 
-input, select {
+input,select{
     width:100%;
     padding:12px;
     margin-top:8px;
-    background:#111;
-    color:white;
     border:none;
     border-radius:8px;
+    background:#111;
+    color:white;
 }
-.light input, .light select { background:white; color:black; border:1px solid #ccc; }
+.light input,.light select{ background:white; color:#222; border:1px solid #ccc; }
 
-table {
+.tableBox{
+    overflow-x:auto;
+    margin-top:20px;
+}
+table{
     width:100%;
     border-collapse:collapse;
+}
+th,td{
+    padding:10px;
+    border:1px solid #333;
+}
+.light th,.light td{ border:1px solid #ccc; }
+
+.callBtn{
+    background:#2B7FFF;
+    color:white;
+    padding:5px 9px;
+    border-radius:6px;
+    text-decoration:none;
+}
+
+.filterBox{
+    padding:15px;
+    background:#111;
+    border-radius:12px;
     margin-top:15px;
 }
-th, td {
-    border:1px solid #333;
-    padding:10px;
-}
-.light th, .light td { border:1px solid #ccc; }
-
-.tableBox { overflow-x:auto; }
+.light .filterBox{ background:#fff; border:1px solid #ccc; }
 
 </style>
 </head>
@@ -67,14 +84,13 @@ th, td {
 </div>
 
 <h2>Your Performance</h2>
-
 <div class="tableBox">
 <table>
     <thead>
         <tr>
             <th>EmpID</th>
-            <th>Today's Count</th>
-            <th>All-Time</th>
+            <th>Today</th>
+            <th>Total</th>
         </tr>
     </thead>
     <tbody id="dashBody"></tbody>
@@ -99,48 +115,72 @@ th, td {
     <option>Tele calling</option>
 </select>
 
+<select id="statusInput">
+    <option value="">Call Status</option>
+    <option>Interested</option>
+    <option>Not Interested</option>
+    <option>Not Answered</option>
+</select>
+
 <input id="remarkInput" placeholder="Remarks">
 
 <button class="blueBtn" onclick="saveData()">Submit Entry</button>
 
-<h2>Filters</h2>
+<!-- FILTER + CSV BUTTONS -->
+<div style="display:flex; gap:12px; margin-top:25px;">
+    <button class="blueBtn" onclick="exportCSV()">Download CSV</button>
+    <button id="filterToggleBtn" class="greyBtn" onclick="toggleFilters()">Filter</button>
+</div>
 
-<input id="filterName" placeholder="Filter by Name">
-<input id="filterNumber" placeholder="Filter by Number">
-<input id="filterCompany" placeholder="Filter by Company">
-<input id="filterRemark" placeholder="Filter by Remark">
+<!-- FILTER PANEL -->
+<div id="filterPanel" style="display:none;">
+    <div class="filterBox">
 
-<select id="filterChannel">
-    <option value="">Filter by Channel</option>
-    <option>Banca</option>
-    <option>Agency</option>
-    <option>Direct</option>
-    <option>Tele calling</option>
-</select>
+        <input id="f_name" placeholder="Filter by Name">
+        <input id="f_number" placeholder="Filter by Number">
+        <input id="f_company" placeholder="Filter by Company">
+        <input id="f_location" placeholder="Filter by Location">
 
-<select id="filterLocation">
-    <option value="">Filter by Location</option>
-</select>
+        <select id="f_channel">
+            <option value="">Filter by Channel</option>
+            <option>Banca</option>
+            <option>Agency</option>
+            <option>Direct</option>
+            <option>Tele calling</option>
+        </select>
 
-<input id="minAge" placeholder="Min Age">
-<input id="maxAge" placeholder="Max Age">
+        <select id="f_status">
+            <option value="">Filter by Call Status</option>
+            <option>Interested</option>
+            <option>Not Interested</option>
+            <option>Not Answered</option>
+        </select>
 
-<input id="minCTC" placeholder="Min CTC">
-<input id="maxCTC" placeholder="Max CTC">
+        <input id="f_minAge" placeholder="Min Age">
+        <input id="f_maxAge" placeholder="Max Age">
 
-<input id="dateStart" type="date">
-<input id="dateEnd" type="date">
+        <input id="f_minCTC" placeholder="Min CTC">
+        <input id="f_maxCTC" placeholder="Max CTC">
 
-<button class="greyBtn" onclick="applyFilters()">Apply Filters</button>
-<button class="greyBtn" onclick="resetFilters()">Reset</button>
+        <label>Start Date</label>
+        <input id="f_dateStart" type="date">
+
+        <label>End Date</label>
+        <input id="f_dateEnd" type="date">
+
+        <button class="blueBtn" onclick="applyFilters()">Apply Filters</button>
+        <button class="greyBtn" onclick="resetFilters()">Reset</button>
+
+    </div>
+</div>
 
 <h2>Your Entries</h2>
-<button class="greyBtn" onclick="exportCSV()">Download CSV</button>
 
 <div class="tableBox">
 <table>
     <thead>
         <tr>
+            <th>Call</th>
             <th>Time</th>
             <th>Name</th>
             <th>Number</th>
@@ -150,6 +190,7 @@ th, td {
             <th>CTC</th>
             <th>Company</th>
             <th>Channel</th>
+            <th>Status</th>
             <th>Remarks</th>
         </tr>
     </thead>
@@ -167,14 +208,15 @@ let empID = "";
 let email = "";
 let uid = "";
 let all = [];
+let filteredData = [];
 
 // Timestamp formatter
 function formatTS(d){
-    const p = n => n.toString().padStart(2,"0");
+    const p=n=>n.toString().padStart(2,"0");
     return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 }
 
-// Auth check
+// Auth
 auth.onAuthStateChanged(async user=>{
     if(!user) location.href="login.html";
 
@@ -194,31 +236,32 @@ auth.onAuthStateChanged(async user=>{
 // Load only own entries
 function loadData(){
     const q = query(collection(db,"callLogs"), where("empID","==", empID));
+
     onSnapshot(q, snap=>{
         all = [];
         snap.forEach(d => all.push({ id:d.id, ...d.data() }));
+
+        renderDashboard();
         fillFilters();
         renderTable(all);
-        renderDashboard();
     });
 }
 
-// Dashboard
+// Dashboard counts
 function renderDashboard(){
     let today = new Date().toDateString();
-    let t = all.filter(e => new Date(e.ts).toDateString() === today).length;
-    let total = all.length;
-
+    let countToday = all.filter(e => new Date(e.ts).toDateString() === today).length;
+    
     dashBody.innerHTML = `
         <tr>
             <td>${empID}</td>
-            <td>${t}</td>
-            <td>${total}</td>
+            <td>${countToday}</td>
+            <td>${all.length}</td>
         </tr>
     `;
 }
 
-// Save entry with duplicate check
+// Save entry
 async function saveData(){
     let num = numberInput.value.trim();
     if(num.length !== 10){
@@ -227,7 +270,6 @@ async function saveData(){
     }
 
     let duplicate = all.find(e => e.number === num);
-
     if(duplicate){
         let ok = confirm("This number already exists in your entries. Do you still want to add?");
         if(!ok) return;
@@ -238,6 +280,7 @@ async function saveData(){
         uid,
         empID,
         email,
+
         name: nameInput.value || "",
         number: num,
         age: ageInput.value || "",
@@ -246,6 +289,7 @@ async function saveData(){
         ctc: ctcInput.value || "",
         comp: compInput.value || "",
         channel: channelInput.value || "",
+        callStatus: statusInput.value || "",
         remarks: remarkInput.value || ""
     });
 
@@ -257,75 +301,93 @@ async function saveData(){
     ctcInput.value="";
     compInput.value="";
     channelInput.value="";
+    statusInput.value="";
     remarkInput.value="";
 
     alert("Entry Saved");
 }
 
-// Fill location dropdown
-function fillFilters(){
-    let locs = [...new Set(all.map(e => e.loc).filter(x => x))];
-    filterLocation.innerHTML = `<option value="">Filter by Location</option>`;
-    locs.forEach(l => filterLocation.innerHTML += `<option>${l}</option>`);
+// Toggle Filters
+function toggleFilters(){
+    const panel = document.getElementById("filterPanel");
+    const btn = document.getElementById("filterToggleBtn");
+
+    if(panel.style.display === "none"){
+        panel.style.display = "block";
+        btn.textContent = "Hide Filters";
+    } else {
+        panel.style.display = "none";
+        btn.textContent = "Filter";
+    }
 }
 
-// Apply Filters
+// Fill auto dropdowns
+function fillFilters(){
+    let locations = [...new Set(all.map(e=>e.loc).filter(x=>x))];
+    filterLocation.innerHTML = `<option value="">Filter by Location</option>`;
+    locations.forEach(loc => filterLocation.innerHTML += `<option>${loc}</option>`);
+}
+
+// Apply Filters (AND logic)
 function applyFilters(){
     let data = all;
 
-    if(filterName.value)
-        data = data.filter(d => d.name.toLowerCase().includes(filterName.value.toLowerCase()));
+    if(f_name.value)
+        data = data.filter(x => x.name.toLowerCase().includes(f_name.value.toLowerCase()));
 
-    if(filterNumber.value)
-        data = data.filter(d => d.number.includes(filterNumber.value));
+    if(f_number.value)
+        data = data.filter(x => x.number.includes(f_number.value));
 
-    if(filterCompany.value)
-        data = data.filter(d => d.comp.toLowerCase().includes(filterCompany.value.toLowerCase()));
+    if(f_company.value)
+        data = data.filter(x => x.comp.toLowerCase().includes(f_company.value.toLowerCase()));
 
-    if(filterRemark.value)
-        data = data.filter(d => d.remarks.toLowerCase().includes(filterRemark.value.toLowerCase()));
+    if(f_location.value)
+        data = data.filter(x => x.loc.toLowerCase() === f_location.value.toLowerCase());
 
-    if(filterChannel.value)
-        data = data.filter(d => d.channel === filterChannel.value);
+    if(f_channel.value)
+        data = data.filter(x => x.channel === f_channel.value);
 
-    if(filterLocation.value)
-        data = data.filter(d => d.loc === filterLocation.value);
+    if(f_status.value)
+        data = data.filter(x => x.callStatus === f_status.value);
 
-    if(minAge.value)
-        data = data.filter(d => Number(d.age) >= Number(minAge.value));
+    if(f_minAge.value)
+        data = data.filter(x => Number(x.age) >= Number(f_minAge.value));
 
-    if(maxAge.value)
-        data = data.filter(d => Number(d.age) <= Number(maxAge.value));
+    if(f_maxAge.value)
+        data = data.filter(x => Number(x.age) <= Number(f_maxAge.value));
 
-    if(minCTC.value)
-        data = data.filter(d => Number(d.ctc) >= Number(minCTC.value));
+    if(f_minCTC.value)
+        data = data.filter(x => Number(x.ctc) >= Number(f_minCTC.value));
 
-    if(maxCTC.value)
-        data = data.filter(d => Number(d.ctc) <= Number(maxCTC.value));
+    if(f_maxCTC.value)
+        data = data.filter(x => Number(x.ctc) <= Number(f_maxCTC.value));
 
-    if(dateStart.value)
-        data = data.filter(d => new Date(d.ts) >= new Date(dateStart.value));
+    if(f_dateStart.value)
+        data = data.filter(x => new Date(x.ts) >= new Date(f_dateStart.value));
 
-    if(dateEnd.value)
-        data = data.filter(d => new Date(d.ts) <= new Date(dateEnd.value));
+    if(f_dateEnd.value)
+        data = data.filter(x => new Date(x.ts) <= new Date(f_dateEnd.value));
 
-    renderTable(data);
+    filteredData = data;
+    renderTable(filteredData);
 }
 
 // Reset Filters
 function resetFilters(){
-    filterName.value="";
-    filterNumber.value="";
-    filterCompany.value="";
-    filterRemark.value="";
-    filterChannel.value="";
-    filterLocation.value="";
-    minAge.value="";
-    maxAge.value="";
-    minCTC.value="";
-    maxCTC.value="";
-    dateStart.value="";
-    dateEnd.value="";
+    f_name.value="";
+    f_number.value="";
+    f_company.value="";
+    f_location.value="";
+    f_channel.value="";
+    f_status.value="";
+    f_minAge.value="";
+    f_maxAge.value="";
+    f_minCTC.value="";
+    f_maxCTC.value="";
+    f_dateStart.value="";
+    f_dateEnd.value="";
+
+    filteredData = [];
     renderTable(all);
 }
 
@@ -336,6 +398,7 @@ function renderTable(list){
     list.forEach(d=>{
         listBody.innerHTML += `
         <tr>
+            <td><a href="tel:${d.number}" class="callBtn">📞</a></td>
             <td>${d.ts}</td>
             <td>${d.name}</td>
             <td>${d.number}</td>
@@ -345,23 +408,27 @@ function renderTable(list){
             <td>${d.ctc}</td>
             <td>${d.comp}</td>
             <td>${d.channel}</td>
+            <td>${d.callStatus}</td>
             <td>${d.remarks}</td>
         </tr>
         `;
     });
 }
 
-// CSV Export
+// CSV
 function exportCSV(){
-    let csv = "Time,Name,Number,Age,Experience,Location,CTC,Company,Channel,Remarks\n";
+    let data = filteredData.length ? filteredData : all;
 
-    all.forEach(d=>{
-        csv += `${d.ts},${d.name},${d.number},${d.age},${d.exp},${d.loc},${d.ctc},${d.comp},${d.channel},${d.remarks}\n`;
+    let csv = "Time,Name,Number,Age,Experience,Location,CTC,Company,Channel,Status,Remarks\n";
+
+    data.forEach(d=>{
+        csv += `${formatTS(new Date(d.ts))},${d.name},${d.number},${d.age},${d.exp},${d.loc},${d.ctc},${d.comp},${d.channel},${d.callStatus},${d.remarks}\n`;
     });
 
+    let blob = new Blob([csv],{type:"text/csv"});
     let a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([csv], {type:"text/csv"}));
-    a.download = `${empID}_Recruiter_Data.csv`;
+    a.href = URL.createObjectURL(blob);
+    a.download = `${empID}_Filtered_Data.csv`;
     a.click();
 }
 
@@ -371,15 +438,16 @@ function logout(){
     location.href="login.html";
 }
 
-// Theme Toggle
+// Theme toggle
 function toggleTheme(){
     document.body.classList.toggle("light");
 }
 
-// Expose globals
+// Expose
+window.saveData = saveData;
 window.applyFilters = applyFilters;
 window.resetFilters = resetFilters;
-window.saveData = saveData;
+window.toggleFilters = toggleFilters;
 window.exportCSV = exportCSV;
 window.logout = logout;
 window.toggleTheme = toggleTheme;
