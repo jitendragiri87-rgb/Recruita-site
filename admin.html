@@ -1,357 +1,357 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Admin Panel - Recruita</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>Admin Panel</title>
 
 <style>
-    body {
-        font-family: Inter, sans-serif;
-        padding: 20px;
-        transition: 0.3s;
-    }
+body {
+  background:#0b0b0c;
+  color:white;
+  font-family:Inter, sans-serif;
+  margin:0;
+  padding:20px;
+}
 
-    body.dark {
-        background: #0b0b0c;
-        color: white;
-    }
+.topBar {
+  display:flex;
+  justify-content:flex-end;
+  gap:12px;
+  margin-bottom:20px;
+}
 
-    body.light {
-        background: #f5f5f5;
-        color: #222;
-    }
+button {
+  padding:10px 18px;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+  font-weight:600;
+}
 
-    h2 {
-        margin-top: 20px;
-        margin-bottom: 10px;
-    }
+.blueBtn { background:#2B7FFF; color:white; }
+.redBtn { background:#d9534f; color:white; }
+.greyBtn { background:#555; color:white; }
 
-    input, select {
-        width: 100%;
-        padding: 12px;
-        border-radius: 8px;
-        border: 1px solid #555;
-        margin-top: 10px;
-        background: #fff;
-    }
+.themeBtn { background:#444; color:white; }
 
-    body.dark input, body.dark select {
-        background: #111;
-        color: white;
-        border: none;
-    }
+table {
+  width:100%;
+  border-collapse:collapse;
+  margin-top:15px;
+  font-size:15px;
+}
 
-    button {
-        padding: 12px 18px;
-        border-radius: 8px;
-        border: none;
-        cursor: pointer;
-        font-size: 16px;
-        font-weight: 600;
-        margin-top: 10px;
-    }
+th, td {
+  border:1px solid #333;
+  padding:10px;
+  text-align:left;
+}
 
-    .blueBtn { background: #2B7FFF; color: white; }
-    .redBtn { background: #e74c3c; color: white; }
-    .grayBtn { background: gray; color: white; }
+input, select {
+  width:100%;
+  padding:12px;
+  margin-top:10px;
+  background:#111;
+  color:white;
+  border-radius:8px;
+  border:none;
+}
 
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 20px;
-    }
-    th, td {
-        padding: 10px;
-        border: 1px solid #444;
-        text-align: left;
-    }
+.editInput {
+  background:#222;
+  color:white;
+  padding:6px;
+  border-radius:6px;
+  width:100%;
+}
 
-    /* Top-right actions */
-    .topBar {
-        display: flex;
-        justify-content: flex-end;
-        gap: 10px;
-        margin-bottom: 20px;
-    }
+.dark { background:#0b0b0c; color:white; }
+.light { background:#f2f2f2; color:black; }
+.light input, .light select { background:white; color:black; }
+.light table, .light th, .light td { border-color:#ccc; }
 </style>
 </head>
 
-<body class="dark">
+<body>
 
 <div class="topBar">
-    <button id="themeToggle" class="grayBtn">Toggle Theme</button>
-    <button onclick="logout()" class="redBtn">Logout</button>
+  <button onclick="toggleTheme()" class="themeBtn">Toggle Theme</button>
+  <button onclick="logout()" class="redBtn">Logout</button>
 </div>
 
 <h2>Admin Dashboard</h2>
-<table id="dashboardTable">
+
+<table>
+  <thead>
     <tr>
-        <th>EmpID</th>
-        <th>Today's Count</th>
-        <th>All-Time Count</th>
+      <th>EmpID</th>
+      <th>Today's Count</th>
+      <th>All-Time Count</th>
     </tr>
+  </thead>
+  <tbody id="dashBody"></tbody>
 </table>
 
 <h2>Add Candidate Entry</h2>
 
-<input id="name" placeholder="Candidate Name">
-<input id="number" placeholder="10 Digit Mobile Number">
-<input id="age" placeholder="Age">
-<input id="expYears" placeholder="Total Experience (Years)">
-<input id="loc" placeholder="Location">
-<input id="ctc" placeholder="CTC">
-<input id="comp" placeholder="Current Company">
+<input id="nameInput" placeholder="Name">
+<input id="numberInput" placeholder="Number (Required)">
+<input id="ageInput" placeholder="Age">
+<input id="expInput" placeholder="Total Experience (Years)">
+<input id="locInput" placeholder="Location">
+<input id="ctcInput" placeholder="CTC">
+<input id="compInput" placeholder="Current Company">
 
-<select id="channel">
-    <option value="">Select Channel</option>
-    <option>Banca</option>
-    <option>Agency</option>
-    <option>Direct</option>
-    <option>Tele calling</option>
+<select id="channelInput">
+  <option value="">Select Channel</option>
+  <option>Banca</option>
+  <option>Agency</option>
+  <option>Direct</option>
+  <option>Tele calling</option>
 </select>
 
-<input id="remarks" placeholder="Remarks">
+<input id="remarkInput" placeholder="Remarks">
 
-<button class="blueBtn" id="submitBtn" onclick="saveData()">Submit Entry</button>
-
+<button class="blueBtn" onclick="saveData()">Submit Entry</button>
 
 <h2>All Entries</h2>
-<button class="blueBtn" onclick="exportCSV()">Download Full CSV</button>
 
-<table id="dataTable">
-    <thead>
-        <tr>
-            <th>Time</th>
-            <th>EmpID</th>
-            <th>Name</th>
-            <th>Number</th>
-            <th>Age</th>
-            <th>Experience</th>
-            <th>Location</th>
-            <th>CTC</th>
-            <th>Company</th>
-            <th>Channel</th>
-            <th>Remarks</th>
-            <th>Edit</th>
-            <th>Delete</th>
-        </tr>
-    </thead>
-    <tbody id="tableBody"></tbody>
+<button class="greyBtn" onclick="exportCSV()">Download Full CSV</button>
+
+<table>
+  <thead>
+    <tr>
+      <th>Time</th>
+      <th>EmpID</th>
+      <th>Name</th>
+      <th>Number</th>
+      <th>Age</th>
+      <th>Experience</th>
+      <th>Location</th>
+      <th>CTC</th>
+      <th>Company</th>
+      <th>Channel</th>
+      <th>Remarks</th>
+      <th>Edit</th>
+      <th>Delete</th>
+    </tr>
+  </thead>
+  <tbody id="listBody"></tbody>
 </table>
-
 
 <script type="module">
 import { auth, db } from "./firebase.js";
 import {
-    addDoc, collection, getDocs, deleteDoc, updateDoc,
-    doc, onSnapshot, query, where
+  addDoc, collection, onSnapshot, deleteDoc,
+  updateDoc, doc, getDoc, query, where
 } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
-let ADMIN_EMAIL = "";
-let EMPID = "";
-let ALL = [];
+let allData = [];
+let users = {};
+let editingRow = null;
 
-/* ---------------------- AUTH CHECK --------------------- */
-auth.onAuthStateChanged(async user => {
-    if (!user) {
-        window.location = "login.html";
-        return;
-    }
-
-    ADMIN_EMAIL = user.email;
-
-    // fetch empID
-    let usersQ = query(collection(db, "users"), where("email", "==", user.email));
-    let snap = await getDocs(usersQ);
-    snap.forEach(d => EMPID = d.data().empID);
-
-    loadData();
+// ---------------------- LOAD USER METADATA ----------------------
+onSnapshot(collection(db,"users"), snap=>{
+  users = {};
+  snap.forEach(d=> users[d.id] = d.data());
 });
 
+// ---------------------- LOAD ENTRIES ----------------------
+onSnapshot(collection(db,"callLogs"), snap=>{
+  allData = [];
+  snap.forEach(d=> allData.push({ id:d.id, ...d.data() }));
+  renderTable();
+  renderDashboard();
+});
 
-/* -------------------- REAL-TIME FETCH -------------------- */
-function loadData() {
-    onSnapshot(collection(db, "callLogs"), snap => {
-        ALL = [];
-        snap.forEach(d => ALL.push({ id: d.id, ...d.data() }));
-        renderTable();
-        renderDashboard();
-    });
+// ---------------------- SAVE ENTRY ----------------------
+async function saveData(){
+  let num = numberInput.value.trim();
+  if(num.length !== 10){ alert("Enter valid 10-digit number"); return; }
+
+  let uid = auth.currentUser.uid;
+  let meta = users[uid] || {};
+  let empID = meta.empID || "Unknown";
+
+  await addDoc(collection(db,"callLogs"),{
+    uid,
+    empID,
+    ts: new Date().toISOString(),
+    name: nameInput.value,
+    number: num,
+    age: ageInput.value,
+    exp: expInput.value,
+    loc: locInput.value,
+    ctc: ctcInput.value,
+    comp: compInput.value,
+    channel: channelInput.value,
+    remarks: remarkInput.value
+  });
+
+  clearForm();
+  alert("Entry Added");
 }
 
-
-/* ------------------ DASHBOARD COUNTS ------------------ */
-function renderDashboard() {
-    let map = {};
-
-    ALL.forEach(e => {
-        if (!map[e.empID]) map[e.empID] = { today: 0, total: 0 };
-
-        let today = new Date().toDateString();
-        let entryDate = new Date(e.ts).toDateString();
-
-        if (today === entryDate) map[e.empID].today++;
-        map[e.empID].total++;
-    });
-
-    dashboardTable.innerHTML = `
-        <tr><th>EmpID</th><th>Today's Count</th><th>All-Time Count</th></tr>
-    `;
-
-    Object.keys(map).forEach(id => {
-        dashboardTable.innerHTML += `
-            <tr>
-                <td>${id}</td>
-                <td>${map[id].today}</td>
-                <td>${map[id].total}</td>
-            </tr>
-        `;
-    });
+function clearForm(){
+  nameInput.value = "";
+  numberInput.value = "";
+  ageInput.value = "";
+  expInput.value = "";
+  locInput.value = "";
+  ctcInput.value = "";
+  compInput.value = "";
+  channelInput.value = "";
+  remarkInput.value = "";
 }
 
+// --------------------- RENDER TABLE -----------------------
+function renderTable(){
+  listBody.innerHTML = "";
 
-/* ---------------------- ADD ENTRY ---------------------- */
-async function saveData() {
+  allData.forEach(d=>{
+    let row = document.createElement("tr");
 
-    let num = number.value.trim();
-    if (num.length !== 10) {
-        alert("Enter valid 10 digit number");
-        return;
-    }
-
-    // duplicate check
-    let duplicate = ALL.find(e => e.number === num && e.empID === EMPID);
-
-    if (duplicate) {
-        let ok = confirm("Duplicate entry found. Still want to add?");
-        if (!ok) return;
-    }
-
-    let data = {
-        ts: new Date().toISOString(),
-        empID: EMPID,
-        email: ADMIN_EMAIL,
-        name: name.value || "",
-        number: num,
-        age: age.value || "",
-        expYears: expYears.value || "",
-        loc: loc.value || "",
-        ctc: ctc.value || "",
-        comp: comp.value || "",
-        channel: channel.value || "",
-        remarks: remarks.value || ""
-    };
-
-    await addDoc(collection(db, "callLogs"), data);
-    alert("Entry Saved");
-
-    // Reset fields
-    name.value = "";
-    number.value = "";
-    age.value = "";
-    expYears.value = "";
-    loc.value = "";
-    ctc.value = "";
-    comp.value = "";
-    channel.value = "";
-    remarks.value = "";
-}
-
-
-/* ---------------------- RENDER TABLE ---------------------- */
-function renderTable() {
-    tableBody.innerHTML = "";
-
-    ALL.forEach(e => {
-        tableBody.innerHTML += `
-        <tr>
-            <td>${new Date(e.ts).toLocaleString()}</td>
-            <td>${e.empID}</td>
-            <td>${e.name}</td>
-            <td>${e.number}</td>
-            <td>${e.age}</td>
-            <td>${e.expYears}</td>
-            <td>${e.loc}</td>
-            <td>${e.ctc}</td>
-            <td>${e.comp}</td>
-            <td>${e.channel}</td>
-            <td>${e.remarks}</td>
-
-            <td><button class="grayBtn" onclick="editEntry('${e.id}')">Edit</button></td>
-            <td><button class="redBtn" onclick="deleteEntry('${e.id}')">Delete</button></td>
-        </tr>`;
-    });
-}
-
-
-/* ---------------------- DELETE ---------------------- */
-window.deleteEntry = async (id) => {
-    if (!confirm("Delete this entry?")) return;
-    await deleteDoc(doc(db, "callLogs", id));
-};
-
-
-/* ---------------------- EDIT ---------------------- */
-window.editEntry = async (id) => {
-
-    let item = ALL.find(e => e.id === id);
-
-    let newName = prompt("Name:", item.name);
-    let newNum  = prompt("Number:", item.number);
-    let newAge  = prompt("Age:", item.age);
-    let newExp  = prompt("Experience (years):", item.expYears);
-    let newLoc  = prompt("Location:", item.loc);
-    let newCTC  = prompt("CTC:", item.ctc);
-    let newComp = prompt("Company:", item.comp);
-    let newCh   = prompt("Channel:", item.channel);
-    let newRem  = prompt("Remarks:", item.remarks);
-
-    await updateDoc(doc(db, "callLogs", id), {
-        name: newName,
-        number: newNum,
-        age: newAge,
-        expYears: newExp,
-        loc: newLoc,
-        ctc: newCTC,
-        comp: newComp,
-        channel: newCh,
-        remarks: newRem
-    });
-};
-
-
-/* ---------------------- CSV EXPORT ---------------------- */
-window.exportCSV = () => {
-    let csv = "Time,EmpID,Name,Number,Age,Experience,Location,CTC,Company,Channel,Remarks\n";
-
-    ALL.forEach(e => {
-        csv += `${e.ts},${e.empID},${e.name},${e.number},${e.age},${e.expYears},${e.loc},${e.ctc},${e.comp},${e.channel},${e.remarks}\n`;
-    });
-
-    let blob = new Blob([csv], { type: "text/csv" });
-    let a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "Recruita_Full_Data.csv";
-    a.click();
-};
-
-
-/* ---------------------- LOGOUT ---------------------- */
-window.logout = () => {
-    auth.signOut();
-};
-
-
-/* ---------------------- THEME TOGGLE ---------------------- */
-themeToggle.onclick = () => {
-    if (document.body.classList.contains("dark")) {
-        document.body.classList.replace("dark", "light");
+    if(editingRow === d.id){
+      row.innerHTML = `
+        <td>${new Date(d.ts).toLocaleString()}</td>
+        <td>${d.empID}</td>
+        <td><input class="editInput" id="edit_name" value="${d.name}"></td>
+        <td><input class="editInput" id="edit_number" value="${d.number}"></td>
+        <td><input class="editInput" id="edit_age" value="${d.age}"></td>
+        <td><input class="editInput" id="edit_exp" value="${d.exp}"></td>
+        <td><input class="editInput" id="edit_loc" value="${d.loc}"></td>
+        <td><input class="editInput" id="edit_ctc" value="${d.ctc}"></td>
+        <td><input class="editInput" id="edit_comp" value="${d.comp}"></td>
+        <td><input class="editInput" id="edit_channel" value="${d.channel}"></td>
+        <td><input class="editInput" id="edit_remarks" value="${d.remarks}"></td>
+        <td><button class="blueBtn" onclick="saveEdit('${d.id}')">Save</button></td>
+        <td><button class="greyBtn" onclick="cancelEdit()">Cancel</button></td>
+      `;
     } else {
-        document.body.classList.replace("light", "dark");
+      row.innerHTML = `
+        <td>${new Date(d.ts).toLocaleString()}</td>
+        <td>${d.empID}</td>
+        <td>${d.name}</td>
+        <td>${d.number}</td>
+        <td>${d.age}</td>
+        <td>${d.exp}</td>
+        <td>${d.loc}</td>
+        <td>${d.ctc}</td>
+        <td>${d.comp}</td>
+        <td>${d.channel}</td>
+        <td>${d.remarks}</td>
+        <td><button class="blueBtn" onclick="startEdit('${d.id}')">Edit</button></td>
+        <td><button class="redBtn" onclick="deleteEntry('${d.id}')">Delete</button></td>
+      `;
     }
-};
-</script>
 
+    listBody.appendChild(row);
+  });
+}
+
+// ---------------------- START EDIT ----------------------
+function startEdit(id){
+  editingRow = id;
+  renderTable();
+}
+
+// ---------------------- CANCEL EDIT ----------------------
+function cancelEdit(){
+  editingRow = null;
+  renderTable();
+}
+
+// ---------------------- SAVE EDIT ----------------------
+async function saveEdit(id){
+  let ref = doc(db, "callLogs", id);
+
+  await updateDoc(ref,{
+    name: edit_name.value,
+    number: edit_number.value,
+    age: edit_age.value,
+    exp: edit_exp.value,
+    loc: edit_loc.value,
+    ctc: edit_ctc.value,
+    comp: edit_comp.value,
+    channel: edit_channel.value,
+    remarks: edit_remarks.value
+  });
+
+  editingRow = null;
+  alert("Updated Successfully");
+  renderTable();
+}
+
+// ---------------------- DELETE ENTRY ----------------------
+async function deleteEntry(id){
+  if(!confirm("Delete this entry?")) return;
+  await deleteDoc(doc(db,"callLogs",id));
+}
+
+// ---------------------- DASHBOARD ----------------------
+function renderDashboard(){
+  dashBody.innerHTML = "";
+
+  let map = {};
+
+  allData.forEach(d=>{
+    if(!map[d.empID]) map[d.empID] = { today:0, total:0 };
+
+    let dDate = new Date(d.ts).toDateString();
+    let now = new Date().toDateString();
+
+    if(dDate === now) map[d.empID].today++;
+    map[d.empID].total++;
+  });
+
+  Object.keys(map).forEach(e=>{
+    dashBody.innerHTML += `
+      <tr>
+        <td>${e}</td>
+        <td>${map[e].today}</td>
+        <td>${map[e].total}</td>
+      </tr>
+    `;
+  });
+}
+
+// ---------------------- EXPORT CSV ----------------------
+function exportCSV(){
+  let csv = "Time,EmpID,Name,Number,Age,Experience,Location,CTC,Company,Channel,Remarks\n";
+
+  allData.forEach(d=>{
+    csv += `${d.ts},${d.empID},${d.name},${d.number},${d.age},${d.exp},${d.loc},${d.ctc},${d.comp},${d.channel},${d.remarks}\n`;
+  });
+
+  let blob = new Blob([csv],{ type:"text/csv" });
+  let a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "Full_Data.csv";
+  a.click();
+}
+
+// ---------------------- LOGOUT ----------------------
+function logout(){
+  auth.signOut();
+  window.location = "login.html";
+}
+
+// ---------------------- THEME TOGGLE ----------------------
+function toggleTheme(){
+  document.body.classList.toggle("light");
+}
+
+// EXPOSE GLOBALS
+window.saveData = saveData;
+window.startEdit = startEdit;
+window.cancelEdit = cancelEdit;
+window.saveEdit = saveEdit;
+window.deleteEntry = deleteEntry;
+window.exportCSV = exportCSV;
+window.logout = logout;
+window.toggleTheme = toggleTheme;
+
+</script>
 </body>
 </html>
