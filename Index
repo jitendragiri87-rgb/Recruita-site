@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Recruita Hiring Solutions</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Inter,sans-serif;}
+body{background:#0b0b0c;color:#fff;overflow-x:hidden;}
+
+header{
+  width:100%;padding:20px 40px;position:fixed;top:0;left:0;
+  background:rgba(0,0,0,0.5);backdrop-filter:blur(6px);
+  display:flex;justify-content:space-between;align-items:center;z-index:999;
+}
+nav a{margin-left:24px;text-decoration:none;color:#fff;font-size:15px;}
+nav a:hover{color:#2B7FFF;}
+
+.hero{
+  height:100vh;
+  padding:0 40px;
+  background:url("https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=1800&q=80") center/cover no-repeat;
+  display:flex;align-items:center;
+}
+.hero h1{font-size:60px;font-weight:800;margin-bottom:10px;}
+.hero p{font-size:22px;margin-bottom:20px;color:#d8d8d8;}
+.btn{
+  background:#2B7FFF;padding:14px 22px;
+  color:#fff;border-radius:8px;font-weight:600;
+  text-decoration:none;font-size:17px;
+}
+
+footer{
+  padding:30px 40px;text-align:center;background:#111;
+  color:#777;margin-top:40px;font-size:14px;
+}
+
+@media(max-width:600px){
+  .hero{padding:20px;}
+  .hero h1{font-size:38px;}
+  .hero p{font-size:17px;}
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>Recruita</h1>
+  <nav>
+    <a href="login.html">Login</a>
+  </nav>
+</header>
+
+<section class="hero">
+  <div>
+    <h1>Connecting Talent, Building Teams</h1>
+    <p>Recruita Hiring Solutions — trusted since 2020.</p>
+    <a href="login.html" class="btn">Login</a>
+  </div>
+</section>
+
+<footer>
+  © 2025 Recruita Hiring Solutions. All rights reserved.
+</footer>
+
+</body>
+</html>
