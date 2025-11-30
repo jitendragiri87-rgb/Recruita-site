@@ -6,38 +6,100 @@
 <title>Recruiter Panel</title>
 
 <style>
-body{background:#0b0b0c;color:white;font-family:Inter;padding:20px;}
-input{
-  width:100%;padding:14px;margin-top:12px;border-radius:10px;border:none;
+body{
+  background:#0b0b0c;color:white;font-family:Inter;padding:20px;
+}
+h2{margin-top:20px;margin-bottom:10px;}
+input, select{
+  width:100%;padding:12px;border-radius:8px;border:none;margin-top:10px;
+  background:#1a1a1a;color:white;
 }
 button{
   width:100%;padding:14px;background:#2B7FFF;border:none;border-radius:10px;
   margin-top:20px;font-size:17px;color:white;font-weight:600;
+  transition:0.2s;
+}
+button:active{
+  transform:scale(0.97);
+  background:#1f63cc;
+}
+.container{
+  max-width:900px;margin:auto;
 }
 .entry{
   background:#111;padding:16px;border-radius:12px;margin-top:16px;
 }
-.entry small{color:#999;}
+.entry small{color:#aaa;}
+
+.filterBox{
+  background:#111;padding:16px;border-radius:12px;margin-top:20px;
+}
 </style>
 </head>
 
 <body>
 
-<h2>Candidate Call Entry</h2>
+<div class="container">
 
+<h2>Add Candidate Entry</h2>
 <input id="name" placeholder="Candidate Name">
 <input id="number" placeholder="Candidate Number">
 <input id="age" placeholder="Age">
+<input id="exp" placeholder="Total Experience (Years)">
 <input id="loc" placeholder="Location">
 <input id="ctc" placeholder="Current CTC">
 <input id="comp" placeholder="Current Company">
-<input id="channel" placeholder="Channel">
+
+<select id="channel">
+  <option value="">Select Channel</option>
+  <option>Banca</option>
+  <option>Agency</option>
+  <option>Direct</option>
+  <option>Tele calling</option>
+</select>
+
 <input id="remarks" placeholder="Remarks">
 
-<button onclick="saveData()">Submit</button>
+<button id="submitBtn" onclick="saveData()">Submit Entry</button>
 
-<h2 style="margin-top:30px;">Your Entries</h2>
+
+<h2>Filters</h2>
+<div class="filterBox">
+
+<input id="filterName" placeholder="Filter by Name">
+<input id="filterNumber" placeholder="Filter by Number">
+<input id="filterCompany" placeholder="Filter by Company">
+<input id="filterRemark" placeholder="Filter by Remark">
+
+<select id="filterChannel">
+  <option value="">Filter by Channel</option>
+  <option>Banca</option>
+  <option>Agency</option>
+  <option>Direct</option>
+  <option>Tele calling</option>
+</select>
+
+<select id="filterLocation">
+  <option value="">Filter by Location (Auto)</option>
+</select>
+
+<input id="minAge" placeholder="Min Age">
+<input id="maxAge" placeholder="Max Age">
+
+<input id="minCTC" placeholder="Min CTC">
+<input id="maxCTC" placeholder="Max CTC">
+
+<input id="dateStart" type="date">
+<input id="dateEnd" type="date">
+
+<button onclick="applyFilters()">Apply Filters</button>
+<button onclick="resetFilters()">Reset</button>
+</div>
+
+<h2>Your Entries</h2>
 <div id="logs"></div>
+
+</div>
 
 <script type="module">
 import { auth, db } from "./firebase.js";
@@ -45,58 +107,156 @@ import {
   addDoc, collection, query, where, onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
+let all = [];
+let empID = localStorage.getItem("empID");
+
+// ============ SAVE ENTRY ===============
 async function saveData(){
-  let uid = auth.currentUser.uid;
+  const btn = document.getElementById("submitBtn");
+
+  if(!number.value || number.value.length !== 10){
+    alert("Enter a valid 10 digit number");
+    return;
+  }
+
+  btn.innerText = "Saving...";
+  btn.disabled = true;
 
   await addDoc(collection(db,"callLogs"),{
-    uid,
+    empID,
     ts: new Date().toISOString(),
-    name: name.value,
+    name: name.value || "",
     number: number.value,
-    age: age.value,
-    loc: loc.value,
-    ctc: ctc.value,
-    comp: comp.value,
-    channel: channel.value,
-    remarks: remarks.value
+    age: age.value || "",
+    exp: exp.value || "",
+    loc: loc.value || "",
+    ctc: ctc.value || "",
+    comp: comp.value || "",
+    channel: channel.value || "",
+    remarks: remarks.value || ""
   });
+
+  btn.innerText = "Submit Entry";
+  btn.disabled = false;
+
+  name.value = "";
+  number.value = "";
+  age.value = "";
+  exp.value = "";
+  loc.value = "";
+  ctc.value = "";
+  comp.value = "";
+  channel.value = "";
+  remarks.value = "";
 
   alert("Entry Saved");
-  load();
 }
 
-function load(){
-  let uid = auth.currentUser.uid;
+// ============ FETCH ONLY OWN ENTRIES ===============
+const q = query(collection(db,"callLogs"), where("empID","==",empID));
 
-  let q = query(collection(db,"callLogs"), where("uid","==",uid));
+onSnapshot(q,(snap)=>{
+  all = [];
+  snap.forEach(doc => all.push(doc.data()));
 
-  onSnapshot(q,(snap)=>{
-    let logs=document.getElementById("logs");
-    logs.innerHTML="";
+  autoFilters();
+  render(all);
+});
 
-    snap.forEach(doc=>{
-      let d=doc.data();
-      logs.innerHTML+=`
-        <div class="entry">
-          <small>${new Date(d.ts).toLocaleString()}</small><br>
-          <b>${d.name}</b><br>
-          ${d.number}<br>
-          ${d.age}, ${d.loc}<br>
-          CTC: ${d.ctc}<br>
-          ${d.comp}<br>
-          Channel: ${d.channel}<br>
-          Remarks: ${d.remarks}
-        </div>
-      `;
-    });
+// ============ AUTO FILTER OPTIONS ===============
+function autoFilters(){
+  let locations = [...new Set(all.map(e=>e.loc).filter(e=>e))];
 
+  filterLocation.innerHTML = `<option value="">Filter by Location</option>`;
+  locations.forEach(l=> filterLocation.innerHTML += `<option>${l}</option>`);
+}
+
+// ============ APPLY FILTERS ===============
+function applyFilters(){
+  let data = all;
+
+  if(filterName.value)
+    data = data.filter(d => d.name.toLowerCase().includes(filterName.value.toLowerCase()));
+
+  if(filterNumber.value)
+    data = data.filter(d => d.number.includes(filterNumber.value));
+
+  if(filterCompany.value)
+    data = data.filter(d => d.comp.toLowerCase().includes(filterCompany.value.toLowerCase()));
+
+  if(filterRemark.value)
+    data = data.filter(d => d.remarks.toLowerCase().includes(filterRemark.value.toLowerCase()));
+
+  if(filterChannel.value)
+    data = data.filter(d => d.channel === filterChannel.value);
+
+  if(filterLocation.value)
+    data = data.filter(d => d.loc === filterLocation.value);
+
+  if(minAge.value)
+    data = data.filter(d => d.age >= Number(minAge.value));
+
+  if(maxAge.value)
+    data = data.filter(d => d.age <= Number(maxAge.value));
+
+  if(minCTC.value)
+    data = data.filter(d => d.ctc >= Number(minCTC.value));
+
+  if(maxCTC.value)
+    data = data.filter(d => d.ctc <= Number(maxCTC.value));
+
+  if(dateStart.value)
+    data = data.filter(d => new Date(d.ts) >= new Date(dateStart.value));
+
+  if(dateEnd.value)
+    data = data.filter(d => new Date(d.ts) <= new Date(dateEnd.value));
+
+  render(data);
+}
+
+// ============ RESET FILTERS ===============
+function resetFilters(){
+  filterName.value="";
+  filterNumber.value="";
+  filterCompany.value="";
+  filterRemark.value="";
+  filterChannel.value="";
+  filterLocation.value="";
+  minAge.value="";
+  maxAge.value="";
+  minCTC.value="";
+  maxCTC.value="";
+  dateStart.value="";
+  dateEnd.value="";
+
+  render(all);
+}
+
+// ============ RENDER ENTRIES ===============
+function render(list){
+  logs.innerHTML = "";
+  list.forEach(d=>{
+    logs.innerHTML += `
+      <div class="entry">
+        <small>${new Date(d.ts).toLocaleString()}</small><br>
+        <b>${d.name}</b><br>
+        Number: ${d.number}<br>
+        Age: ${d.age}<br>
+        Experience: ${d.exp}<br>
+        Location: ${d.loc}<br>
+        CTC: ${d.ctc}<br>
+        Company: ${d.comp}<br>
+        Channel: ${d.channel}<br>
+        Remarks: ${d.remarks}
+      </div>
+    `;
   });
 }
 
-auth.onAuthStateChanged((u)=>{
-  if(!u) window.location="login.html";
-  else load();
-});
+window.applyFilters = applyFilters;
+window.resetFilters = resetFilters;
+window.saveData = saveData;
+
 </script>
 
 </body>
