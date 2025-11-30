@@ -3,81 +3,84 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-<title>Admin Panel</title>
+<title>Recruita Admin Panel</title>
 
 <style>
 body {
-  background:#0b0b0c;
-  color:white;
-  font-family:Inter, sans-serif;
-  margin:0;
-  padding:20px;
+    background:#0b0b0c;
+    color:white;
+    font-family:Inter, sans-serif;
+    margin:0;
+    padding:20px;
 }
+.light { background:#f2f2f2; color:#222; }
 
 .topBar {
-  display:flex;
-  justify-content:flex-end;
-  gap:12px;
-  margin-bottom:20px;
+    display:flex;
+    justify-content:flex-end;
+    gap:12px;
+    margin-bottom:20px;
 }
 
 button {
-  padding:10px 18px;
-  border:none;
-  border-radius:6px;
-  cursor:pointer;
-  font-weight:600;
+    padding:10px 18px;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+    font-weight:600;
 }
-
 .blueBtn { background:#2B7FFF; color:white; }
-.redBtn { background:#d9534f; color:white; }
+.redBtn { background:#e74c3c; color:white; }
 .greyBtn { background:#555; color:white; }
 
-.themeBtn { background:#444; color:white; }
-
 table {
-  width:100%;
-  border-collapse:collapse;
-  margin-top:15px;
-  font-size:15px;
+    width:100%;
+    border-collapse:collapse;
+    margin-top:15px;
 }
-
 th, td {
-  border:1px solid #333;
-  padding:10px;
-  text-align:left;
+    padding:10px;
+    border:1px solid #333;
 }
+.light th, .light td { border:1px solid #ccc; }
 
 input, select {
-  width:100%;
-  padding:12px;
-  margin-top:10px;
-  background:#111;
-  color:white;
-  border-radius:8px;
-  border:none;
+    width:100%;
+    padding:12px;
+    background:#111;
+    color:white;
+    border-radius:8px;
+    border:none;
+    margin-top:8px;
+}
+.light input, .light select {
+    background:white;
+    color:#222;
+    border:1px solid #ccc;
 }
 
 .editInput {
-  background:#222;
-  color:white;
-  padding:6px;
-  border-radius:6px;
-  width:100%;
+    background:#222;
+    color:white;
+    padding:6px;
+    border-radius:6px;
+    width:100%;
+}
+.light .editInput { background:#fff; color:black; }
+
+td button {
+    padding:6px 12px;
+    font-size:14px;
 }
 
-.dark { background:#0b0b0c; color:white; }
-.light { background:#f2f2f2; color:black; }
-.light input, .light select { background:white; color:black; }
-.light table, .light th, .light td { border-color:#ccc; }
 </style>
 </head>
 
 <body>
 
 <div class="topBar">
-  <button onclick="toggleTheme()" class="themeBtn">Toggle Theme</button>
-  <button onclick="logout()" class="redBtn">Logout</button>
+    <button onclick="toggleTheme()" class="greyBtn">🌓 Theme</button>
+    <button onclick="logout()" class="redBtn">Logout</button>
 </div>
 
 <h2>Admin Dashboard</h2>
@@ -87,7 +90,7 @@ input, select {
     <tr>
       <th>EmpID</th>
       <th>Today's Count</th>
-      <th>All-Time Count</th>
+      <th>Total Count</th>
     </tr>
   </thead>
   <tbody id="dashBody"></tbody>
@@ -96,19 +99,19 @@ input, select {
 <h2>Add Candidate Entry</h2>
 
 <input id="nameInput" placeholder="Name">
-<input id="numberInput" placeholder="Number (Required)">
+<input id="numberInput" placeholder="Number (10 digits)">
 <input id="ageInput" placeholder="Age">
-<input id="expInput" placeholder="Total Experience (Years)">
+<input id="expInput" placeholder="Total Experience">
 <input id="locInput" placeholder="Location">
 <input id="ctcInput" placeholder="CTC">
 <input id="compInput" placeholder="Current Company">
 
 <select id="channelInput">
-  <option value="">Select Channel</option>
-  <option>Banca</option>
-  <option>Agency</option>
-  <option>Direct</option>
-  <option>Tele calling</option>
+    <option value="">Select Channel</option>
+    <option>Banca</option>
+    <option>Agency</option>
+    <option>Direct</option>
+    <option>Tele calling</option>
 </select>
 
 <input id="remarkInput" placeholder="Remarks">
@@ -116,7 +119,6 @@ input, select {
 <button class="blueBtn" onclick="saveData()">Submit Entry</button>
 
 <h2>All Entries</h2>
-
 <button class="greyBtn" onclick="exportCSV()">Download Full CSV</button>
 
 <table>
@@ -144,214 +146,260 @@ input, select {
 import { auth, db } from "./firebase.js";
 import {
   addDoc, collection, onSnapshot, deleteDoc,
-  updateDoc, doc, getDoc, query, where
+  updateDoc, doc, query, where, getDocs
 } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
 let allData = [];
-let users = {};
-let editingRow = null;
+let adminEmpID = "";
+let adminEmail = "";
+let editingID = null;
+let userMeta = {};
 
-// ---------------------- LOAD USER METADATA ----------------------
+
+// -------------------- Format Timestamp --------------------- //
+function formatTS(d){
+    const pad = n => n.toString().padStart(2,"0");
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} `
+         + `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+
+// -------------------- Load user metadata --------------------- //
 onSnapshot(collection(db,"users"), snap=>{
-  users = {};
-  snap.forEach(d=> users[d.id] = d.data());
+    userMeta = {};
+    snap.forEach(d => userMeta[d.id] = d.data());
 });
 
-// ---------------------- LOAD ENTRIES ----------------------
-onSnapshot(collection(db,"callLogs"), snap=>{
-  allData = [];
-  snap.forEach(d=> allData.push({ id:d.id, ...d.data() }));
-  renderTable();
-  renderDashboard();
+
+// -------------------- Auth Check --------------------- //
+auth.onAuthStateChanged(async user=>{
+    if(!user){ location.href="login.html"; return; }
+
+    adminEmail = user.email;
+
+    let q = query(collection(db,"users"), where("email","==", user.email));
+    let snap = await getDocs(q);
+    snap.forEach(d => adminEmpID = d.data().empID);
+
+    loadAllEntries();
 });
 
-// ---------------------- SAVE ENTRY ----------------------
+
+// -------------------- Load Entries --------------------- //
+function loadAllEntries(){
+    onSnapshot(collection(db,"callLogs"), snap=>{
+        allData = [];
+        snap.forEach(d=> allData.push({ id:d.id, ...d.data() }));
+        renderTable();
+        renderDashboard();
+    });
+}
+
+
+// ---------------------- Save Data --------------------- //
 async function saveData(){
-  let num = numberInput.value.trim();
-  if(num.length !== 10){ alert("Enter valid 10-digit number"); return; }
 
-  let uid = auth.currentUser.uid;
-  let meta = users[uid] || {};
-  let empID = meta.empID || "Unknown";
+    let num = numberInput.value.trim();
+    if(num.length !== 10){
+        alert("Enter valid 10 digit number");
+        return;
+    }
 
-  await addDoc(collection(db,"callLogs"),{
-    uid,
-    empID,
-    ts: new Date().toISOString(),
-    name: nameInput.value,
-    number: num,
-    age: ageInput.value,
-    exp: expInput.value,
-    loc: locInput.value,
-    ctc: ctcInput.value,
-    comp: compInput.value,
-    channel: channelInput.value,
-    remarks: remarkInput.value
-  });
+    // duplicate check (self only)
+    let duplicate = allData.find(e => e.number === num && e.empID === adminEmpID);
+    if(duplicate){
+        let ok = confirm("This number already exists in your entries. Do you still want to add?");
+        if(!ok) return;
+    }
 
-  clearForm();
-  alert("Entry Added");
+    await addDoc(collection(db,"callLogs"),{
+        ts: formatTS(new Date()),
+        empID: adminEmpID,
+        email: adminEmail,
+
+        name: nameInput.value || "",
+        number: num,
+        age: ageInput.value || "",
+        exp: expInput.value || "",
+        loc: locInput.value || "",
+        ctc: ctcInput.value || "",
+        comp: compInput.value || "",
+        channel: channelInput.value || "",
+        remarks: remarkInput.value || ""
+    });
+
+    clearForm();
+    alert("Entry Saved");
 }
 
 function clearForm(){
-  nameInput.value = "";
-  numberInput.value = "";
-  ageInput.value = "";
-  expInput.value = "";
-  locInput.value = "";
-  ctcInput.value = "";
-  compInput.value = "";
-  channelInput.value = "";
-  remarkInput.value = "";
+    nameInput.value="";
+    numberInput.value="";
+    ageInput.value="";
+    expInput.value="";
+    locInput.value="";
+    ctcInput.value="";
+    compInput.value="";
+    channelInput.value="";
+    remarkInput.value="";
 }
 
-// --------------------- RENDER TABLE -----------------------
-function renderTable(){
-  listBody.innerHTML = "";
 
-  allData.forEach(d=>{
-    let row = document.createElement("tr");
-
-    if(editingRow === d.id){
-      row.innerHTML = `
-        <td>${new Date(d.ts).toLocaleString()}</td>
-        <td>${d.empID}</td>
-        <td><input class="editInput" id="edit_name" value="${d.name}"></td>
-        <td><input class="editInput" id="edit_number" value="${d.number}"></td>
-        <td><input class="editInput" id="edit_age" value="${d.age}"></td>
-        <td><input class="editInput" id="edit_exp" value="${d.exp}"></td>
-        <td><input class="editInput" id="edit_loc" value="${d.loc}"></td>
-        <td><input class="editInput" id="edit_ctc" value="${d.ctc}"></td>
-        <td><input class="editInput" id="edit_comp" value="${d.comp}"></td>
-        <td><input class="editInput" id="edit_channel" value="${d.channel}"></td>
-        <td><input class="editInput" id="edit_remarks" value="${d.remarks}"></td>
-        <td><button class="blueBtn" onclick="saveEdit('${d.id}')">Save</button></td>
-        <td><button class="greyBtn" onclick="cancelEdit()">Cancel</button></td>
-      `;
-    } else {
-      row.innerHTML = `
-        <td>${new Date(d.ts).toLocaleString()}</td>
-        <td>${d.empID}</td>
-        <td>${d.name}</td>
-        <td>${d.number}</td>
-        <td>${d.age}</td>
-        <td>${d.exp}</td>
-        <td>${d.loc}</td>
-        <td>${d.ctc}</td>
-        <td>${d.comp}</td>
-        <td>${d.channel}</td>
-        <td>${d.remarks}</td>
-        <td><button class="blueBtn" onclick="startEdit('${d.id}')">Edit</button></td>
-        <td><button class="redBtn" onclick="deleteEntry('${d.id}')">Delete</button></td>
-      `;
-    }
-
-    listBody.appendChild(row);
-  });
-}
-
-// ---------------------- START EDIT ----------------------
-function startEdit(id){
-  editingRow = id;
-  renderTable();
-}
-
-// ---------------------- CANCEL EDIT ----------------------
-function cancelEdit(){
-  editingRow = null;
-  renderTable();
-}
-
-// ---------------------- SAVE EDIT ----------------------
-async function saveEdit(id){
-  let ref = doc(db, "callLogs", id);
-
-  await updateDoc(ref,{
-    name: edit_name.value,
-    number: edit_number.value,
-    age: edit_age.value,
-    exp: edit_exp.value,
-    loc: edit_loc.value,
-    ctc: edit_ctc.value,
-    comp: edit_comp.value,
-    channel: edit_channel.value,
-    remarks: edit_remarks.value
-  });
-
-  editingRow = null;
-  alert("Updated Successfully");
-  renderTable();
-}
-
-// ---------------------- DELETE ENTRY ----------------------
-async function deleteEntry(id){
-  if(!confirm("Delete this entry?")) return;
-  await deleteDoc(doc(db,"callLogs",id));
-}
-
-// ---------------------- DASHBOARD ----------------------
+// ---------------------- Render Dashboard --------------------- //
 function renderDashboard(){
-  dashBody.innerHTML = "";
+    dashBody.innerHTML = "";
 
-  let map = {};
+    let map = {};
 
-  allData.forEach(d=>{
-    if(!map[d.empID]) map[d.empID] = { today:0, total:0 };
+    allData.forEach(d=>{
+        if(!map[d.empID]) map[d.empID] = { today:0, total:0 };
 
-    let dDate = new Date(d.ts).toDateString();
-    let now = new Date().toDateString();
+        let today = new Date().toDateString();
+        let day = new Date(d.ts).toDateString();
 
-    if(dDate === now) map[d.empID].today++;
-    map[d.empID].total++;
-  });
+        if(today === day) map[d.empID].today++;
+        map[d.empID].total++;
+    });
 
-  Object.keys(map).forEach(e=>{
-    dashBody.innerHTML += `
-      <tr>
-        <td>${e}</td>
-        <td>${map[e].today}</td>
-        <td>${map[e].total}</td>
-      </tr>
-    `;
-  });
+    Object.keys(map).forEach(id=>{
+        dashBody.innerHTML += `
+            <tr>
+                <td>${id}</td>
+                <td>${map[id].today}</td>
+                <td>${map[id].total}</td>
+            </tr>
+        `;
+    });
 }
 
-// ---------------------- EXPORT CSV ----------------------
+
+// ---------------------- Render Table --------------------- //
+function renderTable(){
+    listBody.innerHTML = "";
+
+    allData.forEach(d=>{
+        let row = document.createElement("tr");
+
+        if(editingID === d.id){
+            row.innerHTML = `
+                <td>${d.ts}</td>
+                <td>${d.empID}</td>
+
+                <td><input class="editInput" id="edit_name" value="${d.name}"></td>
+                <td><input class="editInput" id="edit_number" value="${d.number}"></td>
+                <td><input class="editInput" id="edit_age" value="${d.age}"></td>
+                <td><input class="editInput" id="edit_exp" value="${d.exp}"></td>
+                <td><input class="editInput" id="edit_loc" value="${d.loc}"></td>
+                <td><input class="editInput" id="edit_ctc" value="${d.ctc}"></td>
+                <td><input class="editInput" id="edit_comp" value="${d.comp}"></td>
+                <td><input class="editInput" id="edit_channel" value="${d.channel}"></td>
+                <td><input class="editInput" id="edit_remarks" value="${d.remarks}"></td>
+
+                <td><button class="blueBtn" onclick="saveEdit('${d.id}')">Save</button></td>
+                <td><button class="greyBtn" onclick="cancelEdit()">Cancel</button></td>
+            `;
+        } else {
+            row.innerHTML = `
+                <td>${d.ts}</td>
+                <td>${d.empID}</td>
+                <td>${d.name}</td>
+                <td>${d.number}</td>
+                <td>${d.age}</td>
+                <td>${d.exp}</td>
+                <td>${d.loc}</td>
+                <td>${d.ctc}</td>
+                <td>${d.comp}</td>
+                <td>${d.channel}</td>
+                <td>${d.remarks}</td>
+
+                <td><button class="blueBtn" onclick="startEdit('${d.id}')">Edit</button></td>
+                <td><button class="redBtn" onclick="deleteEntry('${d.id}')">Delete</button></td>
+            `;
+        }
+
+        listBody.appendChild(row);
+    });
+}
+
+
+// ---------------------- Edit Entry --------------------- //
+function startEdit(id){
+    editingID = id;
+    renderTable();
+}
+
+function cancelEdit(){
+    editingID = null;
+    renderTable();
+}
+
+async function saveEdit(id){
+    let ref = doc(db,"callLogs", id);
+
+    await updateDoc(ref, {
+        name: edit_name.value,
+        number: edit_number.value,
+        age: edit_age.value,
+        exp: edit_exp.value,
+        loc: edit_loc.value,
+        ctc: edit_ctc.value,
+        comp: edit_comp.value,
+        channel: edit_channel.value,
+        remarks: edit_remarks.value
+    });
+
+    editingID = null;
+    alert("Updated Successfully");
+    renderTable();
+}
+
+
+// ---------------------- Delete --------------------- //
+async function deleteEntry(id){
+    if(!confirm("Delete this entry?")) return;
+    await deleteDoc(doc(db,"callLogs",id));
+}
+
+
+// ---------------------- Export CSV --------------------- //
 function exportCSV(){
-  let csv = "Time,EmpID,Name,Number,Age,Experience,Location,CTC,Company,Channel,Remarks\n";
+    let csv = "Time,EmpID,Name,Number,Age,Experience,Location,CTC,Company,Channel,Remarks\n";
 
-  allData.forEach(d=>{
-    csv += `${d.ts},${d.empID},${d.name},${d.number},${d.age},${d.exp},${d.loc},${d.ctc},${d.comp},${d.channel},${d.remarks}\n`;
-  });
+    allData.forEach(d=>{
+        csv += `${d.ts},${d.empID},${d.name},${d.number},${d.age},${d.exp},${d.loc},${d.ctc},${d.comp},${d.channel},${d.remarks}\n`;
+    });
 
-  let blob = new Blob([csv],{ type:"text/csv" });
-  let a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "Full_Data.csv";
-  a.click();
+    let blob = new Blob([csv],{ type:"text/csv" });
+    let a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "Recruita_Full_Data.csv";
+    a.click();
 }
 
-// ---------------------- LOGOUT ----------------------
+
+// ---------------------- Logout --------------------- //
 function logout(){
-  auth.signOut();
-  window.location = "login.html";
+    auth.signOut();
+    location.href="login.html";
 }
 
-// ---------------------- THEME TOGGLE ----------------------
+
+// ---------------------- Theme Toggle --------------------- //
 function toggleTheme(){
-  document.body.classList.toggle("light");
+    document.body.classList.toggle("light");
 }
 
-// EXPOSE GLOBALS
+
+// Expose globals
 window.saveData = saveData;
 window.startEdit = startEdit;
-window.cancelEdit = cancelEdit;
 window.saveEdit = saveEdit;
+window.cancelEdit = cancelEdit;
 window.deleteEntry = deleteEntry;
 window.exportCSV = exportCSV;
 window.logout = logout;
 window.toggleTheme = toggleTheme;
-
 </script>
+
 </body>
 </html>
