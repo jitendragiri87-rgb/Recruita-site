@@ -1,56 +1,121 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Recruiter Panel</title>
 
 <style>
+:root {
+  --bg:#0b0b0c;
+  --card:#111;
+  --text:#fff;
+  --text-light:#ccc;
+  --btn:#2B7FFF;
+  --table-border:#444;
+}
+
+.light {
+  --bg:#f5f5f5;
+  --card:#fff;
+  --text:#000;
+  --text-light:#444;
+  --btn:#0066ff;
+  --table-border:#ddd;
+}
+
 body{
-  background:#0b0b0c;color:white;font-family:Inter;padding:20px;
+  background:var(--bg);
+  color:var(--text);
+  font-family:Inter, sans-serif;
+  padding:20px;
 }
-h2{margin-top:25px;margin-bottom:10px;}
+
+.container{
+  max-width:1100px;
+  margin:auto;
+}
+
+h2{
+  margin-top:25px;
+  margin-bottom:12px;
+}
+
 input, select{
-  width:100%;padding:12px;border-radius:8px;border:none;margin-top:10px;
-  background:#1a1a1a;color:white;
+  width:100%;
+  padding:12px;
+  border-radius:8px;
+  border:none;
+  margin-top:10px;
+  background:#1a1a1a;
+  color:white;
 }
+
 button{
-  width:100%;padding:14px;background:#2B7FFF;border:none;border-radius:10px;
-  margin-top:20px;font-size:17px;color:white;font-weight:600;
-  transition:0.2s;
+  padding:12px 20px;
+  background:var(--btn);
+  border:none;
+  border-radius:8px;
+  margin-top:16px;
+  font-weight:600;
+  color:white;
+  cursor:pointer;
 }
+
 button:active{
   transform:scale(0.97);
-  background:#1f63cc;
 }
-.container{
-  max-width:1000px;margin:auto;
+
+.tableBox{
+  overflow-x:auto;
+  margin-top:20px;
 }
-.tableWrap{
-  background:#111;padding:16px;border-radius:12px;margin-top:20px;overflow-x:auto;
-}
+
 table{
-  width:100%;border-collapse:collapse;margin-top:10px;font-size:14px;
+  width:100%;
+  border-collapse:collapse;
 }
-th,td{
-  border:1px solid #333;padding:10px;text-align:left;
+
+th, td{
+  border:1px solid var(--table-border);
+  padding:10px;
+  text-align:left;
 }
+
 th{
-  background:#1d1d1d;color:#2B7FFF;font-weight:700;
+  background:var(--card);
+  color:var(--btn);
 }
+
+.topBar{
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+  margin-bottom:20px;
+}
+
 .filterBox{
-  background:#111;padding:16px;border-radius:12px;margin-top:20px;
+  background:var(--card);
+  padding:16px;
+  border-radius:12px;
+  margin-top:20px;
 }
 </style>
-</head>
 
+</head>
 <body>
 
 <div class="container">
 
-<!-- ===================== DASHBOARD ======================= -->
-<h2>Your Dashboard</h2>
-<div class="tableWrap">
+<!-- TOP BUTTONS -->
+<div class="topBar">
+  <button id="themeBtn">🌓 Theme</button>
+  <button id="logoutBtn">Logout</button>
+</div>
+
+<!-- DASHBOARD -->
+<h2>Your Performance</h2>
+<div class="tableBox">
   <table>
     <thead>
       <tr>
@@ -63,13 +128,13 @@ th{
   </table>
 </div>
 
-<!-- ===================== ENTRY FORM ======================= -->
+<!-- ENTRY FORM -->
 <h2>Add Candidate Entry</h2>
 
 <input id="name" placeholder="Candidate Name">
 <input id="number" placeholder="Candidate Number (10 digits)">
 <input id="age" placeholder="Age">
-<input id="experienceYears" placeholder="Total Experience (Years)">
+<input id="expYears" placeholder="Total Experience (Years)">
 <input id="loc" placeholder="Location">
 <input id="ctc" placeholder="Current CTC">
 <input id="comp" placeholder="Current Company">
@@ -84,9 +149,9 @@ th{
 
 <input id="remarks" placeholder="Remarks">
 
-<button id="submitBtn" onclick="saveData()">Submit Entry</button>
+<button id="saveBtn">Submit Entry</button>
 
-<!-- ===================== FILTERS ======================= -->
+<!-- FILTERS -->
 <h2>Filters</h2>
 <div class="filterBox">
 
@@ -118,21 +183,21 @@ th{
 
 <button onclick="applyFilters()">Apply Filters</button>
 <button onclick="resetFilters()">Reset</button>
-
 </div>
 
-<!-- ===================== ENTRIES TABLE ======================= -->
+<!-- TABLE -->
 <h2>Your Entries</h2>
+<button id="csvBtn">Download CSV (Only Your Data)</button>
 
-<div class="tableWrap">
-  <table>
+<div class="tableBox">
+  <table id="entryTable">
     <thead>
       <tr>
         <th>Timestamp</th>
         <th>Name</th>
         <th>Number</th>
         <th>Age</th>
-        <th>Experience Years</th>
+        <th>Experience</th>
         <th>Location</th>
         <th>CTC</th>
         <th>Company</th>
@@ -140,84 +205,58 @@ th{
         <th>Remarks</th>
       </tr>
     </thead>
-    <tbody id="logs"></tbody>
+    <tbody id="dataBody"></tbody>
   </table>
 </div>
 
 </div>
 
-
 <script type="module">
-import { auth, db } from "./firebase.js";
+import { auth, db, getUserInfo } from "./firebase.js";
 import {
-  addDoc, collection, query, where, onSnapshot, doc, getDoc
+  collection, query, where, addDoc, onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
-let all = [];
-let empID = localStorage.getItem("empID");
+let empID = "";
+let email = "";
+let uid = "";
+let ALL = [];
 
-// ===================== SAVE ENTRY =======================
-async function saveData(){
+// AUTH CHECK
+auth.onAuthStateChanged(async user=>{
+  if(!user) location.href="login.html";
 
-  if(!number.value || number.value.length !== 10){
-    alert("Enter 10 digit valid number");
-    return;
-  }
+  const info = await getUserInfo();
+  if(!info || info.role!=="recruiter") location.href="login.html";
 
-  let btn = document.getElementById("submitBtn");
-  btn.innerText = "Saving...";
-  btn.disabled = true;
+  empID = info.empID;
+  email = info.email;
+  uid = info.uid;
 
-  await addDoc(collection(db,"callLogs"),{
-    loginID: empID,
-    ts: new Date().toISOString(),
-    name: name.value || "",
-    number: number.value,
-    age: age.value || "",
-    experienceYears: experienceYears.value || "",
-    loc: loc.value || "",
-    ctc: ctc.value || "",
-    comp: comp.value || "",
-    channel: channel.value || "",
-    remarks: remarks.value || ""
-  });
-
-  // Clear fields
-  name.value = "";
-  number.value = "";
-  age.value = "";
-  experienceYears.value = "";
-  loc.value = "";
-  ctc.value = "";
-  comp.value = "";
-  channel.value = "";
-  remarks.value = "";
-
-  btn.innerText = "Submit Entry";
-  btn.disabled = false;
-
-  alert("Entry Saved");
-}
-
-// ===================== FETCH ONLY OWN ENTRIES =======================
-const q = query(collection(db,"callLogs"), where("loginID","==",empID));
-
-onSnapshot(q,(snap)=>{
-  all = [];
-  snap.forEach(doc => all.push(doc.data()));
-  fillAuto();
-  renderTable(all);
-  buildDashboard();
+  loadData();
 });
 
-// ===================== DASHBOARD =======================
+// LOAD OWN DATA ONLY
+function loadData(){
+  const q = query(collection(db,"callLogs"), where("empID","==",empID));
+
+  onSnapshot(q, snap=>{
+    ALL = [];
+    snap.forEach(d=> ALL.push(d.data()));
+    buildDashboard();
+    fillFilters();
+    render(ALL);
+  });
+}
+
+// DASHBOARD
 function buildDashboard(){
   let today = new Date().toISOString().slice(0,10);
 
-  let todayCount = all.filter(e=>e.ts.slice(0,10) === today).length;
-  let totalCount = all.length;
+  let todayCount = ALL.filter(e=>e.ts.slice(0,10)==today).length;
+  let totalCount = ALL.length;
 
-  document.getElementById("dashBody").innerHTML = `
+  dashBody.innerHTML = `
     <tr>
       <td>${empID}</td>
       <td>${todayCount}</td>
@@ -226,55 +265,91 @@ function buildDashboard(){
   `;
 }
 
-// ===================== AUTO FILTERS =======================
-function fillAuto(){
-  let locations = [...new Set(all.map(e=>e.loc).filter(e=>e))];
+// SAVE ENTRY
+document.getElementById("saveBtn").onclick = async()=>{
 
+  let num = number.value.trim();
+  if(num.length!==10){
+    alert("10 digit number required");
+    return;
+  }
+
+  // Duplicate check only if same recruiter already entered
+  let duplicate = ALL.find(e=> e.number===num);
+  if(duplicate){
+    let ok = confirm("Duplicate entry found for this number. Still want to add?");
+    if(!ok) return;
+  }
+
+  await addDoc(collection(db,"callLogs"),{
+    ts:new Date().toISOString(),
+    uid,
+    email,
+    empID,
+    name:name.value,
+    number:num,
+    age:age.value || "",
+    expYears:expYears.value || "",
+    loc:loc.value || "",
+    ctc:ctc.value || "",
+    comp:comp.value || "",
+    channel:channel.value || "",
+    remarks:remarks.value || ""
+  });
+
+  alert("Entry Saved");
+
+  name.value = number.value = age.value = expYears.value = loc.value =
+  ctc.value = comp.value = channel.value = remarks.value = "";
+};
+
+// FILTERS
+function fillFilters(){
+  let locs = [...new Set(ALL.map(e=>e.loc).filter(x=>x))];
   filterLocation.innerHTML = `<option value="">Filter by Location</option>`;
-  locations.forEach(l=> filterLocation.innerHTML += `<option>${l}</option>`);
+  locs.forEach(l=> filterLocation.innerHTML += `<option>${l}</option>`);
 }
 
-// ===================== FILTER APPLY =======================
 function applyFilters(){
-  let data = all;
+  let data = ALL;
 
   if(filterName.value)
-    data = data.filter(d => d.name.toLowerCase().includes(filterName.value.toLowerCase()));
+    data = data.filter(d=> d.name.toLowerCase().includes(filterName.value.toLowerCase()));
 
   if(filterNumber.value)
-    data = data.filter(d => d.number.includes(filterNumber.value));
+    data = data.filter(d=> d.number.includes(filterNumber.value));
 
   if(filterCompany.value)
-    data = data.filter(d => d.comp.toLowerCase().includes(filterCompany.value.toLowerCase()));
+    data = data.filter(d=> d.comp.toLowerCase().includes(filterCompany.value.toLowerCase()));
 
   if(filterRemark.value)
-    data = data.filter(d => d.remarks.toLowerCase().includes(filterRemark.value.toLowerCase()));
+    data = data.filter(d=> d.remarks.toLowerCase().includes(filterRemark.value.toLowerCase()));
 
   if(filterChannel.value)
-    data = data.filter(d => d.channel === filterChannel.value);
+    data = data.filter(d=> d.channel===filterChannel.value);
 
   if(filterLocation.value)
-    data = data.filter(d => d.loc === filterLocation.value);
+    data = data.filter(d=> d.loc===filterLocation.value);
 
   if(minAge.value)
-    data = data.filter(d => Number(d.age) >= Number(minAge.value));
+    data = data.filter(d=> Number(d.age)>=Number(minAge.value));
 
   if(maxAge.value)
-    data = data.filter(d => Number(d.age) <= Number(maxAge.value));
+    data = data.filter(d=> Number(d.age)<=Number(maxAge.value));
 
   if(minCTC.value)
-    data = data.filter(d => Number(d.ctc) >= Number(minCTC.value));
+    data = data.filter(d=> Number(d.ctc)>=Number(minCTC.value));
 
   if(maxCTC.value)
-    data = data.filter(d => Number(d.ctc) <= Number(maxCTC.value));
+    data = data.filter(d=> Number(d.ctc)<=Number(maxCTC.value));
 
   if(dateStart.value)
-    data = data.filter(d => new Date(d.ts) >= new Date(dateStart.value));
+    data = data.filter(d=> new Date(d.ts)>=new Date(dateStart.value));
 
   if(dateEnd.value)
-    data = data.filter(d => new Date(d.ts) <= new Date(dateEnd.value));
+    data = data.filter(d=> new Date(d.ts)<=new Date(dateEnd.value));
 
-  renderTable(data);
+  render(data);
 }
 
 function resetFilters(){
@@ -290,23 +365,20 @@ function resetFilters(){
   maxCTC.value="";
   dateStart.value="";
   dateEnd.value="";
-
-  renderTable(all);
+  render(ALL);
 }
 
-// ===================== RENDER TABLE =======================
-function renderTable(list){
-  let logs = document.getElementById("logs");
-  logs.innerHTML = "";
-
+// RENDER TABLE
+function render(list){
+  dataBody.innerHTML = "";
   list.forEach(d=>{
-    logs.innerHTML += `
+    dataBody.innerHTML += `
       <tr>
         <td>${new Date(d.ts).toLocaleString()}</td>
         <td>${d.name}</td>
         <td>${d.number}</td>
         <td>${d.age}</td>
-        <td>${d.experienceYears}</td>
+        <td>${d.expYears}</td>
         <td>${d.loc}</td>
         <td>${d.ctc}</td>
         <td>${d.comp}</td>
@@ -316,6 +388,41 @@ function renderTable(list){
     `;
   });
 }
+
+// CSV EXPORT
+csvBtn.onclick = ()=>{
+  let csv = "Timestamp,Name,Number,Age,ExpYears,Location,CTC,Company,Channel,Remarks\n";
+
+  ALL.forEach(e=>{
+    csv += `${e.ts},${e.name},${e.number},${e.age},${e.expYears},${e.loc},${e.ctc},${e.comp},${e.channel},${e.remarks}\n`;
+  });
+
+  let blob = new Blob([csv],{type:"text/csv"});
+  let a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `${empID}_Recruiter_Data.csv`;
+  a.click();
+};
+
+// THEME MODE
+let theme = localStorage.getItem("theme") || "dark";
+applyTheme(theme);
+
+document.getElementById("themeBtn").onclick = ()=>{
+  theme = theme==="dark" ? "light" : "dark";
+  applyTheme(theme);
+};
+
+function applyTheme(t){
+  if(t==="light") document.body.classList.add("light");
+  else document.body.classList.remove("light");
+  localStorage.setItem("theme",t);
+}
+
+// LOGOUT
+logoutBtn.onclick = ()=>{
+  auth.signOut();
+};
 
 </script>
 
