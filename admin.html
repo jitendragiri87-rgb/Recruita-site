@@ -1,48 +1,72 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Admin Panel</title>
 
 <style>
-body{
-  background:#0b0b0c;color:white;font-family:Inter;padding:20px;
+:root {
+  --bg: #0b0b0c;
+  --card: #111;
+  --text: #fff;
+  --text-light: #bbb;
+  --btn: #2B7FFF;
+  --table-border: #444;
 }
-h2{margin-top:25px;margin-bottom:10px;}
+
+.light {
+  --bg: #f5f5f5;
+  --card: #fff;
+  --text: #000;
+  --text-light: #555;
+  --btn: #0066ff;
+  --table-border: #ddd;
+}
+
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:Inter, sans-serif;
+  padding:20px;
+}
+
+.container{max-width:1100px; margin:auto;}
+
+h2{margin-top:25px;margin-bottom:12px;}
+
 input, select{
   width:100%;padding:12px;border-radius:8px;border:none;margin-top:10px;
-  background:#1a1a1a;color:white;
 }
+
 button{
-  width:100%;padding:14px;background:#2B7FFF;border:none;border-radius:10px;
-  margin-top:20px;font-size:17px;color:white;font-weight:600;
-  transition:0.2s;
+  padding:10px 20px;background:var(--btn);border:none;border-radius:8px;
+  color:white;font-weight:600;cursor:pointer;
 }
-button:active{
-  transform:scale(0.97);
-  background:#1f63cc;
+
+button:active{transform:scale(0.96);}
+
+.tableBox{
+  width:100%;overflow-x:auto;margin-top:20px;
 }
-.container{
-  max-width:1000px;margin:auto;
-}
-.tableWrap{
-  background:#111;padding:16px;border-radius:12px;margin-top:20px;overflow-x:auto;
-}
+
 table{
-  width:100%;border-collapse:collapse;margin-top:10px;font-size:14px;
+  width:100%;border-collapse:collapse;margin-top:10px;
 }
 th,td{
-  border:1px solid #333;padding:10px;text-align:left;
+  padding:10px;border:1px solid var(--table-border);text-align:left;
 }
-th{
-  background:#1d1d1d;color:#2B7FFF;font-weight:700;
+th{background:var(--card);}
+.entryCard{
+  background:var(--card);padding:20px;border-radius:12px;margin-top:20px;
 }
-.entryTable th, .entryTable td{
-  white-space:nowrap;
+.actionBtn{
+  padding:6px 10px;font-size:13px;border-radius:6px;
 }
-.filterBox{
-  background:#111;padding:16px;border-radius:12px;margin-top:20px;
+.del{background:#d9534f;}
+.edit{background:#5bc0de;}
+.topBar{
+  display:flex;justify-content:flex-end;gap:10px;margin-bottom:20px;
 }
 </style>
 </head>
@@ -51,28 +75,31 @@ th{
 
 <div class="container">
 
-<!-- ===================== DASHBOARD ======================= -->
-<h2>Recruiter Dashboard</h2>
-<div class="tableWrap">
-  <table id="dashTable">
-    <thead>
-      <tr>
-        <th>EmpID</th>
-        <th>Today's Count</th>
-        <th>All-Time Count</th>
-      </tr>
-    </thead>
-    <tbody id="dashBody"></tbody>
-  </table>
+<div class="topBar">
+  <button id="themeBtn">Toggle Theme</button>
+  <button id="logoutBtn">Logout</button>
 </div>
 
-<!-- ===================== ENTRY FORM ======================= -->
+<h2>Recruiter Performance Dashboard</h2>
+<div class="tableBox">
+<table id="dashTable">
+  <thead>
+    <tr>
+      <th>EmpID</th>
+      <th>Today's Count</th>
+      <th>All-Time Count</th>
+    </tr>
+  </thead>
+  <tbody id="dashBody"></tbody>
+</table>
+</div>
+
 <h2>Add Candidate Entry</h2>
 
 <input id="name" placeholder="Candidate Name">
-<input id="number" placeholder="Candidate Number (10 digits)">
+<input id="number" placeholder="Candidate Number">
 <input id="age" placeholder="Age">
-<input id="experienceYears" placeholder="Total Experience (Years)">
+<input id="exp" placeholder="Total Experience">
 <input id="loc" placeholder="Location">
 <input id="ctc" placeholder="Current CTC">
 <input id="comp" placeholder="Current Company">
@@ -87,106 +114,111 @@ th{
 
 <input id="remarks" placeholder="Remarks">
 
-<button id="submitBtn" onclick="saveData()">Submit Entry</button>
+<button id="saveBtn">Submit Entry</button>
 
+<h2>All Entries</h2>
 
-<!-- ===================== FILTERS ======================= -->
-<h2>Filters</h2>
-<div class="filterBox">
+<button id="csvBtn">Download CSV</button>
 
-<input id="filterName" placeholder="Filter by Name">
-<input id="filterNumber" placeholder="Filter by Number">
-<input id="filterCompany" placeholder="Filter by Company">
-<input id="filterRemark" placeholder="Filter by Remark">
-
-<select id="filterChannel">
-  <option value="">Filter by Channel</option>
-  <option>Banca</option>
-  <option>Agency</option>
-  <option>Direct</option>
-  <option>Tele calling</option>
-</select>
-
-<select id="filterLocation">
-  <option value="">Filter by Location</option>
-</select>
-
-<select id="filterRecruiter">
-  <option value="">Filter by Recruiter (EmpID)</option>
-</select>
-
-<input id="minAge" placeholder="Min Age">
-<input id="maxAge" placeholder="Max Age">
-
-<input id="minCTC" placeholder="Min CTC">
-<input id="maxCTC" placeholder="Max CTC">
-
-<input id="dateStart" type="date">
-<input id="dateEnd" type="date">
-
-<button onclick="applyFilters()">Apply Filters</button>
-<button onclick="resetFilters()">Reset</button>
-</div>
-
-<!-- ===================== TABLE ======================= -->
-<h2>All Recruiter Entries</h2>
-<button onclick="downloadCSV()">Download CSV</button>
-
-<div class="tableWrap">
-  <table class="entryTable">
-    <thead>
-      <tr>
-        <th>Timestamp</th>
-        <th>EmpID</th>
-        <th>Name</th>
-        <th>Number</th>
-        <th>Age</th>
-        <th>Experience (Years)</th>
-        <th>Location</th>
-        <th>CTC</th>
-        <th>Company</th>
-        <th>Channel</th>
-        <th>Remarks</th>
-      </tr>
-    </thead>
-    <tbody id="logs"></tbody>
-  </table>
+<div class="tableBox">
+<table id="dataTable">
+  <thead>
+    <tr>
+      <th>Time</th>
+      <th>EmpID</th>
+      <th>Name</th>
+      <th>Number</th>
+      <th>Age</th>
+      <th>Experience</th>
+      <th>Location</th>
+      <th>CTC</th>
+      <th>Company</th>
+      <th>Channel</th>
+      <th>Remarks</th>
+      <th>Edit</th>
+      <th>Delete</th>
+    </tr>
+  </thead>
+  <tbody id="dataBody"></tbody>
+</table>
 </div>
 
 </div>
-
 
 <script type="module">
-import { auth, db } from "./firebase.js";
+import { auth, db, getUserInfo } from "./firebase.js";
 import {
-  addDoc, collection, onSnapshot, doc, getDoc
+  addDoc, collection, onSnapshot, doc, updateDoc, deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
-let all = [];
+// ------------------------ LOGIN CHECK -------------------------
+auth.onAuthStateChanged(async u=>{
+  if(!u) location.href="login.html";
 
-// ===================== SAVE ENTRY =======================
-async function saveData(){
-  let btn = document.getElementById("submitBtn");
+  const info = await getUserInfo();
+  if(!info || info.role!=="admin") location.href="login.html";
 
-  if(!number.value || number.value.length !== 10){
-    alert("Enter a valid 10-digit number");
+  window.empID = info.empID;
+});
+
+// ------------------------ THEME -------------------------
+let theme = localStorage.getItem("theme") || "dark";
+applyTheme(theme);
+
+document.getElementById("themeBtn").onclick = ()=>{
+  theme = theme==="dark" ? "light" : "dark";
+  applyTheme(theme);
+};
+
+function applyTheme(t){
+  if(t==="light") document.body.classList.add("light");
+  else document.body.classList.remove("light");
+  localStorage.setItem("theme",t);
+}
+
+// ------------------------ LOGOUT -------------------------
+document.getElementById("logoutBtn").onclick = ()=>{
+  auth.signOut();
+};
+
+// ------------------------ REALTIME FETCH -------------------------
+let ALL = [];
+
+onSnapshot(collection(db,"callLogs"),(snap)=>{
+  ALL = [];
+  snap.forEach(d=>{
+    ALL.push({ id: d.id, ...d.data() });
+  });
+  renderDashboard();
+  renderTable();
+});
+
+// ------------------------ DUPLICATE CHECK -------------------------
+async function alreadyExists(number){
+  return ALL.some(e=> e.number === number);
+}
+
+// ------------------------ SAVE ENTRY -------------------------
+document.getElementById("saveBtn").onclick = async ()=>{
+
+  let number = numberInput.value.trim();
+  if(number.length!==10){
+    alert("10-digit number required");
     return;
   }
 
-  btn.innerText = "Saving...";
-  btn.disabled = true;
-
-  // fetch empID
-  let userSnap = await getDoc(doc(db, "users", auth.currentUser.uid));
-  let empID = userSnap.data().empID;
+  const duplicate = ALL.find(e=> e.number===number && e.empID!==window.empID);
+  if(duplicate){
+    if(!confirm("Duplicate entry exists by another recruiter. Still add?")) return;
+  }
 
   await addDoc(collection(db,"callLogs"),{
-    loginID: empID,
     ts: new Date().toISOString(),
-    name: name.value || "",
-    number: number.value,
+    empID: window.empID,
+    name: name.value,
+    number,
     age: age.value || "",
-    experienceYears: experienceYears.value || "",
+    exp: exp.value || "",
     loc: loc.value || "",
     ctc: ctc.value || "",
     comp: comp.value || "",
@@ -194,175 +226,88 @@ async function saveData(){
     remarks: remarks.value || ""
   });
 
-  btn.innerText = "Submit Entry";
-  btn.disabled = false;
+  alert("Saved");
+  name.value = numberInput.value = age.value = exp.value = loc.value =
+  ctc.value = comp.value = channel.value = remarks.value = "";
+};
 
-  alert("Entry Saved");
-
-  // Clear inputs
-  name.value = "";
-  number.value = "";
-  age.value = "";
-  experienceYears.value = "";
-  loc.value = "";
-  ctc.value = "";
-  comp.value = "";
-  channel.value = "";
-  remarks.value = "";
-}
-
-// ===================== LIVE FETCH =======================
-onSnapshot(collection(db,"callLogs"),(snap)=>{
-  all = [];
-  snap.forEach(doc => all.push(doc.data()));
-  fillAutoFilters();
-  renderTable(all);
-  buildDashboard();
-});
-
-// ===================== DASHBOARD =======================
-function buildDashboard(){
-  let today = new Date().toISOString().slice(0,10);
-
+// ------------------------ RENDER DASHBOARD -------------------------
+function renderDashboard(){
   let map = {};
 
-  all.forEach(e=>{
-    if(!map[e.loginID]) map[e.loginID] = {today:0, total:0};
-    map[e.loginID].total++;
-
-    if(e.ts.slice(0,10) === today){
-      map[e.loginID].today++;
+  ALL.forEach(e=>{
+    if(!map[e.empID]) map[e.empID] = { today:0, all:0 };
+    map[e.empID].all++;
+    if(e.ts.slice(0,10) === new Date().toISOString().slice(0,10)){
+      map[e.empID].today++;
     }
   });
 
-  let body = document.getElementById("dashBody");
-  body.innerHTML = "";
-
+  dashBody.innerHTML = "";
   Object.keys(map).forEach(id=>{
-    body.innerHTML += `
+    dashBody.innerHTML += `
       <tr>
         <td>${id}</td>
         <td>${map[id].today}</td>
-        <td>${map[id].total}</td>
+        <td>${map[id].all}</td>
       </tr>
     `;
   });
 }
 
-// ===================== AUTO FILTERS =======================
-function fillAutoFilters(){
-  let locations = [...new Set(all.map(e=>e.loc).filter(e=>e))];
-  let recruiters = [...new Set(all.map(e=>e.loginID))];
-
-  filterLocation.innerHTML = `<option value="">Filter by Location</option>`;
-  locations.forEach(l => filterLocation.innerHTML += `<option>${l}</option>`);
-
-  filterRecruiter.innerHTML = `<option value="">Filter by Recruiter</option>`;
-  recruiters.forEach(r => filterRecruiter.innerHTML += `<option>${r}</option>`);
-}
-
-// ===================== FILTERS =======================
-function applyFilters(){
-  let data = all;
-
-  if(filterName.value)
-    data = data.filter(d => d.name.toLowerCase().includes(filterName.value.toLowerCase()));
-
-  if(filterNumber.value)
-    data = data.filter(d => d.number.includes(filterNumber.value));
-
-  if(filterCompany.value)
-    data = data.filter(d => d.comp.toLowerCase().includes(filterCompany.value.toLowerCase()));
-
-  if(filterRemark.value)
-    data = data.filter(d => d.remarks.toLowerCase().includes(filterRemark.value.toLowerCase()));
-
-  if(filterChannel.value)
-    data = data.filter(d => d.channel === filterChannel.value);
-
-  if(filterLocation.value)
-    data = data.filter(d => d.loc === filterLocation.value);
-
-  if(filterRecruiter.value)
-    data = data.filter(d => d.loginID === filterRecruiter.value);
-
-  if(minAge.value)
-    data = data.filter(d => d.age >= Number(minAge.value));
-
-  if(maxAge.value)
-    data = data.filter(d => d.age <= Number(maxAge.value));
-
-  if(minCTC.value)
-    data = data.filter(d => d.ctc >= Number(minCTC.value));
-
-  if(maxCTC.value)
-    data = data.filter(d => d.ctc <= Number(maxCTC.value));
-
-  if(dateStart.value)
-    data = data.filter(d => new Date(d.ts) >= new Date(dateStart.value));
-
-  if(dateEnd.value)
-    data = data.filter(d => new Date(d.ts) <= new Date(dateEnd.value));
-
-  renderTable(data);
-}
-
-function resetFilters(){
-  filterName.value = "";
-  filterNumber.value = "";
-  filterCompany.value = "";
-  filterRemark.value = "";
-  filterChannel.value = "";
-  filterLocation.value = "";
-  filterRecruiter.value = "";
-  minAge.value = "";
-  maxAge.value = "";
-  minCTC.value = "";
-  maxCTC.value = "";
-  dateStart.value = "";
-  dateEnd.value = "";
-  renderTable(all);
-}
-
-// ===================== RENDER TABLE =======================
-function renderTable(list){
-  let logs = document.getElementById("logs");
-  logs.innerHTML = "";
-
-  list.forEach(d=>{
-    logs.innerHTML += `
+// ------------------------ RENDER TABLE -------------------------
+function renderTable(){
+  dataBody.innerHTML = "";
+  ALL.forEach(e=>{
+    dataBody.innerHTML += `
       <tr>
-        <td>${new Date(d.ts).toLocaleString()}</td>
-        <td>${d.loginID}</td>
-        <td>${d.name}</td>
-        <td>${d.number}</td>
-        <td>${d.age}</td>
-        <td>${d.experienceYears}</td>
-        <td>${d.loc}</td>
-        <td>${d.ctc}</td>
-        <td>${d.comp}</td>
-        <td>${d.channel}</td>
-        <td>${d.remarks}</td>
+        <td>${new Date(e.ts).toLocaleString()}</td>
+        <td>${e.empID}</td>
+        <td>${e.name}</td>
+        <td>${e.number}</td>
+        <td>${e.age}</td>
+        <td>${e.exp}</td>
+        <td>${e.loc}</td>
+        <td>${e.ctc}</td>
+        <td>${e.comp}</td>
+        <td>${e.channel}</td>
+        <td>${e.remarks}</td>
+        <td><button class="actionBtn edit" onclick="editEntry('${e.id}')">Edit</button></td>
+        <td><button class="actionBtn del" onclick="delEntry('${e.id}')">Delete</button></td>
       </tr>
     `;
   });
 }
 
-// ===================== CSV =======================
-function downloadCSV(){
-  let csv = "Timestamp,EmpID,Name,Number,Age,ExperienceYears,Location,CTC,Company,Channel,Remarks\n";
+// ------------------------ DELETE -------------------------
+window.delEntry = async(id)=>{
+  if(confirm("Delete this entry?")){
+    await deleteDoc(doc(db,"callLogs",id));
+  }
+};
 
-  all.forEach(d=>{
-    csv += `"${d.ts}","${d.loginID}","${d.name}","${d.number}","${d.age}","${d.experienceYears}","${d.loc}","${d.ctc}","${d.comp}","${d.channel}","${d.remarks}"\n`;
+// ------------------------ EDIT -------------------------
+window.editEntry = async(id)=>{
+  let e = ALL.find(x=>x.id===id);
+  let newRemark = prompt("Edit remark:", e.remarks);
+  if(newRemark!==null){
+    await updateDoc(doc(db,"callLogs",id),{ remarks:newRemark });
+  }
+};
+
+// ------------------------ CSV DOWNLOAD -------------------------
+csvBtn.onclick = ()=>{
+  let csv = "Timestamp,EmpID,Name,Number,Age,Experience,Location,CTC,Company,Channel,Remarks\n";
+  ALL.forEach(e=>{
+    csv += `${e.ts},${e.empID},${e.name},${e.number},${e.age},${e.exp},${e.loc},${e.ctc},${e.comp},${e.channel},${e.remarks}\n`;
   });
 
   let blob = new Blob([csv],{type:"text/csv"});
   let a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = "Recruita_Data.csv";
+  a.download = "Recruita_Full_Data.csv";
   a.click();
-}
-
+};
 </script>
 
 </body>
