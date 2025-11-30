@@ -9,7 +9,7 @@
 body{
   background:#0b0b0c;color:white;font-family:Inter;padding:20px;
 }
-h2{margin-top:20px;margin-bottom:10px;}
+h2{margin-top:25px;margin-bottom:10px;}
 input, select{
   width:100%;padding:12px;border-radius:8px;border:none;margin-top:10px;
   background:#1a1a1a;color:white;
@@ -24,13 +24,20 @@ button:active{
   background:#1f63cc;
 }
 .container{
-  max-width:900px;margin:auto;
+  max-width:1000px;margin:auto;
 }
-.entry{
-  background:#111;padding:16px;border-radius:12px;margin-top:16px;
+.tableWrap{
+  background:#111;padding:16px;border-radius:12px;margin-top:20px;overflow-x:auto;
 }
-.entry small{color:#aaa;}
-
+table{
+  width:100%;border-collapse:collapse;margin-top:10px;font-size:14px;
+}
+th,td{
+  border:1px solid #333;padding:10px;text-align:left;
+}
+th{
+  background:#1d1d1d;color:#2B7FFF;font-weight:700;
+}
 .filterBox{
   background:#111;padding:16px;border-radius:12px;margin-top:20px;
 }
@@ -41,11 +48,28 @@ button:active{
 
 <div class="container">
 
+<!-- ===================== DASHBOARD ======================= -->
+<h2>Your Dashboard</h2>
+<div class="tableWrap">
+  <table>
+    <thead>
+      <tr>
+        <th>EmpID</th>
+        <th>Today's Count</th>
+        <th>All-Time Count</th>
+      </tr>
+    </thead>
+    <tbody id="dashBody"></tbody>
+  </table>
+</div>
+
+<!-- ===================== ENTRY FORM ======================= -->
 <h2>Add Candidate Entry</h2>
+
 <input id="name" placeholder="Candidate Name">
-<input id="number" placeholder="Candidate Number">
+<input id="number" placeholder="Candidate Number (10 digits)">
 <input id="age" placeholder="Age">
-<input id="exp" placeholder="Total Experience (Years)">
+<input id="experienceYears" placeholder="Total Experience (Years)">
 <input id="loc" placeholder="Location">
 <input id="ctc" placeholder="Current CTC">
 <input id="comp" placeholder="Current Company">
@@ -62,7 +86,7 @@ button:active{
 
 <button id="submitBtn" onclick="saveData()">Submit Entry</button>
 
-
+<!-- ===================== FILTERS ======================= -->
 <h2>Filters</h2>
 <div class="filterBox">
 
@@ -80,7 +104,7 @@ button:active{
 </select>
 
 <select id="filterLocation">
-  <option value="">Filter by Location (Auto)</option>
+  <option value="">Filter by Location</option>
 </select>
 
 <input id="minAge" placeholder="Min Age">
@@ -94,41 +118,63 @@ button:active{
 
 <button onclick="applyFilters()">Apply Filters</button>
 <button onclick="resetFilters()">Reset</button>
+
 </div>
 
+<!-- ===================== ENTRIES TABLE ======================= -->
 <h2>Your Entries</h2>
-<div id="logs"></div>
+
+<div class="tableWrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Timestamp</th>
+        <th>Name</th>
+        <th>Number</th>
+        <th>Age</th>
+        <th>Experience Years</th>
+        <th>Location</th>
+        <th>CTC</th>
+        <th>Company</th>
+        <th>Channel</th>
+        <th>Remarks</th>
+      </tr>
+    </thead>
+    <tbody id="logs"></tbody>
+  </table>
+</div>
 
 </div>
+
 
 <script type="module">
 import { auth, db } from "./firebase.js";
 import {
-  addDoc, collection, query, where, onSnapshot
+  addDoc, collection, query, where, onSnapshot, doc, getDoc
 } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
 let all = [];
 let empID = localStorage.getItem("empID");
 
-// ============ SAVE ENTRY ===============
+// ===================== SAVE ENTRY =======================
 async function saveData(){
-  const btn = document.getElementById("submitBtn");
 
   if(!number.value || number.value.length !== 10){
-    alert("Enter a valid 10 digit number");
+    alert("Enter 10 digit valid number");
     return;
   }
 
+  let btn = document.getElementById("submitBtn");
   btn.innerText = "Saving...";
   btn.disabled = true;
 
   await addDoc(collection(db,"callLogs"),{
-    empID,
+    loginID: empID,
     ts: new Date().toISOString(),
     name: name.value || "",
     number: number.value,
     age: age.value || "",
-    exp: exp.value || "",
+    experienceYears: experienceYears.value || "",
     loc: loc.value || "",
     ctc: ctc.value || "",
     comp: comp.value || "",
@@ -136,42 +182,59 @@ async function saveData(){
     remarks: remarks.value || ""
   });
 
-  btn.innerText = "Submit Entry";
-  btn.disabled = false;
-
+  // Clear fields
   name.value = "";
   number.value = "";
   age.value = "";
-  exp.value = "";
+  experienceYears.value = "";
   loc.value = "";
   ctc.value = "";
   comp.value = "";
   channel.value = "";
   remarks.value = "";
 
+  btn.innerText = "Submit Entry";
+  btn.disabled = false;
+
   alert("Entry Saved");
 }
 
-// ============ FETCH ONLY OWN ENTRIES ===============
-const q = query(collection(db,"callLogs"), where("empID","==",empID));
+// ===================== FETCH ONLY OWN ENTRIES =======================
+const q = query(collection(db,"callLogs"), where("loginID","==",empID));
 
 onSnapshot(q,(snap)=>{
   all = [];
   snap.forEach(doc => all.push(doc.data()));
-
-  autoFilters();
-  render(all);
+  fillAuto();
+  renderTable(all);
+  buildDashboard();
 });
 
-// ============ AUTO FILTER OPTIONS ===============
-function autoFilters(){
+// ===================== DASHBOARD =======================
+function buildDashboard(){
+  let today = new Date().toISOString().slice(0,10);
+
+  let todayCount = all.filter(e=>e.ts.slice(0,10) === today).length;
+  let totalCount = all.length;
+
+  document.getElementById("dashBody").innerHTML = `
+    <tr>
+      <td>${empID}</td>
+      <td>${todayCount}</td>
+      <td>${totalCount}</td>
+    </tr>
+  `;
+}
+
+// ===================== AUTO FILTERS =======================
+function fillAuto(){
   let locations = [...new Set(all.map(e=>e.loc).filter(e=>e))];
 
   filterLocation.innerHTML = `<option value="">Filter by Location</option>`;
   locations.forEach(l=> filterLocation.innerHTML += `<option>${l}</option>`);
 }
 
-// ============ APPLY FILTERS ===============
+// ===================== FILTER APPLY =======================
 function applyFilters(){
   let data = all;
 
@@ -194,16 +257,16 @@ function applyFilters(){
     data = data.filter(d => d.loc === filterLocation.value);
 
   if(minAge.value)
-    data = data.filter(d => d.age >= Number(minAge.value));
+    data = data.filter(d => Number(d.age) >= Number(minAge.value));
 
   if(maxAge.value)
-    data = data.filter(d => d.age <= Number(maxAge.value));
+    data = data.filter(d => Number(d.age) <= Number(maxAge.value));
 
   if(minCTC.value)
-    data = data.filter(d => d.ctc >= Number(minCTC.value));
+    data = data.filter(d => Number(d.ctc) >= Number(minCTC.value));
 
   if(maxCTC.value)
-    data = data.filter(d => d.ctc <= Number(maxCTC.value));
+    data = data.filter(d => Number(d.ctc) <= Number(maxCTC.value));
 
   if(dateStart.value)
     data = data.filter(d => new Date(d.ts) >= new Date(dateStart.value));
@@ -211,10 +274,9 @@ function applyFilters(){
   if(dateEnd.value)
     data = data.filter(d => new Date(d.ts) <= new Date(dateEnd.value));
 
-  render(data);
+  renderTable(data);
 }
 
-// ============ RESET FILTERS ===============
 function resetFilters(){
   filterName.value="";
   filterNumber.value="";
@@ -229,33 +291,31 @@ function resetFilters(){
   dateStart.value="";
   dateEnd.value="";
 
-  render(all);
+  renderTable(all);
 }
 
-// ============ RENDER ENTRIES ===============
-function render(list){
+// ===================== RENDER TABLE =======================
+function renderTable(list){
+  let logs = document.getElementById("logs");
   logs.innerHTML = "";
+
   list.forEach(d=>{
     logs.innerHTML += `
-      <div class="entry">
-        <small>${new Date(d.ts).toLocaleString()}</small><br>
-        <b>${d.name}</b><br>
-        Number: ${d.number}<br>
-        Age: ${d.age}<br>
-        Experience: ${d.exp}<br>
-        Location: ${d.loc}<br>
-        CTC: ${d.ctc}<br>
-        Company: ${d.comp}<br>
-        Channel: ${d.channel}<br>
-        Remarks: ${d.remarks}
-      </div>
+      <tr>
+        <td>${new Date(d.ts).toLocaleString()}</td>
+        <td>${d.name}</td>
+        <td>${d.number}</td>
+        <td>${d.age}</td>
+        <td>${d.experienceYears}</td>
+        <td>${d.loc}</td>
+        <td>${d.ctc}</td>
+        <td>${d.comp}</td>
+        <td>${d.channel}</td>
+        <td>${d.remarks}</td>
+      </tr>
     `;
   });
 }
-
-window.applyFilters = applyFilters;
-window.resetFilters = resetFilters;
-window.saveData = saveData;
 
 </script>
 
