@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Recruiter Panel</title>
+
+<style>
+body{background:#0b0b0c;color:white;font-family:Inter;padding:20px;}
+input{
+  width:100%;padding:14px;margin-top:12px;border-radius:10px;border:none;
+}
+button{
+  width:100%;padding:14px;background:#2B7FFF;border:none;border-radius:10px;
+  margin-top:20px;font-size:17px;color:white;font-weight:600;
+}
+.entry{
+  background:#111;padding:16px;border-radius:12px;margin-top:16px;
+}
+.entry small{color:#999;}
+</style>
+</head>
+
+<body>
+
+<h2>Candidate Call Entry</h2>
+
+<input id="name" placeholder="Candidate Name">
+<input id="number" placeholder="Candidate Number">
+<input id="age" placeholder="Age">
+<input id="loc" placeholder="Location">
+<input id="ctc" placeholder="Current CTC">
+<input id="comp" placeholder="Current Company">
+<input id="channel" placeholder="Channel">
+<input id="remarks" placeholder="Remarks">
+
+<button onclick="saveData()">Submit</button>
+
+<h2 style="margin-top:30px;">Your Entries</h2>
+<div id="logs"></div>
+
+<script type="module">
+import { auth, db } from "./firebase.js";
+import {
+  addDoc, collection, query, where, onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+
+async function saveData(){
+  let uid = auth.currentUser.uid;
+
+  await addDoc(collection(db,"callLogs"),{
+    uid,
+    ts: new Date().toISOString(),
+    name: name.value,
+    number: number.value,
+    age: age.value,
+    loc: loc.value,
+    ctc: ctc.value,
+    comp: comp.value,
+    channel: channel.value,
+    remarks: remarks.value
+  });
+
+  alert("Entry Saved");
+  load();
+}
+
+function load(){
+  let uid = auth.currentUser.uid;
+
+  let q = query(collection(db,"callLogs"), where("uid","==",uid));
+
+  onSnapshot(q,(snap)=>{
+    let logs=document.getElementById("logs");
+    logs.innerHTML="";
+
+    snap.forEach(doc=>{
+      let d=doc.data();
+      logs.innerHTML+=`
+        <div class="entry">
+          <small>${new Date(d.ts).toLocaleString()}</small><br>
+          <b>${d.name}</b><br>
+          ${d.number}<br>
+          ${d.age}, ${d.loc}<br>
+          CTC: ${d.ctc}<br>
+          ${d.comp}<br>
+          Channel: ${d.channel}<br>
+          Remarks: ${d.remarks}
+        </div>
+      `;
+    });
+
+  });
+}
+
+auth.onAuthStateChanged((u)=>{
+  if(!u) window.location="login.html";
+  else load();
+});
+</script>
+
+</body>
+</html>
