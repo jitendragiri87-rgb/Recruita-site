@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Recruita Login</title>
+
+<style>
+body{
+  background:#0b0b0c;color:#fff;font-family:Inter,sans-serif;
+  display:flex;justify-content:center;align-items:center;
+  padding:20px;height:100vh;
+}
+.box{
+  width:100%;max-width:360px;background:#111;padding:32px;border-radius:12px;
+}
+input{
+  width:100%;padding:14px;border-radius:8px;border:none;margin-top:14px;
+}
+button{
+  width:100%;padding:14px;background:#2B7FFF;border:none;border-radius:10px;
+  margin-top:20px;color:white;font-size:17px;font-weight:600;
+}
+</style>
+</head>
+
+<body>
+
+<div class="box">
+  <h2>Login</h2>
+
+  <input id="email" placeholder="Email">
+  <input id="password" type="password" placeholder="Password">
+
+  <button onclick="login()">Login</button>
+</div>
+
+<script type="module">
+import { auth, db } from "./firebase.js";
+import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+
+async function login(){
+  let email=document.getElementById("email").value;
+  let pass=document.getElementById("password").value;
+
+  try{
+    let res = await signInWithEmailAndPassword(auth,email,pass);
+    let uid = res.user.uid;
+
+    let ref = doc(db,"users",uid);
+    let snap = await getDoc(ref);
+
+    if(!snap.exists()){
+      alert("User role not found!"); 
+      return;
+    }
+
+    let role = snap.data().role;
+
+    if(role==="admin") window.location="admin.html";
+    else window.location="recruiter.html";
+
+  }catch(err){
+    alert("Invalid ID or password");
+  }
+}
+</script>
+
+</body>
+</html>
