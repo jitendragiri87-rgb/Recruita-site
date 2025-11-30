@@ -18,6 +18,18 @@ input{
   width:100%;padding:14px;border-radius:8px;border:none;margin-top:14px;
   background:#1a1a1a;color:white;
 }
+.passwordWrap {
+  position:relative;
+}
+.eye {
+  position:absolute;
+  right:14px;
+  top:50%;
+  transform:translateY(-50%);
+  cursor:pointer;
+  font-size:14px;
+  color:#ccc;
+}
 button{
   width:100%;padding:14px;background:#2B7FFF;border:none;border-radius:10px;
   margin-top:20px;color:white;font-size:17px;font-weight:600;
@@ -36,7 +48,11 @@ button:active{
   <h2>Login</h2>
 
   <input id="email" placeholder="Email">
-  <input id="password" type="password" placeholder="Password">
+
+  <div class="passwordWrap">
+    <input id="password" type="password" placeholder="Password">
+    <span class="eye" id="togglePass">👁</span>
+  </div>
 
   <button onclick="login()">Login</button>
 </div>
@@ -46,9 +62,16 @@ import { auth, db } from "./firebase.js";
 import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
+// ⭐ SHOW / HIDE PASSWORD
+document.getElementById("togglePass").addEventListener("click", () => {
+  const pass = document.getElementById("password");
+  pass.type = pass.type === "password" ? "text" : "password";
+});
+
+// ⭐ MAIN LOGIN FUNCTION
 async function login(){
-  let email = document.getElementById("email").value.trim();
-  let pass  = document.getElementById("password").value.trim();
+  let email = email.value.trim();
+  let pass  = password.value.trim();
 
   if(!email || !pass){
     alert("Please enter Email and Password");
@@ -56,10 +79,10 @@ async function login(){
   }
 
   try{
-    let res = await signInWithEmailAndPassword(auth,email,pass);
+    let res = await signInWithEmailAndPassword(auth, email, pass);
     let uid = res.user.uid;
 
-    let ref = doc(db,"users",uid);
+    let ref = doc(db, "users", uid);
     let snap = await getDoc(ref);
 
     if(!snap.exists()){
@@ -67,8 +90,7 @@ async function login(){
       return;
     }
 
-    let role = snap.data().role;   // "admin" or "recruiter"
-    let empID = snap.data().empID; // login ID
+    let { role, empID } = snap.data();
 
     localStorage.setItem("empID", empID);
     localStorage.setItem("role", role);
@@ -79,10 +101,14 @@ async function login(){
       window.location = "recruiter.html";
     }
 
-  }catch(err){
+  } catch(err){
+    console.error(err);
     alert("Invalid login details");
   }
 }
+
+// ⭐ FIX: Expose login() globally so button can call it
+window.login = login;
 
 </script>
 
