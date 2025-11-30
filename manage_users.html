@@ -1,67 +1,60 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Recruita User Management</title>
 
 <style>
 body {
     background:#0b0b0c;
-    color:white;
-    font-family:Inter,sans-serif;
-    padding:20px;
+    color:#fff;
+    font-family: Inter, sans-serif;
+    padding: 20px;
 }
 .light { background:#f2f2f2; color:#222; }
 
 .topBar {
     display:flex;
-    justify-content:flex-end;
+    justify-content:flex-start;
     gap:12px;
-    margin-bottom:20px;
+    margin-bottom:25px;
 }
 
-button{
+button {
     padding:10px 18px;
     border:none;
     border-radius:6px;
-    font-weight:600;
     cursor:pointer;
+    font-weight:600;
 }
-.blueBtn{ background:#2B7FFF; color:white; }
-.greyBtn{ background:#555; color:white; }
-.redBtn{ background:#e74c3c; color:white; }
+.blueBtn { background:#2B7FFF; color:white; }
+.redBtn { background:#e74c3c; color:white; }
+.greyBtn { background:#555; color:white; }
 
 input {
     width:100%;
     padding:12px;
-    border:none;
     border-radius:8px;
-    margin-top:8px;
+    border:none;
+    margin-top:10px;
     background:#111;
     color:white;
 }
-.light input { background:#fff; color:#222; border:1px solid #ccc; }
+.light input { background:white; color:#222; border:1px solid #ccc; }
 
-.tableBox{
-    overflow-x:auto;
-    margin-top:20px;
-}
+.tableBox { overflow-x:auto; margin-top:20px; }
 
-table{
+table {
     width:100%;
-    border-collapse:collapse;
+    border-collapse: collapse;
+    margin-top:15px;
 }
-th,td{
+th, td {
     padding:10px;
     border:1px solid #333;
 }
-.light th,.light td{ border:1px solid #ccc; }
-
-.actionBtn{
-    padding:6px 10px;
-    border-radius:6px;
-}
+.light th, .light td { border:1px solid #ccc; }
 
 </style>
 </head>
@@ -69,50 +62,193 @@ th,td{
 <body>
 
 <div class="topBar">
-    <button onclick="location.href='admin.html'" class="blueBtn">← Back</button>
-    <button onclick="toggleTheme()" class="greyBtn">🌓 Theme</button>
-    <button onclick="logout()" class="redBtn">Logout</button>
+    <button class="blueBtn" onclick="goBack()">← Back</button>
+    <button class="greyBtn" onclick="toggleTheme()">🌓 Theme</button>
+    <button class="redBtn" onclick="logout()">Logout</button>
 </div>
 
-<h1>User Management (Admin Only)</h1>
+<h2>User Management (Admin Only)</h2>
 
-<h2>Create Recruiter</h2>
+<h3>Create Recruiter</h3>
 
-<input id="emailInput" placeholder="Recruiter Email">
-<input id="passwordInput" placeholder="Password">
+<input id="newEmail" placeholder="Recruiter Email">
+<input id="newPassword" placeholder="Password">
+
 <button class="blueBtn" onclick="createRecruiter()">Create Recruiter</button>
 
 <h2>All Users</h2>
 
 <div class="tableBox">
 <table>
-  <thead>
-    <tr>
-      <th>EmpID</th>
-      <th>Email</th>
-      <th>Role</th>
-      <th>UID</th>
-      <th>Reset Password</th>
-      <th>Delete</th>
-    </tr>
-  </thead>
-  <tbody id="usersBody"></tbody>
+    <thead>
+        <tr>
+            <th>EmpID</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>UID</th>
+            <th>Reset Password</th>
+            <th>Delete</th>
+        </tr>
+    </thead>
+    <tbody id="userBody"></tbody>
 </table>
 </div>
 
 <script type="module">
+import { auth, db } from "./firebase.js";
 
-// FULL WORKING JS CODE FROM EARLIER VERSION
-// ✔ Auto empID from email prefix
-// ✔ Create Firebase Auth user
-// ✔ Create Firestore user
-// ✔ Reset password
-// ✔ Delete user
-// ✔ Admin authentication check
-// ✔ Theme toggle
+import {
+    createUserWithEmailAndPassword,
+    sendPasswordResetEmail,
+    deleteUser as firebaseDeleteUser
+} from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
 
-//  ⚠️  SAME CODE, NO CHANGE NEEDED  ⚠️
+import {
+    setDoc,
+    doc,
+    getDocs,
+    collection,
+    deleteDoc
+} from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+
+//-------------------------------------------------------
+// ACCESS CHECK — Only logged-in admin can view
+//-------------------------------------------------------
+auth.onAuthStateChanged(async u => {
+    if(!u){
+        location.href = "login.html";
+        return;
+    }
+
+    let uid = u.uid;
+    let userRef = doc(db,"users",uid);
+    let snap = await getDoc(userRef);
+
+    if(!snap.exists() || snap.data().role !== "admin"){
+        alert("Access denied. Admin only.");
+        location.href = "login.html";
+    }
+});
+
+//-------------------------------------------------------
+// CREATE RECRUITER
+//-------------------------------------------------------
+async function createRecruiter(){
+    let email = newEmail.value.trim();
+    let pass  = newPassword.value.trim();
+
+    if(!email || !pass){
+        alert("Enter email & password");
+        return;
+    }
+
+    try{
+        let res = await createUserWithEmailAndPassword(auth, email, pass);
+        let uid = res.user.uid;
+
+        await setDoc(doc(db,"users",uid),{
+            email: email,
+            empID: email.split("@")[0],
+            role: "recruiter"
+        });
+
+        alert("Recruiter Created");
+        newEmail.value = "";
+        newPassword.value = "";
+        loadUsers();
+
+    }catch(e){
+        alert("Error: " + e.message);
+    }
+}
+
+//-------------------------------------------------------
+// LOAD USERS
+//-------------------------------------------------------
+async function loadUsers(){
+    let snap = await getDocs(collection(db,"users"));
+    userBody.innerHTML = "";
+
+    snap.forEach(u=>{
+        let d = u.data();
+
+        userBody.innerHTML += `
+        <tr>
+            <td>${d.empID}</td>
+            <td>${d.email}</td>
+            <td>${d.role}</td>
+            <td>${u.id}</td>
+
+            <td>
+                <button class="blueBtn" onclick="resetPass('${d.email}')">
+                    Reset
+                </button>
+            </td>
+
+            <td>
+                <button class="redBtn" onclick="deleteUserRecord('${u.id}')">
+                    Delete
+                </button>
+            </td>
+        </tr>`;
+    });
+}
+
+//-------------------------------------------------------
+// RESET PASSWORD
+//-------------------------------------------------------
+async function resetPass(email){
+    await sendPasswordResetEmail(auth, email);
+    alert("Reset link sent to " + email);
+}
+
+//-------------------------------------------------------
+// DELETE USER
+//-------------------------------------------------------
+async function deleteUserRecord(uid){
+    if(!confirm("Delete this user?")) return;
+
+    try{
+        await deleteDoc(doc(db,"users",uid));
+        alert("Deleted");
+        loadUsers();
+
+    }catch(err){
+        alert("Error: " + err.message);
+    }
+}
+
+//-------------------------------------------------------
+// BUTTONS
+//-------------------------------------------------------
+function goBack(){
+    location.href = "admin.html";
+}
+
+function toggleTheme(){
+    document.body.classList.toggle("light");
+}
+
+function logout(){
+    auth.signOut();
+    location.href = "login.html";
+}
+
+//-------------------------------------------------------
+// MAKE FUNCTIONS ACCESSIBLE TO HTML
+//-------------------------------------------------------
+window.createRecruiter = createRecruiter;
+window.resetPass = resetPass;
+window.deleteUserRecord = deleteUserRecord;
+window.goBack = goBack;
+window.toggleTheme = toggleTheme;
+window.logout = logout;
+window.loadUsers = loadUsers;
+
+// Load users at page load
+loadUsers();
 
 </script>
+
 </body>
 </html>
