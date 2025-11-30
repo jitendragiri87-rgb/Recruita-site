@@ -47,8 +47,13 @@ import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/1
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
 async function login(){
-  let email = document.getElementById("email").value;
-  let pass  = document.getElementById("password").value;
+  let email = document.getElementById("email").value.trim();
+  let pass  = document.getElementById("password").value.trim();
+
+  if(!email || !pass){
+    alert("Please enter Email and Password");
+    return;
+  }
 
   try{
     let res = await signInWithEmailAndPassword(auth,email,pass);
@@ -58,25 +63,24 @@ async function login(){
     let snap = await getDoc(ref);
 
     if(!snap.exists()){
-      alert("User not registered in DB");
+      alert("User record missing in Firestore");
       return;
     }
 
-    let role = snap.data().role;
-    let empID = snap.data().empID;
+    let role = snap.data().role;   // "admin" or "recruiter"
+    let empID = snap.data().empID; // login ID
 
     localStorage.setItem("empID", empID);
     localStorage.setItem("role", role);
 
-    // Redirect
     if(role === "admin"){
       window.location = "admin.html";
     } else {
       window.location = "recruiter.html";
     }
 
-  }catch(e){
-    alert("Invalid Login Credentials");
+  }catch(err){
+    alert("Invalid login details");
   }
 }
 
