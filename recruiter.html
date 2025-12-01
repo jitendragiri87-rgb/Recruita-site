@@ -113,6 +113,7 @@ th,td{
     <option>Agency</option>
     <option>Direct</option>
     <option>Tele calling</option>
+    <option>Other</option>
 </select>
 
 <select id="statusInput">
@@ -126,7 +127,7 @@ th,td{
 
 <button class="blueBtn" onclick="saveData()">Submit Entry</button>
 
-<!-- FILTER + CSV BUTTONS -->
+<!-- FILTER + CSV -->
 <div style="display:flex; gap:12px; margin-top:25px;">
     <button class="blueBtn" onclick="exportCSV()">Download CSV</button>
     <button id="filterToggleBtn" class="greyBtn" onclick="toggleFilters()">Filter</button>
@@ -147,6 +148,7 @@ th,td{
             <option>Agency</option>
             <option>Direct</option>
             <option>Tele calling</option>
+            <option>Other</option>
         </select>
 
         <select id="f_status">
@@ -158,7 +160,6 @@ th,td{
 
         <input id="f_minAge" placeholder="Min Age">
         <input id="f_maxAge" placeholder="Max Age">
-
         <input id="f_minCTC" placeholder="Min CTC">
         <input id="f_maxCTC" placeholder="Max CTC">
 
@@ -210,31 +211,31 @@ let uid = "";
 let all = [];
 let filteredData = [];
 
-// Timestamp formatter
+// timestamp formatter
 function formatTS(d){
     const p=n=>n.toString().padStart(2,"0");
     return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 }
 
-// Auth
+// auth
 auth.onAuthStateChanged(async user=>{
     if(!user) location.href="login.html";
 
     uid = user.uid;
     email = user.email;
 
-    // load empID
+    // load empID first, THEN load callLogs
     const ref = collection(db,"users");
     const q = query(ref, where("email","==", email));
 
     onSnapshot(q, snap=>{
         snap.forEach(d => empID = d.data().empID);
-        loadData();
+        loadData(empID);
     });
 });
 
-// Load only own entries
-function loadData(){
+// LOAD entries
+function loadData(empID){
     const q = query(collection(db,"callLogs"), where("empID","==", empID));
 
     onSnapshot(q, snap=>{
@@ -242,12 +243,11 @@ function loadData(){
         snap.forEach(d => all.push({ id:d.id, ...d.data() }));
 
         renderDashboard();
-        fillFilters();
         renderTable(all);
     });
 }
 
-// Dashboard counts
+// Dashboard
 function renderDashboard(){
     let today = new Date().toDateString();
     let countToday = all.filter(e => new Date(e.ts).toDateString() === today).length;
@@ -261,7 +261,7 @@ function renderDashboard(){
     `;
 }
 
-// Save entry
+// Save Entry
 async function saveData(){
     let num = numberInput.value.trim();
     if(num.length !== 10){
@@ -269,18 +269,11 @@ async function saveData(){
         return;
     }
 
-    let duplicate = all.find(e => e.number === num);
-    if(duplicate){
-        let ok = confirm("This number already exists in your entries. Do you still want to add?");
-        if(!ok) return;
-    }
-
     await addDoc(collection(db,"callLogs"),{
         ts: formatTS(new Date()),
         uid,
         empID,
         email,
-
         name: nameInput.value || "",
         number: num,
         age: ageInput.value || "",
@@ -307,28 +300,21 @@ async function saveData(){
     alert("Entry Saved");
 }
 
-// Toggle Filters
+// show/hide filter panel
 function toggleFilters(){
-    const panel = document.getElementById("filterPanel");
-    const btn = document.getElementById("filterToggleBtn");
+    const panel=document.getElementById("filterPanel");
+    const btn=document.getElementById("filterToggleBtn");
 
-    if(panel.style.display === "none"){
-        panel.style.display = "block";
-        btn.textContent = "Hide Filters";
-    } else {
-        panel.style.display = "none";
-        btn.textContent = "Filter";
+    if(panel.style.display==="none"){
+        panel.style.display="block";
+        btn.textContent="Hide Filters";
+    } else{
+        panel.style.display="none";
+        btn.textContent="Filter";
     }
 }
 
-// Fill auto dropdowns
-function fillFilters(){
-    let locations = [...new Set(all.map(e=>e.loc).filter(x=>x))];
-    filterLocation.innerHTML = `<option value="">Filter by Location</option>`;
-    locations.forEach(loc => filterLocation.innerHTML += `<option>${loc}</option>`);
-}
-
-// Apply Filters (AND logic)
+// Apply Filters
 function applyFilters(){
     let data = all;
 
@@ -372,7 +358,7 @@ function applyFilters(){
     renderTable(filteredData);
 }
 
-// Reset Filters
+// reset filters
 function resetFilters(){
     f_name.value="";
     f_number.value="";
@@ -386,12 +372,11 @@ function resetFilters(){
     f_maxCTC.value="";
     f_dateStart.value="";
     f_dateEnd.value="";
-
-    filteredData = [];
+    filteredData=[];
     renderTable(all);
 }
 
-// Render table
+// Render Data Table
 function renderTable(list){
     listBody.innerHTML = "";
 
@@ -410,12 +395,11 @@ function renderTable(list){
             <td>${d.channel}</td>
             <td>${d.callStatus}</td>
             <td>${d.remarks}</td>
-        </tr>
-        `;
+        </tr>`;
     });
 }
 
-// CSV
+// Export CSV
 function exportCSV(){
     let data = filteredData.length ? filteredData : all;
 
@@ -426,31 +410,31 @@ function exportCSV(){
     });
 
     let blob = new Blob([csv],{type:"text/csv"});
-    let a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `${empID}_Filtered_Data.csv`;
+    let a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download=`${empID}_Filtered_Data.csv`;
     a.click();
 }
 
-// Logout
+// logout
 function logout(){
     auth.signOut();
     location.href="login.html";
 }
 
-// Theme toggle
+// theme toggle
 function toggleTheme(){
     document.body.classList.toggle("light");
 }
 
-// Expose
-window.saveData = saveData;
-window.applyFilters = applyFilters;
-window.resetFilters = resetFilters;
-window.toggleFilters = toggleFilters;
-window.exportCSV = exportCSV;
-window.logout = logout;
-window.toggleTheme = toggleTheme;
+// expose
+window.saveData=saveData;
+window.applyFilters=applyFilters;
+window.resetFilters=resetFilters;
+window.toggleFilters=toggleFilters;
+window.exportCSV=exportCSV;
+window.logout=logout;
+window.toggleTheme=toggleTheme;
 
 </script>
 </body>
