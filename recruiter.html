@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Recruiter Panel</title>
 
+<!-- TABULATOR EXCEL-STYLE TABLE LIBRARY -->
+<link href="https://unpkg.com/tabulator-tables@6.2.1/dist/css/tabulator_midnight.min.css" rel="stylesheet">
+<script src="https://unpkg.com/tabulator-tables@6.2.1/dist/js/tabulator.min.js"></script>
+
 <style>
 body{
     background:#0b0b0c;
@@ -43,36 +47,15 @@ input,select{
 }
 .light input,.light select{ background:white; color:#222; border:1px solid #ccc; }
 
-.tableBox{
-    overflow-x:auto;
+#listTable {
     margin-top:20px;
-}
-table{
-    width:100%;
-    border-collapse:collapse;
-}
-th,td{
-    padding:10px;
     border:1px solid #333;
 }
-.light th,.light td{ border:1px solid #ccc; }
 
-.callBtn{
-    background:#2B7FFF;
-    color:white;
-    padding:5px 9px;
-    border-radius:6px;
-    text-decoration:none;
+.tabulator {
+    background:#0b0b0c !important;
+    border:1px solid #444 !important;
 }
-
-.filterBox{
-    padding:15px;
-    background:#111;
-    border-radius:12px;
-    margin-top:15px;
-}
-.light .filterBox{ background:#fff; border:1px solid #ccc; }
-
 </style>
 </head>
 
@@ -84,18 +67,16 @@ th,td{
 </div>
 
 <h2>Your Performance</h2>
-<div class="tableBox">
-<table>
-    <thead>
-        <tr>
-            <th>EmpID</th>
-            <th>Today</th>
-            <th>Total</th>
-        </tr>
-    </thead>
-    <tbody id="dashBody"></tbody>
+<table style="width:100%; border-collapse:collapse;">
+<thead>
+<tr>
+<th style="border:1px solid #333; padding:10px;">EmpID</th>
+<th style="border:1px solid #333; padding:10px;">Today</th>
+<th style="border:1px solid #333; padding:10px;">Total</th>
+</tr>
+</thead>
+<tbody id="dashBody"></tbody>
 </table>
-</div>
 
 <h2>Add Candidate Entry</h2>
 
@@ -127,77 +108,13 @@ th,td{
 
 <button class="blueBtn" onclick="saveData()">Submit Entry</button>
 
-<!-- FILTER + CSV -->
-<div style="display:flex; gap:12px; margin-top:25px;">
-    <button class="blueBtn" onclick="exportCSV()">Download CSV</button>
-    <button id="filterToggleBtn" class="greyBtn" onclick="toggleFilters()">Filter</button>
-</div>
-
-<!-- FILTER PANEL -->
-<div id="filterPanel" style="display:none;">
-    <div class="filterBox">
-
-        <input id="f_name" placeholder="Filter by Name">
-        <input id="f_number" placeholder="Filter by Number">
-        <input id="f_company" placeholder="Filter by Company">
-        <input id="f_location" placeholder="Filter by Location">
-
-        <select id="f_channel">
-            <option value="">Filter by Channel</option>
-            <option>Banca</option>
-            <option>Agency</option>
-            <option>Direct</option>
-            <option>Tele calling</option>
-            <option>Other</option>
-        </select>
-
-        <select id="f_status">
-            <option value="">Filter by Call Status</option>
-            <option>Interested</option>
-            <option>Not Interested</option>
-            <option>Not Answered</option>
-        </select>
-
-        <input id="f_minAge" placeholder="Min Age">
-        <input id="f_maxAge" placeholder="Max Age">
-        <input id="f_minCTC" placeholder="Min CTC">
-        <input id="f_maxCTC" placeholder="Max CTC">
-
-        <label>Start Date</label>
-        <input id="f_dateStart" type="date">
-
-        <label>End Date</label>
-        <input id="f_dateEnd" type="date">
-
-        <button class="blueBtn" onclick="applyFilters()">Apply Filters</button>
-        <button class="greyBtn" onclick="resetFilters()">Reset</button>
-
-    </div>
-</div>
+<button class="blueBtn" onclick="exportCSV()" style="margin-top:20px;">Download CSV</button>
 
 <h2>Your Entries</h2>
 
-<div class="tableBox">
-<table>
-    <thead>
-        <tr>
-            <th>Call</th>
-            <th>Time</th>
-            <th>Name</th>
-            <th>Number</th>
-            <th>Age</th>
-            <th>Experience</th>
-            <th>Location</th>
-            <th>CTC</th>
-            <th>Company</th>
-            <th>Channel</th>
-            <th>Status</th>
-            <th>Remarks</th>
-        </tr>
-    </thead>
-    <tbody id="listBody"></tbody>
-</table>
-</div>
+<!-- TABULATOR TABLE -->
+<div id="listTable"></div>
+
 
 <script type="module">
 import { auth, db } from "./firebase.js";
@@ -206,25 +123,21 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
 let empID = "";
-let email = "";
 let uid = "";
+let email = "";
 let all = [];
-let filteredData = [];
 
-// timestamp formatter
 function formatTS(d){
-    const p=n=>n.toString().padStart(2,"0");
-    return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+  const p=n=>n.toString().padStart(2,"0");
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 }
 
-// auth
 auth.onAuthStateChanged(async user=>{
     if(!user) location.href="login.html";
 
     uid = user.uid;
     email = user.email;
 
-    // load empID first, THEN load callLogs
     const ref = collection(db,"users");
     const q = query(ref, where("email","==", email));
 
@@ -234,7 +147,8 @@ auth.onAuthStateChanged(async user=>{
     });
 });
 
-// LOAD entries
+let table;
+
 function loadData(empID){
     const q = query(collection(db,"callLogs"), where("empID","==", empID));
 
@@ -242,51 +156,49 @@ function loadData(empID){
         all = [];
         snap.forEach(d => all.push({ id:d.id, ...d.data() }));
 
+        // ALWAYS SORT LATEST FIRST
+        all.sort((a,b)=> new Date(b.ts) - new Date(a.ts));
+
         renderDashboard();
-        renderTable(all);
+        loadTabulator(all);
     });
 }
 
-// Dashboard
 function renderDashboard(){
     let today = new Date().toDateString();
     let countToday = all.filter(e => new Date(e.ts).toDateString() === today).length;
-    
+
     dashBody.innerHTML = `
         <tr>
-            <td>${empID}</td>
-            <td>${countToday}</td>
-            <td>${all.length}</td>
+            <td style="border:1px solid #333; padding:10px;">${empID}</td>
+            <td style="border:1px solid #333; padding:10px;">${countToday}</td>
+            <td style="border:1px solid #333; padding:10px;">${all.length}</td>
         </tr>
     `;
 }
 
-// Save Entry
 async function saveData(){
     let num = numberInput.value.trim();
-    if(num.length !== 10){
-        alert("Enter valid 10-digit number");
-        return;
-    }
+    if(num.length !== 10){ alert("Enter valid 10-digit number"); return; }
 
     await addDoc(collection(db,"callLogs"),{
         ts: formatTS(new Date()),
         uid,
         empID,
         email,
-        name: nameInput.value || "",
+        name: nameInput.value,
         number: num,
-        age: ageInput.value || "",
-        exp: expInput.value || "",
-        loc: locInput.value || "",
-        ctc: ctcInput.value || "",
-        comp: compInput.value || "",
-        channel: channelInput.value || "",
-        callStatus: statusInput.value || "",
-        remarks: remarkInput.value || ""
+        age: ageInput.value,
+        exp: expInput.value,
+        loc: locInput.value,
+        ctc: ctcInput.value,
+        comp: compInput.value,
+        channel: channelInput.value,
+        callStatus: statusInput.value,
+        remarks: remarkInput.value
     });
 
-    nameInput.value="";
+    nameInput.value = "";
     numberInput.value="";
     ageInput.value="";
     expInput.value="";
@@ -300,142 +212,50 @@ async function saveData(){
     alert("Entry Saved");
 }
 
-// show/hide filter panel
-function toggleFilters(){
-    const panel=document.getElementById("filterPanel");
-    const btn=document.getElementById("filterToggleBtn");
-
-    if(panel.style.display==="none"){
-        panel.style.display="block";
-        btn.textContent="Hide Filters";
-    } else{
-        panel.style.display="none";
-        btn.textContent="Filter";
+function loadTabulator(data){
+    if(table){
+        table.replaceData(data);
+        return;
     }
-}
 
-// Apply Filters
-function applyFilters(){
-    let data = all;
+    table = new Tabulator("#listTable", {
+        data:data,
+        layout:"fitColumns",
+        height:"500px",
+        movableColumns:true,
+        pagination:false,
 
-    if(f_name.value)
-        data = data.filter(x => x.name.toLowerCase().includes(f_name.value.toLowerCase()));
+        columns:[
+            {title:"Call", field:"number", formatter:cell=>`<a href="tel:${cell.getValue()}" style="color:#2B7FFF;font-size:20px;">📞</a>`},
 
-    if(f_number.value)
-        data = data.filter(x => x.number.includes(f_number.value));
-
-    if(f_company.value)
-        data = data.filter(x => x.comp.toLowerCase().includes(f_company.value.toLowerCase()));
-
-    if(f_location.value)
-        data = data.filter(x => x.loc.toLowerCase() === f_location.value.toLowerCase());
-
-    if(f_channel.value)
-        data = data.filter(x => x.channel === f_channel.value);
-
-    if(f_status.value)
-        data = data.filter(x => x.callStatus === f_status.value);
-
-    if(f_minAge.value)
-        data = data.filter(x => Number(x.age) >= Number(f_minAge.value));
-
-    if(f_maxAge.value)
-        data = data.filter(x => Number(x.age) <= Number(f_maxAge.value));
-
-    if(f_minCTC.value)
-        data = data.filter(x => Number(x.ctc) >= Number(f_minCTC.value));
-
-    if(f_maxCTC.value)
-        data = data.filter(x => Number(x.ctc) <= Number(f_maxCTC.value));
-
-    if(f_dateStart.value)
-        data = data.filter(x => new Date(x.ts) >= new Date(f_dateStart.value));
-
-    if(f_dateEnd.value)
-        data = data.filter(x => new Date(x.ts) <= new Date(f_dateEnd.value));
-
-    filteredData = data;
-    renderTable(filteredData);
-}
-
-// reset filters
-function resetFilters(){
-    f_name.value="";
-    f_number.value="";
-    f_company.value="";
-    f_location.value="";
-    f_channel.value="";
-    f_status.value="";
-    f_minAge.value="";
-    f_maxAge.value="";
-    f_minCTC.value="";
-    f_maxCTC.value="";
-    f_dateStart.value="";
-    f_dateEnd.value="";
-    filteredData=[];
-    renderTable(all);
-}
-
-// Render Data Table
-function renderTable(list){
-    listBody.innerHTML = "";
-
-    list.forEach(d=>{
-        listBody.innerHTML += `
-        <tr>
-            <td><a href="tel:${d.number}" class="callBtn">📞</a></td>
-            <td>${d.ts}</td>
-            <td>${d.name}</td>
-            <td>${d.number}</td>
-            <td>${d.age}</td>
-            <td>${d.exp}</td>
-            <td>${d.loc}</td>
-            <td>${d.ctc}</td>
-            <td>${d.comp}</td>
-            <td>${d.channel}</td>
-            <td>${d.callStatus}</td>
-            <td>${d.remarks}</td>
-        </tr>`;
+            {title:"Time ▼", field:"ts", sorter:"datetime", headerFilter:"input"},
+            {title:"Name ▼", field:"name", sorter:"string", headerFilter:"input"},
+            {title:"Number ▼", field:"number", sorter:"number", headerFilter:"input"},
+            {title:"Age ▼", field:"age", sorter:"number", headerFilter:"input"},
+            {title:"Experience ▼", field:"exp", sorter:"number", headerFilter:"input"},
+            {title:"Location ▼", field:"loc", sorter:"string", headerFilter:"input"},
+            {title:"CTC ▼", field:"ctc", sorter:"number", headerFilter:"input"},
+            {title:"Company ▼", field:"comp", sorter:"string", headerFilter:"input"},
+            {title:"Channel ▼", field:"channel", sorter:"string", headerFilter:"input"},
+            {title:"Status ▼", field:"callStatus", sorter:"string", headerFilter:"input"},
+            {title:"Remarks ▼", field:"remarks", sorter:"string", headerFilter:"input"},
+        ],
     });
 }
 
-// Export CSV
 function exportCSV(){
-    let data = filteredData.length ? filteredData : all;
-
-    let csv = "Time,Name,Number,Age,Experience,Location,CTC,Company,Channel,Status,Remarks\n";
-
-    data.forEach(d=>{
-        csv += `${formatTS(new Date(d.ts))},${d.name},${d.number},${d.age},${d.exp},${d.loc},${d.ctc},${d.comp},${d.channel},${d.callStatus},${d.remarks}\n`;
-    });
-
-    let blob = new Blob([csv],{type:"text/csv"});
-    let a=document.createElement("a");
-    a.href=URL.createObjectURL(blob);
-    a.download=`${empID}_Filtered_Data.csv`;
-    a.click();
+    table.download("csv", `${empID}_data.csv`);
 }
 
-// logout
 function logout(){
     auth.signOut();
     location.href="login.html";
 }
 
-// theme toggle
 function toggleTheme(){
     document.body.classList.toggle("light");
 }
-
-// expose
-window.saveData=saveData;
-window.applyFilters=applyFilters;
-window.resetFilters=resetFilters;
-window.toggleFilters=toggleFilters;
-window.exportCSV=exportCSV;
-window.logout=logout;
-window.toggleTheme=toggleTheme;
-
 </script>
+
 </body>
 </html>
