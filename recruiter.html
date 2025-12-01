@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Recruiter Panel</title>
 
-<!-- TABULATOR EXCEL-STYLE TABLE LIBRARY -->
+<!-- TABULATOR EXCEL TABLE -->
 <link href="https://unpkg.com/tabulator-tables@6.2.1/dist/css/tabulator_midnight.min.css" rel="stylesheet">
 <script src="https://unpkg.com/tabulator-tables@6.2.1/dist/js/tabulator.min.js"></script>
 
@@ -15,8 +15,12 @@ body{
     color:white;
     font-family:Inter,sans-serif;
     padding:20px;
+    transition:0.3s;
 }
-.light{ background:#f2f2f2; color:#222; }
+body.light{
+    background:#f2f2f2;
+    color:#111;
+}
 
 .topBar{
     display:flex;
@@ -45,16 +49,28 @@ input,select{
     background:#111;
     color:white;
 }
-.light input,.light select{ background:white; color:#222; border:1px solid #ccc; }
+body.light input,body.light select{
+    background:white;
+    color:#222;
+    border:1px solid #ccc;
+}
 
-#listTable {
+#tableWrapper {
+    overflow-x:auto;
+    width:100%;
     margin-top:20px;
     border:1px solid #333;
 }
 
 .tabulator {
     background:#0b0b0c !important;
-    border:1px solid #444 !important;
+}
+body.light .tabulator{
+    background:#fff !important;
+}
+
+.tabulator-col-title, .tabulator-cell{
+    white-space:nowrap;
 }
 </style>
 </head>
@@ -107,14 +123,14 @@ input,select{
 <input id="remarkInput" placeholder="Remarks">
 
 <button class="blueBtn" onclick="saveData()">Submit Entry</button>
-
 <button class="blueBtn" onclick="exportCSV()" style="margin-top:20px;">Download CSV</button>
 
-<h2>Your Entries</h2>
+<h2 style="margin-top:30px;">Your Entries</h2>
 
-<!-- TABULATOR TABLE -->
-<div id="listTable"></div>
-
+<!-- TABLE WRAPPER FOR SCROLL -->
+<div id="tableWrapper">
+    <div id="listTable"></div>
+</div>
 
 <script type="module">
 import { auth, db } from "./firebase.js";
@@ -154,13 +170,13 @@ function loadData(empID){
 
     onSnapshot(q, snap=>{
         all = [];
-        snap.forEach(d => all.push({ id:d.id, ...d.data() }));
+        snap.forEach(d => all.push({...d.data(), id:d.id}));
 
-        // ALWAYS SORT LATEST FIRST
+        // latest first
         all.sort((a,b)=> new Date(b.ts) - new Date(a.ts));
 
         renderDashboard();
-        loadTabulator(all);
+        renderTable(all);
     });
 }
 
@@ -179,7 +195,10 @@ function renderDashboard(){
 
 async function saveData(){
     let num = numberInput.value.trim();
-    if(num.length !== 10){ alert("Enter valid 10-digit number"); return; }
+    if(num.length !== 10){
+        alert("Enter valid 10-digit number");
+        return;
+    }
 
     await addDoc(collection(db,"callLogs"),{
         ts: formatTS(new Date()),
@@ -198,7 +217,7 @@ async function saveData(){
         remarks: remarkInput.value
     });
 
-    nameInput.value = "";
+    nameInput.value="";
     numberInput.value="";
     ageInput.value="";
     expInput.value="";
@@ -212,7 +231,7 @@ async function saveData(){
     alert("Entry Saved");
 }
 
-function loadTabulator(data){
+function renderTable(data){
     if(table){
         table.replaceData(data);
         return;
@@ -220,13 +239,16 @@ function loadTabulator(data){
 
     table = new Tabulator("#listTable", {
         data:data,
-        layout:"fitColumns",
-        height:"500px",
+        layout:"fitDataFill",   // auto-fit columns
+        responsiveLayout:false,
+        height:"480px",
         movableColumns:true,
         pagination:false,
+        columnDefaults:{ resizable:true },
 
         columns:[
-            {title:"Call", field:"number", formatter:cell=>`<a href="tel:${cell.getValue()}" style="color:#2B7FFF;font-size:20px;">📞</a>`},
+            {title:"Call", field:"number",
+                formatter:cell=>`<a href="tel:${cell.getValue()}" style="color:#2B7FFF;font-size:20px;">📞</a>`},
 
             {title:"Time ▼", field:"ts", sorter:"datetime", headerFilter:"input"},
             {title:"Name ▼", field:"name", sorter:"string", headerFilter:"input"},
@@ -254,6 +276,13 @@ function logout(){
 
 function toggleTheme(){
     document.body.classList.toggle("light");
+
+    // Change Tabulator theme
+    if(document.body.classList.contains("light")){
+        document.querySelector(".tabulator").classList.remove("tabulator_midnight");
+    } else {
+        document.querySelector(".tabulator").classList.add("tabulator_midnight");
+    }
 }
 </script>
 
