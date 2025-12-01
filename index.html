@@ -1,70 +1,291 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Recruita Hiring Solutions</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Recruita Hiring Solutions | Insurance Job Hiring Consultancy</title>
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <meta name="description" content="Recruita Hiring Solutions is a trusted insurance job consultancy and sales hiring agency serving Mumbai, Varanasi, and PAN India. We specialize in bulk hiring for insurance, field sales hiring, BFSI recruitment, and talent acquisition for leading companies." />
 
-<style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:Inter,sans-serif;}
-body{background:#0b0b0c;color:#fff;overflow-x:hidden;}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 
-header{
-  width:100%;padding:20px 40px;position:fixed;top:0;left:0;
-  background:rgba(0,0,0,0.5);backdrop-filter:blur(6px);
-  display:flex;justify-content:space-between;align-items:center;z-index:999;
-}
-nav a{margin-left:24px;text-decoration:none;color:#fff;font-size:15px;}
-nav a:hover{color:#2B7FFF;}
+  <style>
+    :root {
+      --bg: #0B0B0C;
+      --white: #fff;
+      --white85: rgba(255,255,255,.85);
+      --white70: rgba(255,255,255,.7);
+      --card: rgba(255,255,255,.06);
+      --border: rgba(255,255,255,.12);
+      --blue: #2B7FFF;
+      --container: 1280px;
+    }
 
-.hero{
-  height:100vh;
-  padding:0 40px;
-  background:url("https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=1800&q=80") center/cover no-repeat;
-  display:flex;align-items:center;
-}
-.hero h1{font-size:60px;font-weight:800;margin-bottom:10px;}
-.hero p{font-size:22px;margin-bottom:20px;color:#d8d8d8;}
-.btn{
-  background:#2B7FFF;padding:14px 22px;
-  color:#fff;border-radius:8px;font-weight:600;
-  text-decoration:none;font-size:17px;
-}
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, sans-serif;
+      background: var(--bg);
+      color: var(--white);
+      line-height: 1.5;
+    }
 
-footer{
-  padding:30px 40px;text-align:center;background:#111;
-  color:#777;margin-top:40px;font-size:14px;
-}
+    header {
+      width: 100%;
+      background: rgba(0,0,0,.55);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
 
-@media(max-width:600px){
-  .hero{padding:20px;}
-  .hero h1{font-size:38px;}
-  .hero p{font-size:17px;}
+    .nav {
+      max-width: var(--container);
+      margin: auto;
+      padding: 14px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .nav-left { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; }
+
+    nav ul {
+      list-style: none;
+      display: flex;
+      gap: 28px;
+      margin: 0;
+      padding: 0;
+    }
+
+    nav a {
+      color: var(--white85);
+      text-decoration: none;
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    nav a:hover { color: var(--blue); }
+
+    .section {
+      max-width: var(--container);
+      padding: 60px 20px;
+      margin: auto;
+    }
+
+    .hero {
+      background: url('https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1920&q=70') center/cover no-repeat;
+      padding: 140px 20px;
+      position: relative;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,.55);
+    }
+
+    .hero-content {
+      position: relative;
+      max-width: var(--container);
+      margin: auto;
+    }
+
+    .hero h1 { font-size: 62px; font-weight: 800; margin: 0; }
+    .hero p { font-size: 22px; color: var(--white85); margin-top: 10px; }
+
+    h2 {
+      font-size: 36px;
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+
+    .accent {
+      width: 120px;
+      height: 8px;
+      background: var(--blue);
+      border-radius: 999px;
+      margin-bottom: 28px;
+    }
+
+    .grid { display: grid; gap: 24px; }
+    .g-2 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+    .g-3 { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+    .g-4 { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 22px;
+      border-radius: 14px;
+    }
+
+    footer {
+      margin-top: 60px;
+      padding: 30px 20px;
+      background: rgba(255,255,255,.05);
+      border-top: 1px solid var(--border);
+      text-align: center;
+      color: var(--white70);
+    }
+
+  .hamburger { display:none; flex-direction:column; gap:4px; cursor:pointer; }
+.hamburger span { width:24px; height:3px; background:var(--white); border-radius:3px; }
+@media(max-width:780px){ nav ul{ position:absolute; top:60px; right:20px; background:rgba(0,0,0,.9); padding:20px; border:1px solid var(--border); border-radius:12px; flex-direction:column; gap:16px; display:none; }
+body.nav-open nav ul{ display:flex; }
+.hamburger{ display:flex; }
+nav ul li a{ font-size:18px; }
 }
 </style>
 </head>
-
 <body>
 
 <header>
-  <h1>Recruita</h1>
-  <nav>
-    <a href="login.html">Login</a>
-  </nav>
+  <div class="nav">
+    <div class="nav-left">Recruita</div>
+    <div class="hamburger" onclick="document.body.classList.toggle('nav-open')">
+      <span></span><span></span><span></span>
+    </div>
+    <nav>
+      <ul>
+        <li><a href="#about">About</a></li>
+        <li><a href="#vision">Vision</a></li>
+        <li><a href="#services">Services</a></li>
+        <li><a href="#industries">Industries</a></li>
+        <li><a href="#contact">Contact</a></li>
+        <li><a href="admin-login.html" style="color:var(--blue)"><b>Login</b></a></li>
+      </ul>
+    </nav>
+  </div>
 </header>
 
 <section class="hero">
-  <div>
-    <h1>Connecting Talent, Building Teams</h1>
-    <p>Recruita Hiring Solutions — trusted since 2020.</p>
-    <a href="login.html" class="btn">Login</a>
+  <div class="hero-content">
+    <h1>Recruita Hiring Solutions</h1>
+    <p>Connecting Talent, Building Teams.</p>
   </div>
 </section>
 
+<section id="about" class="section">
+  <h2>Company Snapshot</h2>
+  <div class="accent"></div>
+
+  <div class="grid g-2">
+    <div>
+      <p><b>Legal Name:</b> Recruita Hiring Solutions</p>
+      <p><b>Founded:</b> 2020</p>
+      <p><b>GSTIN:</b> 27BEXPG2840C1ZH</p>
+      <p><b>Address:</b> 04/09, Janiya Compound, Poisar, Kandivali East, Mumbai 400101</p>
+      <p><b>Industries:</b> Insurance, E-commerce & Logistics</p>
+    </div>
+
+    <div class="grid g-3">
+      <div class="card"><h3>5+</h3><p>Years in Consulting</p></div>
+      <div class="card"><h3>15+</h3><p>Satisfied Clients</p></div>
+      <div class="card"><h3>1000+</h3><p>Candidates Placed</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="about-detail" class="section">
+  <h2>About Us</h2>
+  <div class="accent"></div>
+
+  <p>
+    Recruita Hiring Solutions is a specialized recruitment consultancy. Since 2020, we’ve supported
+    leading insurance and financial service companies in building high-performing teams. We focus on
+    delivering reliable manpower, reducing TAT, and ensuring quality candidates who stay and perform.
+  </p>
+
+  <div class="grid g-2" style="margin-top:20px;">
+    <div class="card">
+      <h3>Focus</h3>
+      <p>Reliable manpower, faster TAT, and candidates who perform.</p>
+    </div>
+    <div class="card">
+      <h3>Sourcing Footprint</h3>
+      <p>Pan-India coverage across metros and Tier 2/3 cities.</p>
+    </div>
+  </div>
+</section>
+
+<section id="vision" class="section">
+  <h2>Vision & Mission</h2>
+  <div class="accent"></div>
+
+  <div class="grid g-2">
+    <div class="card">
+      <h3>VISION</h3>
+      <p>To be the most trusted partner for companies scaling teams with speed and quality.</p>
+    </div>
+
+    <div class="card">
+      <h3>MISSION</h3>
+      <p>Connecting ambitious professionals with the right opportunities while helping organizations grow.</p>
+    </div>
+  </div>
+</section>
+
+<section id="services" class="section">
+  <h2>Services</h2>
+  <div class="accent"></div>
+
+  <div class="grid g-4">
+    <div class="card">
+      <h3>Volume Hiring</h3>
+      <p>Frontline sales executives, relationship managers, field staff.</p>
+    </div>
+    <div class="card">
+      <h3>Mid-level Hiring</h3>
+      <p>Team leaders, assistant managers, operational staff.</p>
+    </div>
+    <div class="card">
+      <h3>Screening & Shortlisting</h3>
+      <p>Pre-screening aligned with JD; saves HR bandwidth.</p>
+    </div>
+    <div class="card">
+      <h3>Onboarding Support</h3>
+      <p>Documentation and joining follow-ups.</p>
+    </div>
+  </div>
+</section>
+
+<section id="industries" class="section">
+  <h2>Industries We Serve</h2>
+  <div class="accent"></div>
+
+  <div class="grid g-2">
+    <div class="card">
+      <h3>Insurance</h3>
+      <p>Life, General, Health</p>
+    </div>
+    <div class="card">
+      <h3>E-commerce & Logistics</h3>
+      <p>Support hiring</p>
+    </div>
+  </div>
+</section>
+
+<section id="contact" class="section">
+  <h2>Contact</h2>
+  <div class="accent"></div>
+
+  <p><b>Recruita Hiring Solutions</b></p>
+  <p>GSTIN: 27BEXPG2840C1ZH</p>
+  <p>04/09, Janiya Compound, Poisar, Kandivali East, Mumbai 400101</p>
+
+  <p><b>Email:</b> hr@recruita.in</p>
+  <p><b>Phone:</b> +91 7784837087</p>
+  <p><b>Website:</b> https://www.recruita.in</p>
+</section>
+
 <footer>
-  © 2025 Recruita Hiring Solutions. All rights reserved.
+  © Recruita Hiring Solutions — All Rights Reserved
 </footer>
 
 </body>
