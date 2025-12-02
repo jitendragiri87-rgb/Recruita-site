@@ -26,11 +26,14 @@ button{ padding:10px 16px; border:none; border-radius:6px; cursor:pointer; font-
 
 /* content */
 .container{ padding:12px 20px 40px 20px; max-width:1200px; margin:0 auto; }
-h2{ margin:10px 0 6px; font-size:22px; }
+h2{ margin:10px 0 6px; }
 #tableWrapper { overflow-x:auto; width:100%; margin-top:12px; border:1px solid rgba(255,255,255,0.04); border-radius:6px; padding:8px; }
 .tabulator{ background:var(--bg-dark) !important; }
 input,select{ width:100%; padding:12px; margin-top:8px; border-radius:8px; border:none; background:#111; color:#fff; }
 body.light input, body.light select{ background:#fff; color:#222; border:1px solid #ddd; }
+
+/* small inline duplicate hint under number */
+#dupHint{ margin-top:6px; font-size:13px; color:rgba(255,255,255,0.75); }
 
 /* welcome */
 #welcomeFull{ position:fixed; inset:0; z-index:99990; display:none; align-items:center; justify-content:center; background:linear-gradient(180deg, rgba(2,6,23,0.95), rgba(8,13,30,0.95)); transition: transform .55s cubic-bezier(.2,.9,.25,1), opacity .3s ease; }
@@ -47,6 +50,19 @@ body.light input, body.light select{ background:#fff; color:#222; border:1px sol
 @keyframes pop{ from{ transform: scale(.92); opacity:0 } to{ transform: scale(1); opacity:1 } }
 #cartoonBox .greet{ font-size:15px; margin-bottom:6px; color:#0b0b0c; }
 #cartoonBox .line{ font-size:13px; color:#444; font-weight:500; }
+
+/* modal for duplicates (keeps your look) */
+#dupModal{
+  position:fixed; inset:0; z-index:100005; display:none; align-items:center; justify-content:center;
+  background: rgba(2,6,23,0.6);
+}
+#dupCard{
+  width:520px; max-width:94vw; border-radius:12px; padding:18px; background:#0f1114; color:#fff; border:1px solid rgba(255,255,255,0.06);
+  box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+}
+#dupCard h3{ margin:0 0 8px; }
+.dupItem{ padding:10px; border-radius:8px; background:rgba(255,255,255,0.02); margin-bottom:8px; font-size:13px; }
+.dupBtns{ display:flex; gap:8px; justify-content:flex-end; margin-top:12px; }
 
 /* mini fallback */
 #welcomeMini{ position:fixed; left:20px; top:20px; z-index:9999; display:flex; align-items:center; gap:14px; padding:14px 18px; border-radius:12px; background:rgba(11,11,12,0.9); border:1px solid rgba(255,255,255,0.04); transform: translateY(-6px); opacity:0; transition:opacity .32s, transform .32s; pointer-events:none; }
@@ -91,12 +107,19 @@ body.light input, body.light select{ background:#fff; color:#222; border:1px sol
 
   <h2 style="margin-top:18px">Add Candidate Entry</h2>
   <input id="nameInput" placeholder="Name">
+
+  <!-- Number field with hint below -->
   <input id="numberInput" placeholder="Number (10 digits)">
-  <input id="ageInput" placeholder="Age">
-  <input id="expInput" placeholder="Total Experience">
+  <div id="dupHint" aria-live="polite"></div>
+
+  <!-- Numeric fields: Age, Experience, CTC (accept digits and single decimal) -->
+  <input id="ageInput" placeholder="Age (numbers only)">
+  <input id="expInput" placeholder="Total Experience (years)">
+  <input id="ctcInput" placeholder="CTC (numbers only)">
+
   <input id="locInput" placeholder="Location">
-  <input id="ctcInput" placeholder="CTC">
   <input id="compInput" placeholder="Current Company">
+
   <select id="channelInput">
     <option value="">Select Channel</option>
     <option>Banca</option>
@@ -122,6 +145,7 @@ body.light input, body.light select{ background:#fff; color:#222; border:1px sol
   <div id="listTable" style="margin-top:12px"></div>
 </div>
 
+<!-- Full-screen welcome -->
 <div id="welcomeFull" aria-hidden="true" role="dialog">
   <div class="welcomeCard" aria-label="Welcome">
     <div class="avatarBig" id="fullAvatar">R</div>
@@ -133,6 +157,25 @@ body.light input, body.light select{ background:#fff; color:#222; border:1px sol
   </div>
 </div>
 
+<!-- Duplicate modal -->
+<div id="dupModal" role="dialog" aria-modal="true">
+  <div id="dupCard" role="document">
+    <h3>Possible duplicate found</h3>
+    <div id="dupList"></div>
+
+    <div style="margin-top:8px; font-size:13px; color:rgba(255,255,255,0.7);">
+      Choose an action — completing previous is recommended for partial drafts.
+    </div>
+
+    <div class="dupBtns">
+      <button id="dupEditPrev" class="greyBtn">Complete previous</button>
+      <button id="dupSaveNew" class="blueBtn">Save as new</button>
+      <button id="dupDismiss" class="redBtn">Dismiss</button>
+    </div>
+  </div>
+</div>
+
+<!-- mini fallback -->
 <div id="welcomeMini" aria-live="polite" role="status" style="display:none">
   <div style="display:flex;flex-direction:column;">
     <div class="title" id="miniTitle">Hi —</div>
@@ -143,12 +186,25 @@ body.light input, body.light select{ background:#fff; color:#222; border:1px sol
 </div>
 
 <script type="module">
+/* Core imports (keeps using your firebase.js) */
 import { auth, db } from "./firebase.js";
-import { collection, query, where, onSnapshot, addDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+import {
+  collection, query, where, onSnapshot, addDoc, getDocs, limit, doc, updateDoc
+} from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
 /* state */
 let uid = "", email = "", empID = "", displayName = "";
 let table = null, all = [];
+let editingDocId = null;      // if set, Save will update that doc
+let lastDupMatches = [];      // cached matches from last check
+
+/* Elements */
+const dupHint = document.getElementById('dupHint');
+const dupModal = document.getElementById('dupModal');
+const dupList = document.getElementById('dupList');
+const dupEditPrev = document.getElementById('dupEditPrev');
+const dupSaveNew = document.getElementById('dupSaveNew');
+const dupDismiss = document.getElementById('dupDismiss');
 
 const welcomeFull = document.getElementById('welcomeFull');
 const fullAvatar = document.getElementById('fullAvatar');
@@ -169,6 +225,9 @@ const miniClose = document.getElementById('miniClose');
 const KEY_LAST_FULL = 'recruita_lastFullWelcome';
 const KEY_LAST_LOGOUT = 'recruita_lastLogout';
 const KEY_BADGE_VISIBLE = 'recruita_nameBadgeVisible';
+
+/* Utility: format timestamp string (same as existing pattern) */
+function formatTS(d){ const p=n=>n.toString().padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`; }
 
 /* small audio jingle */
 function playJingle(){
@@ -194,56 +253,292 @@ function playJingle(){
   }catch(e){ console.warn('Audio not supported', e); }
 }
 
-/* show cartoon box */
+/* cartoon popup */
 function showCartoon(name){
-  console.log('showCartoon for', name);
   cartoonGreet.textContent = `Hey ${name} —`;
-  cartoonLine.textContent = "What's up? 😊";
+  cartoonLine.textContent = "What's up? 🎵";
   cartoonBox.style.display = 'block';
   cartoonBox.style.opacity = '1';
   playJingle();
   setTimeout(()=> { cartoonBox.style.opacity = '0'; setTimeout(()=> cartoonBox.style.display='none', 320); }, 4200);
 }
 
-/* minimize welcome into badge with reliable fallback */
+/* minimize welcome into badge with fallback (keeps previous code) */
 function minimizeIntoBadge(name){
-  console.log('minimizeIntoBadge called with', name);
-  if(sessionStorage.getItem(KEY_BADGE_VISIBLE)){
-    console.log('badge already visible - skipping animation');
-    return;
-  }
-
-  // show transform (will animate)
+  if(sessionStorage.getItem(KEY_BADGE_VISIBLE)) return;
   welcomeFull.classList.add('minimize');
-
-  // fallback timer for animation end (in case transitionend didn't fire)
-  const fallbackMs = 700; // slightly longer than CSS animation
-  let done = false;
-
+  const fallbackMs = 700; let done = false;
   function finish(){
-    if(done) return;
-    done = true;
+    if(done) return; done = true;
     try{ welcomeFull.style.display = 'none'; }catch(e){}
     badgeAvatar.textContent = (name && name[0]) ? name[0].toUpperCase() : 'R';
     badgeText.textContent = name;
     nameBadge.style.display = 'flex';
     sessionStorage.setItem(KEY_BADGE_VISIBLE, '1');
     try{ localStorage.setItem(KEY_LAST_FULL, Date.now().toString()); }catch(e){}
-    console.log('badge shown');
   }
-
-  // try transitionend but also use fallback
   welcomeFull.addEventListener('transitionend', function onEnd(ev){
-    // ensure it's the transform transition (protective)
     if(ev.propertyName && ev.propertyName.indexOf('transform') === -1) return;
     welcomeFull.removeEventListener('transitionend', onEnd);
     finish();
   });
-
   setTimeout(()=> finish(), fallbackMs);
 }
 
-/* decide welcome behavior */
+/* show/hide modal */
+function openDupModal(matches){
+  lastDupMatches = matches;
+  dupList.innerHTML = '';
+  // Show the most relevant (most recent) match at top, then others
+  matches.forEach((m, idx)=>{
+    const when = m.ts || m.createdAt || '';
+    const status = m.status || 'complete';
+    const snippet = `
+      <div class="dupItem">
+        <div><strong>${m.name || '(no name)'}</strong> — ${m.number}</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:6px;">
+          status: ${status} • ${when}
+          ${m.channel ? ' • ' + m.channel : ''}
+          ${m.remarks ? ' • ' + (m.remarks.length>40 ? m.remarks.slice(0,40)+'…' : m.remarks) : ''}
+        </div>
+      </div>`;
+    dupList.insertAdjacentHTML('beforeend', snippet);
+  });
+  dupModal.style.display = 'flex';
+}
+
+function closeDupModal(){ dupModal.style.display = 'none'; }
+
+/* check duplicates (limit 5) for a number — returns array of doc data + id */
+async function checkMatches(number){
+  if(!number || number.length < 6) return []; // skip for too-short values
+  try{
+    const q = query(collection(db,'callLogs'), where('number','==', number), limit(5));
+    const snap = await getDocs(q);
+    const res = [];
+    snap.forEach(d => res.push({...d.data(), id: d.id}));
+    // sort by ts or createdAt desc (best effort)
+    res.sort((a,b)=>{
+      const at = a.ts || a.createdAt || ''; const bt = b.ts || b.createdAt || '';
+      return (bt > at) ? 1 : -1;
+    });
+    return res;
+  }catch(err){
+    console.error('checkMatches error', err);
+    return [];
+  }
+}
+
+/* debounce helper */
+function debounce(fn, wait){
+  let t = null;
+  return function(...args){
+    clearTimeout(t);
+    t = setTimeout(()=> fn.apply(this, args), wait);
+  };
+}
+
+/* inline pre-check: on number blur, show hint if matches found */
+const numberEl = document.getElementById('numberInput');
+numberEl.addEventListener('input', (e)=> {
+  // nothing heavy here — we sanitize input in numeric fields later separately
+});
+const runPrecheck = debounce(async ()=> {
+  const val = (numberEl.value || '').trim();
+  if(!/^[0-9]{6,}$/.test(val)){ dupHint.textContent = ''; return; } // need at least 6 digits to avoid noise
+  const matches = await checkMatches(val);
+  if(matches.length){
+    const top = matches[0];
+    const status = top.status || 'complete';
+    const when = top.ts || top.createdAt || '';
+    dupHint.textContent = `Existing record found (${matches.length}). Most recent: ${top.name || '(no name)'} • ${when} • ${status}. On Save you will get options.`;
+  } else {
+    dupHint.textContent = '';
+  }
+}, 650);
+
+numberEl.addEventListener('blur', runPrecheck);
+
+/* numeric-only inputs for age, exp, ctc:
+   allow digits and at most one dot. Strip any other characters silently.
+   This will prevent "3 LPA" being typed; it will only show "3".
+*/
+function enforceNumericInput(el){
+  el.addEventListener('input', ()=>{
+    let v = el.value;
+    // remove all characters except digits and dot
+    v = v.replace(/[^\d.]/g, '');
+    // allow only single dot
+    const parts = v.split('.');
+    if(parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('');
+    // remove leading zeros only if it's "00" etc. Keep single zero allowed.
+    if(v.indexOf('.') === -1){
+      // integer part only; trim leading zeros unless it's just "0"
+      v = v.replace(/^0+(\d)/, '$1');
+    }
+    el.value = v;
+  });
+}
+enforceNumericInput(document.getElementById('ageInput'));
+enforceNumericInput(document.getElementById('expInput'));
+enforceNumericInput(document.getElementById('ctcInput'));
+
+/* modal buttons actions */
+dupEditPrev.addEventListener('click', async ()=>{
+  closeDupModal();
+  if(!lastDupMatches.length) return;
+  const top = lastDupMatches[0];
+  // fill form with top match and set editingDocId
+  editingDocId = top.id;
+  document.getElementById('nameInput').value = top.name || '';
+  document.getElementById('numberInput').value = top.number || '';
+  document.getElementById('ageInput').value = top.age || '';
+  document.getElementById('expInput').value = top.exp || '';
+  document.getElementById('ctcInput').value = top.ctc || '';
+  document.getElementById('locInput').value = top.loc || '';
+  document.getElementById('compInput').value = top.comp || '';
+  document.getElementById('channelInput').value = top.channel || '';
+  document.getElementById('statusInput').value = top.callStatus || '';
+  document.getElementById('remarkInput').value = top.remarks || '';
+  // show small banner in dupHint indicating edit mode
+  dupHint.textContent = `Editing existing entry (will update record id ${editingDocId}).`;
+});
+
+dupSaveNew.addEventListener('click', async ()=>{
+  closeDupModal();
+  // mark that we will force-save as new despite duplicate
+  try{
+    await performSave({ forceNew: true, duplicateOf: (lastDupMatches[0] && lastDupMatches[0].id) || null });
+    alert('Saved as new (duplicate allowed)');
+  }catch(e){ console.error(e); alert('Error saving new duplicate: ' + (e.message || e)); }
+});
+
+dupDismiss.addEventListener('click', ()=>{
+  closeDupModal();
+});
+
+/* core save logic:
+   - if editingDocId set => update that doc (set status='complete')
+   - else run checkMatches(number). If matches found => show modal (allow user to choose)
+   - else addDoc with status: 'partial' or 'complete' depending on completeness
+*/
+async function performSave(opts){
+  opts = opts || {};
+  const name = (document.getElementById('nameInput').value || '').trim();
+  const number = (document.getElementById('numberInput').value || '').trim();
+  const age = (document.getElementById('ageInput').value || '').trim();
+  const exp = (document.getElementById('expInput').value || '').trim();
+  const ctc = (document.getElementById('ctcInput').value || '').trim();
+  const loc = (document.getElementById('locInput').value || '').trim();
+  const comp = (document.getElementById('compInput').value || '').trim();
+  const channel = (document.getElementById('channelInput').value || '').trim();
+  const statusSelect = (document.getElementById('statusInput').value || '').trim();
+  const remarks = (document.getElementById('remarkInput').value || '').trim();
+
+  // minimal validation: number required
+  if(!/^[0-9]{6,}$/.test(number)){
+    alert('Enter valid number (at least 6 digits).');
+    return;
+  }
+
+  // determine completeness: treat as partial if only name+number provided (others empty)
+  const isPartial = !(age || exp || ctc || loc || comp || channel || statusSelect || remarks);
+
+  // update (editing existing)
+  if(editingDocId){
+    try{
+      const ref = doc(db, 'callLogs', editingDocId);
+      await updateDoc(ref, {
+        ts: formatTS(new Date()),
+        name, number, age, exp, ctc, loc, comp,
+        channel, callStatus: statusSelect, remarks,
+        status: 'complete',
+        updatedBy: uid,
+        updatedAt: formatTS(new Date())
+      });
+      editingDocId = null;
+      dupHint.textContent = '';
+      alert('Existing entry updated');
+      return;
+    }catch(err){ console.error(err); throw err; }
+  }
+
+  // if forced new (user clicked save-as-new on modal)
+  if(opts.forceNew){
+    try{
+      await addDoc(collection(db,'callLogs'), {
+        ts: formatTS(new Date()),
+        name, number, age, exp, ctc, loc, comp,
+        channel, callStatus: statusSelect, remarks,
+        createdBy: uid,
+        createdAt: formatTS(new Date()),
+        status: isPartial ? 'partial' : 'complete',
+        isDuplicate: !!opts.duplicateOf,
+        duplicateOf: opts.duplicateOf || null
+      });
+      return;
+    }catch(err){ console.error(err); throw err; }
+  }
+
+  // normal flow: check duplicates
+  const matches = await checkMatches(number);
+  if(matches.length){
+    // show modal and let user decide
+    openDupModal(matches);
+    return;
+  }
+
+  // no matches: add doc normally
+  try{
+    await addDoc(collection(db,'callLogs'), {
+      ts: formatTS(new Date()),
+      name, number, age, exp, ctc, loc, comp,
+      channel, callStatus: statusSelect, remarks,
+      createdBy: uid,
+      createdAt: formatTS(new Date()),
+      status: isPartial ? 'partial' : 'complete'
+    });
+    return;
+  }catch(err){ console.error(err); throw err; }
+}
+
+/* wrapper used by button onclick */
+async function saveData(evt){
+  const btn = evt && evt.target && evt.target.tagName === 'BUTTON' ? evt.target : document.activeElement;
+  if(btn) btn.disabled = true;
+  try{
+    await performSave();
+    // If performSave added a doc without returning earlier, show success
+    // (Note: when modal opens, performSave returns before saving; success occurs on subsequent actions)
+    if(!dupModal.style.display || dupModal.style.display === 'none'){
+      alert('Entry saved');
+      // clear form after save if we actually saved
+      ['nameInput','numberInput','ageInput','expInput','ctcInput','locInput','compInput','channelInput','statusInput','remarkInput']
+        .forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+      dupHint.textContent = '';
+    }
+  }catch(err){
+    console.error(err); alert('Error saving entry: ' + (err.message||err));
+  }finally{ if(btn) btn.disabled = false; }
+}
+
+/* Export CSV and other helpers (unchanged behavior) */
+function exportCSV(){ if(table && typeof table.download === 'function'){ table.download('csv', `${(displayName||empID).replace(/\s+/g,'_')}_data.csv`); } else alert('Table not ready yet.'); }
+function toggleTheme(){ document.body.classList.toggle('light'); const tb = document.querySelector('.tabulator'); if(tb){ tb.classList.toggle('tabulator_midnight'); } }
+function logout(){ try{ localStorage.setItem(KEY_LAST_LOGOUT, Date.now().toString()); }catch(e){} try{ sessionStorage.removeItem(KEY_BADGE_VISIBLE); }catch(e){} try{ nameBadge.style.display = 'none'; }catch(e){} auth.signOut(); location.href = 'login.html'; }
+
+/* Duplicate modal save-as-new handled above. */
+/* Cartoons & welcome behavior (kept same as previous working version) */
+
+function showMini(name){
+  document.getElementById('miniTitle').textContent = `Hi ${name} !`;
+  document.getElementById('miniSub').textContent = 'Welcome back.';
+  const mini = document.getElementById('welcomeMini');
+  mini.style.display = 'flex';
+  requestAnimationFrame(()=> mini.classList.add('show'));
+  setTimeout(()=> { mini.classList.remove('show'); setTimeout(()=> mini.style.display='none',320); }, 3500);
+}
+
 function handleWelcomeLogic(){
   const lastFull = localStorage.getItem(KEY_LAST_FULL);
   const lastLogout = localStorage.getItem(KEY_LAST_LOGOUT);
@@ -255,7 +550,6 @@ function handleWelcomeLogic(){
     badgeAvatar.textContent = (displayName && displayName[0]) ? displayName[0].toUpperCase() : 'R';
     badgeText.textContent = displayName || empID;
     nameBadge.style.display = 'flex';
-    console.log('badge restored from session');
     return;
   }
 
@@ -265,49 +559,30 @@ function handleWelcomeLogic(){
     fullSub.textContent = 'Welcome back to Recruita.';
     welcomeFull.style.display = 'flex';
     welcomeFull.setAttribute('aria-hidden','false');
-    console.log('showing full welcome');
   } else {
     const shownKey = `welcomeMiniShown_${uid}`;
     if(!sessionStorage.getItem(shownKey)){
-      document.getElementById('miniTitle').textContent = `Hi ${displayName || empID} !`;
-      document.getElementById('miniSub').textContent = 'Welcome back.';
-      const mini = document.getElementById('welcomeMini');
-      mini.style.display = 'flex';
-      requestAnimationFrame(()=> mini.classList.add('show'));
+      showMini(displayName);
       sessionStorage.setItem(shownKey,'1');
-      setTimeout(()=> { mini.classList.remove('show'); setTimeout(()=> mini.style.display='none',320); }, 3500);
-      console.log('showing mini welcome');
-    } else {
-      console.log('no welcome needed this session');
     }
   }
 }
 
-/* attach handlers reliably (exposed globally) */
-function onFullContinueClick(){
-  console.log('fullContinue clicked');
-  minimizeIntoBadge(displayName || empID);
-}
-function onBadgeClick(){
-  console.log('nameBadge clicked');
-  showCartoon(displayName || empID);
-}
-
-/* bind handlers to elements and expose when script runs */
-fullContinue.addEventListener('click', onFullContinueClick);
-nameBadge.addEventListener('click', onBadgeClick);
+/* Bind handlers */
+fullContinue.addEventListener('click', ()=> minimizeIntoBadge(displayName || empID));
+nameBadge.addEventListener('click', ()=> showCartoon(displayName || empID));
 miniClose.addEventListener('click', ()=> {
-  const mini = document.getElementById('welcomeMini');
-  mini.classList.remove('show');
-  setTimeout(()=> mini.style.display='none', 320);
+  const mini = document.getElementById('welcomeMini'); mini.classList.remove('show'); setTimeout(()=> mini.style.display='none',320);
 });
 
-/* auth + user doc */
+/* Duplicate dismiss auto closes modal already handled */
+
+/* Firestore auth + load data, same as before */
 auth.onAuthStateChanged(async user => {
   if(!user){ location.href='login.html'; return; }
   uid = user.uid; email = user.email;
-  console.log('auth state', uid, email);
 
+  // fetch display name
   const ref = collection(db,'users');
   const q = query(ref, where('email','==', email));
   onSnapshot(q, snap => {
@@ -315,7 +590,6 @@ auth.onAuthStateChanged(async user => {
       const data = d.data() || {};
       empID = data.empID || (email ? email.split('@')[0] : 'User');
       displayName = (data.fullName || data.name || empID || (email ? email.split('@')[0] : 'there')).trim();
-      console.log('user doc loaded:', displayName, empID);
     });
 
     loadData(empID);
@@ -323,9 +597,7 @@ auth.onAuthStateChanged(async user => {
   });
 });
 
-/* data load + UI render */
-function formatTS(d){ const p=n=>n.toString().padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`; }
-
+/* Load call logs (keeps same Tabulator behavior) */
 function loadData(empIDVal){
   const q = query(collection(db,'callLogs'), where('empID','==', empIDVal));
   onSnapshot(q, snap => {
@@ -334,7 +606,6 @@ function loadData(empIDVal){
     all.sort((a,b)=> new Date(b.ts) - new Date(a.ts));
     renderDashboard();
     renderTable(all);
-    console.log('callLogs loaded:', all.length);
   });
 }
 
@@ -349,6 +620,7 @@ function renderDashboard(){
     </tr>`;
 }
 
+/* Tabulator table */
 function renderTable(data){
   if(table){ table.replaceData(data); return; }
   table = new Tabulator('#listTable', {
@@ -371,38 +643,7 @@ function renderTable(data){
   });
 }
 
-/* Save, Export, Theme, Logout */
-async function saveData(evt){
-  const btn = evt && evt.target && evt.target.tagName === 'BUTTON' ? evt.target : document.activeElement;
-  const num = (document.getElementById('numberInput').value || '').trim();
-  if(!/^[0-9]{10}$/.test(num)){ alert('Enter valid 10-digit number'); return; }
-  if(btn) btn.disabled = true;
-  try{
-    await addDoc(collection(db,'callLogs'), {
-      ts: formatTS(new Date()), uid, empID, email,
-      name: document.getElementById('nameInput').value,
-      number: num,
-      age: document.getElementById('ageInput').value,
-      exp: document.getElementById('expInput').value,
-      loc: document.getElementById('locInput').value,
-      ctc: document.getElementById('ctcInput').value,
-      comp: document.getElementById('compInput').value,
-      channel: document.getElementById('channelInput').value,
-      callStatus: document.getElementById('statusInput').value,
-      remarks: document.getElementById('remarkInput').value
-    });
-    ['nameInput','numberInput','ageInput','expInput','locInput','ctcInput','compInput','channelInput','statusInput','remarkInput']
-      .forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
-    alert('Entry Saved');
-  }catch(err){ console.error(err); alert('Error saving entry: ' + (err.message || err)); }
-  finally{ if(btn) btn.disabled = false; }
-}
-
-function exportCSV(){ if(table && typeof table.download === 'function'){ table.download('csv', `${(displayName||empID).replace(/\s+/g,'_')}_data.csv`); } else alert('Table not ready yet.'); }
-function toggleTheme(){ document.body.classList.toggle('light'); const tb = document.querySelector('.tabulator'); if(tb){ tb.classList.toggle('tabulator_midnight'); } }
-function logout(){ try{ localStorage.setItem(KEY_LAST_LOGOUT, Date.now().toString()); }catch(e){} try{ sessionStorage.removeItem(KEY_BADGE_VISIBLE); }catch(e){} try{ nameBadge.style.display = 'none'; }catch(e){} auth.signOut(); location.href = 'login.html'; }
-
-/* expose for inline attributes */
+/* Expose functions for inline onclick attributes if present */
 window.saveData = saveData;
 window.exportCSV = exportCSV;
 window.toggleTheme = toggleTheme;
