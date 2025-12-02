@@ -5,12 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Recruiter Panel</title>
 
-<!-- TABULATOR EXCEL TABLE -->
 <link href="https://unpkg.com/tabulator-tables@6.2.1/dist/css/tabulator_midnight.min.css" rel="stylesheet">
 <script src="https://unpkg.com/tabulator-tables@6.2.1/dist/js/tabulator.min.js"></script>
 
 <style>
-/* ---------- base styles (kept) ---------- */
+/* base styles */
 body{
     background:#0b0b0c;
     color:white;
@@ -23,7 +22,6 @@ body.light{
     color:#111;
 }
 
-/* ... kept UI styles ... */
 .topBar{
     display:flex;
     justify-content:flex-end;
@@ -59,7 +57,7 @@ body.light input,body.light select{
 body.light .tabulator{ background:#fff !important; }
 .tabulator-col-title, .tabulator-cell{ white-space:nowrap; }
 
-/* ---------- FULL-SCREEN WELCOME (NEW) ---------- */
+/* FULL-SCREEN WELCOME */
 #welcomeFull {
   position:fixed; inset:0; z-index:99999;
   display:flex; align-items:center; justify-content:center;
@@ -70,7 +68,7 @@ body.light .tabulator{ background:#fff !important; }
 #welcomeFull.show { opacity:1; pointer-events:auto; }
 
 .welcomeCard {
-  width:min(820px,94vw); max-width:940px;
+  width:min(820px,94vw);
   border-radius:18px; padding:28px; text-align:center;
   background: linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
   border:1px solid rgba(255,255,255,0.06); box-shadow: 0 20px 60px rgba(0,0,0,0.6);
@@ -78,7 +76,6 @@ body.light .tabulator{ background:#fff !important; }
 }
 #welcomeFull.show .welcomeCard { transform: translateY(0) scale(1); opacity:1; }
 
-/* animated avatar */
 .avatar {
   width:96px; height:96px; border-radius:999px; display:inline-grid; place-items:center;
   background:linear-gradient(135deg,#2B7FFF,#6fb1ff);
@@ -86,17 +83,12 @@ body.light .tabulator{ background:#fff !important; }
   box-shadow: 0 12px 30px rgba(43,127,255,0.12);
   animation: popIn 600ms cubic-bezier(.2,.9,.25,1);
 }
-@keyframes popIn {
-  0% { transform: scale(.6); opacity:0; filter:blur(8px); }
-  60% { transform: scale(1.05); opacity:1; filter:blur(0); }
-  100% { transform: scale(1); opacity:1; filter:blur(0); }
-}
+@keyframes popIn { 0% { transform: scale(.6); opacity:0; filter:blur(8px); } 60% { transform: scale(1.05); opacity:1; filter:blur(0); } 100% { transform: scale(1); opacity:1; filter:blur(0); } }
 
-/* heading + sub */
 .welcomeTitle { font-size:30px; font-weight:800; margin:6px 0; }
 .welcomeSub { font-size:16px; color:rgba(255,255,255,0.85); margin-bottom:18px; }
 
-/* small welcome overlay (previous) */
+/* MINI WELCOME */
 #welcomeMini{
   position:fixed; left:20px; top:20px; z-index:9999; display:flex; align-items:center;
   gap:14px; padding:14px 18px; border-radius:12px; background:rgba(11,11,12,0.9);
@@ -106,12 +98,6 @@ body.light .tabulator{ background:#fff !important; }
 #welcomeMini .title{ font-size:18px; font-weight:700; line-height:1; }
 #welcomeMini .sub{ font-size:13px; color:rgba(255,255,255,0.85); margin-top:4px; }
 #welcomeMini button { background:transparent; border:none; color:rgba(255,255,255,0.8); font-size:16px; cursor:pointer; }
-
-/* responsive adjustments */
-@media (max-width:720px){
-  .welcomeTitle { font-size:22px; }
-  .avatar { width:72px; height:72px; font-size:24px; }
-}
 </style>
 </head>
 
@@ -185,7 +171,7 @@ body.light .tabulator{ background:#fff !important; }
 
 <input id="remarkInput" placeholder="Remarks">
 
-<button class="blueBtn" onclick="saveData()">Submit Entry</button>
+<button class="blueBtn" onclick="saveData(event)">Submit Entry</button>
 <button class="blueBtn" onclick="exportCSV()" style="margin-top:20px;">Download CSV</button>
 
 <h2 style="margin-top:30px;">Your Entries</h2>
@@ -195,7 +181,6 @@ body.light .tabulator{ background:#fff !important; }
 </div>
 
 <script type="module">
-/* imports unchanged */
 import { auth, db } from "./firebase.js";
 import {
   collection, query, where, onSnapshot, addDoc
@@ -206,6 +191,7 @@ let empID = "";
 let uid = "";
 let email = "";
 let all = [];
+let table = null;
 
 /* welcome elements */
 const welcomeFull = document.getElementById("welcomeFull");
@@ -220,37 +206,40 @@ const miniTitle = document.getElementById("miniTitle");
 const miniSub = document.getElementById("miniSub");
 const miniClose = document.getElementById("miniClose");
 
-let table;
+let welcomeTimeout = null;
+const KEY_LAST_FULL = "recruita_lastFullWelcome";
+const KEY_LAST_LOGOUT = "recruita_lastLogout";
 
-/* timestamps keys */
-const KEY_LAST_FULL = "recruita_lastFullWelcome";   // timestamp of last full-screen welcome
-const KEY_LAST_LOGOUT = "recruita_lastLogout";      // timestamp of last logout
+/* helper functions */
+function hoursSince(ts){
+  if(!ts) return Infinity;
+  const then = Number(ts);
+  if(!then) return Infinity;
+  return (Date.now() - then) / (1000 * 60 * 60);
+}
 
-/* helper: show mini welcome (non-blocking) */
 function showMini(name){
   miniTitle.textContent = `Hi ${name} !`;
   miniSub.textContent = "Welcome back.";
   welcomeMini.style.display = "flex";
   requestAnimationFrame(()=> welcomeMini.classList.add("show"));
-  // auto-hide
-  setTimeout(()=> {
+  clearTimeout(welcomeTimeout);
+  welcomeTimeout = setTimeout(()=> {
     welcomeMini.classList.remove("show");
     setTimeout(()=> { welcomeMini.style.display = "none"; }, 320);
   }, 3500);
 }
 
-/* helper: show full-screen welcome (blocks until continue/dismiss) */
 function showFull(name){
   fullAvatar.textContent = (name && name[0]) ? name[0].toUpperCase() : "R";
   fullTitle.textContent = `Hi ${name} !`;
   fullSub.textContent = "Welcome back to Recruita.";
   welcomeFull.classList.add("show");
   welcomeFull.setAttribute("aria-hidden", "false");
-  // record last full welcome timestamp
   try{ localStorage.setItem(KEY_LAST_FULL, Date.now().toString()); }catch(e){}
 }
 
-/* full-screen continue/dismiss handlers */
+/* full-screen control */
 fullContinue.addEventListener("click", () => {
   welcomeFull.classList.remove("show");
   welcomeFull.setAttribute("aria-hidden", "true");
@@ -259,29 +248,18 @@ fullDismiss.addEventListener("click", () => {
   welcomeFull.classList.remove("show");
   welcomeFull.setAttribute("aria-hidden", "true");
 });
-
-/* mini dismiss */
 miniClose.addEventListener("click", ()=>{
   welcomeMini.classList.remove("show");
   setTimeout(()=> { welcomeMini.style.display = "none"; }, 320);
 });
 
-/* timestamp utility */
-function hoursSince(ts){
-  if(!ts) return Infinity;
-  const then = Number(ts);
-  if(!then) return Infinity;
-  return (Date.now() - then) / (1000 * 60 * 60);
-}
-
-/* auth state + welcome logic */
+/* auth + data load */
 auth.onAuthStateChanged(async user=>{
     if(!user) location.href="login.html";
 
     uid = user.uid;
     email = user.email;
 
-    // fetch users doc by email (same approach as before)
     const ref = collection(db,"users");
     const q = query(ref, where("email","==", email));
 
@@ -291,19 +269,14 @@ auth.onAuthStateChanged(async user=>{
             empID = data.empID || (email ? email.split("@")[0] : "User");
             const displayName = (data.fullName || data.name || empID || (email ? email.split("@")[0] : "there")).trim();
 
-            // decide whether to show full-screen or mini welcome:
             const lastFull = localStorage.getItem(KEY_LAST_FULL);
             const lastLogout = localStorage.getItem(KEY_LAST_LOGOUT);
             const twelvePassed = hoursSince(lastFull) >= 12;
             const afterLogout = !!lastLogout && Number(lastLogout) > Number(lastFull || 0);
 
-            // show full if user logged out since last full OR 12+ hours passed
             if(afterLogout || twelvePassed){
-                // show full-screen welcome
                 showFull(displayName);
             } else {
-                // show small overlay once per session
-                // use sessionStorage to show only once per tab/session
                 const shownKey = `welcomeMiniShown_${uid}`;
                 if(!sessionStorage.getItem(shownKey)){
                     showMini(displayName);
@@ -312,27 +285,24 @@ auth.onAuthStateChanged(async user=>{
             }
         });
 
-        // load data after we get empID (same as original)
         loadData(empID);
     });
 });
 
-/* formatTS, loadData, renderDashboard, renderTable (copied/preserved) */
+/* timestamp helper used for saved CSV */
 function formatTS(d){
   const p=n=>n.toString().padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 }
 
-function loadData(empID){
-    const q = query(collection(db,"callLogs"), where("empID","==", empID));
+/* load recruiter's call logs */
+function loadData(empIDVal){
+    const q = query(collection(db,"callLogs"), where("empID","==", empIDVal));
 
     onSnapshot(q, snap=>{
         all = [];
         snap.forEach(d => all.push({...d.data(), id:d.id}));
-
-        // latest first
         all.sort((a,b)=> new Date(b.ts) - new Date(a.ts));
-
         renderDashboard();
         renderTable(all);
     });
@@ -351,50 +321,53 @@ function renderDashboard(){
     `;
 }
 
-/* Save entry with basic validation (same) */
-async function saveData(){
-    let num = numberInput.value.trim();
+/* Save entry — robust to being called via inline onclick or programmatically */
+async function saveData(evt){
+    // determine button element if passed
+    const btn = evt && evt.target && evt.target.tagName === 'BUTTON' ? evt.target : document.activeElement;
+
+    let num = (document.getElementById("numberInput") && document.getElementById("numberInput").value) || "";
+    num = num.trim();
+
     if(!/^[0-9]{10}$/.test(num)){
         alert("Enter valid 10-digit number");
         return;
     }
 
-    const btn = event?.target || null;
     if(btn) btn.disabled = true;
 
-    await addDoc(collection(db,"callLogs"),{
-        ts: formatTS(new Date()),
-        uid,
-        empID,
-        email,
-        name: nameInput.value,
-        number: num,
-        age: ageInput.value,
-        exp: expInput.value,
-        loc: locInput.value,
-        ctc: ctcInput.value,
-        comp: compInput.value,
-        channel: channelInput.value,
-        callStatus: statusInput.value,
-        remarks: remarkInput.value
-    });
+    try{
+        await addDoc(collection(db,"callLogs"),{
+            ts: formatTS(new Date()),
+            uid,
+            empID,
+            email,
+            name: document.getElementById("nameInput").value,
+            number: num,
+            age: document.getElementById("ageInput").value,
+            exp: document.getElementById("expInput").value,
+            loc: document.getElementById("locInput").value,
+            ctc: document.getElementById("ctcInput").value,
+            comp: document.getElementById("compInput").value,
+            channel: document.getElementById("channelInput").value,
+            callStatus: document.getElementById("statusInput").value,
+            remarks: document.getElementById("remarkInput").value
+        });
 
-    nameInput.value="";
-    numberInput.value="";
-    ageInput.value="";
-    expInput.value="";
-    locInput.value="";
-    ctcInput.value="";
-    compInput.value="";
-    channelInput.value="";
-    statusInput.value="";
-    remarkInput.value="";
+        // clear fields
+        ["nameInput","numberInput","ageInput","expInput","locInput","ctcInput","compInput","channelInput","statusInput","remarkInput"]
+          .forEach(id=>{ const el = document.getElementById(id); if(el) el.value = ""; });
 
-    if(btn) btn.disabled = false;
-    alert("Entry Saved");
+        alert("Entry Saved");
+    }catch(err){
+        console.error(err);
+        alert("Error saving entry: " + (err.message || err));
+    }finally{
+        if(btn) btn.disabled = false;
+    }
 }
 
-/* Tabulator table rendering (kept) */
+/* Render table using Tabulator */
 function renderTable(data){
     if(table){
         table.replaceData(data);
@@ -413,7 +386,6 @@ function renderTable(data){
         columns:[
             {title:"Call", field:"number",
                 formatter:cell=>`<a href="tel:${cell.getValue()}" style="color:#2B7FFF;font-size:20px;">📞</a>`},
-
             {title:"Time ▼", field:"ts", sorter:"datetime", headerFilter:"input"},
             {title:"Name ▼", field:"name", sorter:"string", headerFilter:"input"},
             {title:"Number ▼", field:"number", sorter:"number", headerFilter:"input"},
@@ -429,25 +401,40 @@ function renderTable(data){
     });
 }
 
+/* Export CSV — safe if table not ready */
 function exportCSV(){
-    table.download("csv", `${empID}_data.csv`);
+    if(table && typeof table.download === 'function'){
+        table.download("csv", `${empID || "data"}_data.csv`);
+    } else {
+        alert("Table not ready yet.");
+    }
 }
 
-/* logout: mark last logout timestamp so next login shows full-screen */
+/* logout: mark last logout timestamp and sign out */
 function logout(){
-    try{ localStorage.setItem(KEY_LAST_LOGOUT, Date.now().toString()); }catch(e){}
+    try{ localStorage.setItem("recruita_lastLogout", Date.now().toString()); }catch(e){}
     auth.signOut();
     location.href="login.html";
 }
 
+/* theme toggle */
 function toggleTheme(){
     document.body.classList.toggle("light");
     if(document.body.classList.contains("light")){
-        document.querySelector(".tabulator").classList.remove("tabulator_midnight");
+        const tb = document.querySelector(".tabulator");
+        if(tb) tb.classList.remove("tabulator_midnight");
     } else {
-        document.querySelector(".tabulator").classList.add("tabulator_midnight");
+        const tb = document.querySelector(".tabulator");
+        if(tb) tb.classList.add("tabulator_midnight");
     }
 }
+
+/* make these functions available for inline onclick attributes (module->global bridge) */
+window.saveData = saveData;
+window.exportCSV = exportCSV;
+window.logout = logout;
+window.toggleTheme = toggleTheme;
+
 </script>
 
 </body>
