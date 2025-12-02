@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Recruiter Panel</title>
 
-<!-- TABULATOR EXCEL TABLE -->
+<!-- TABULATOR CSS / JS -->
 <link href="https://unpkg.com/tabulator-tables@6.2.1/dist/css/tabulator_midnight.min.css" rel="stylesheet">
 <script src="https://unpkg.com/tabulator-tables@6.2.1/dist/js/tabulator.min.js"></script>
 
@@ -13,123 +13,162 @@
 body{
     background:#0b0b0c;
     color:white;
-    font-family:Inter,sans-serif;
+    font-family:Inter, sans-serif;
     padding:20px;
     transition:0.3s;
 }
-body.light{
-    background:#f2f2f2;
-    color:#111;
-}
+body.light{ background:#f2f2f2; color:#111; }
 
-.topBar{
-    display:flex;
-    justify-content:flex-end;
-    gap:10px;
-    margin-bottom:20px;
-}
+.topBar{ display:flex; justify-content:flex-end; gap:10px; margin-bottom:12px; }
+button{ padding:8px 14px; border:none; border-radius:6px; font-weight:600; cursor:pointer; }
+.blueBtn{ background:#2B7FFF; color:#fff; }
+.greyBtn{ background:#555; color:#fff; }
+.redBtn{ background:#e74c3c; color:#fff; }
 
-button{
-    padding:10px 18px;
-    border:none;
-    border-radius:6px;
-    font-weight:600;
-    cursor:pointer;
+input, select {
+    width:100%; padding:10px; margin-top:8px; border:none; border-radius:8px;
+    background:#111; color:white;
 }
-.blueBtn{ background:#2B7FFF; color:white; }
-.greyBtn{ background:#555; color:white; }
-.redBtn{ background:#e74c3c; color:white; }
+body.light input, body.light select { background:#fff; color:#222; border:1px solid #ccc; }
 
-input,select{
-    width:100%;
-    padding:12px;
-    margin-top:8px;
-    border:none;
-    border-radius:8px;
-    background:#111;
-    color:white;
-}
-body.light input,body.light select{
-    background:white;
-    color:#222;
-    border:1px solid #ccc;
-}
+.panel { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+.panel > div{ min-width:160px; flex:1; }
 
-#tableWrapper {
-    overflow-x:auto;
-    width:100%;
-    margin-top:20px;
-    border:1px solid #333;
-}
+#filterPanel { background:rgba(255,255,255,0.03); padding:12px; border-radius:10px; margin-bottom:12px; }
 
-.tabulator {
-    background:#0b0b0c !important;
-}
-body.light .tabulator{
-    background:#fff !important;
-}
+#tableWrapper { overflow-x:auto; width:100%; margin-top:8px; border:1px solid #333; border-radius:6px; padding:6px; }
+.tabulator { background:#0b0b0c !important; }
+body.light .tabulator{ background:#fff !important; }
 
-.tabulator-col-title, .tabulator-cell{
-    white-space:nowrap;
-}
+h2{ margin-top:18px; margin-bottom:8px; }
 </style>
 </head>
 
 <body>
 
 <div class="topBar">
-    <button onclick="toggleTheme()" class="greyBtn">🌓 Theme</button>
-    <button onclick="logout()" class="redBtn">Logout</button>
+    <button id="themeBtn" class="greyBtn">🌓 Theme</button>
+    <button id="logoutBtn" class="redBtn">Logout</button>
 </div>
 
 <h2>Your Performance</h2>
 <table style="width:100%; border-collapse:collapse;">
 <thead>
 <tr>
-<th style="border:1px solid #333; padding:10px;">EmpID</th>
-<th style="border:1px solid #333; padding:10px;">Today</th>
-<th style="border:1px solid #333; padding:10px;">Total</th>
+<th style="border:1px solid #333; padding:8px;">EmpID</th>
+<th style="border:1px solid #333; padding:8px;">Today</th>
+<th style="border:1px solid #333; padding:8px;">Total</th>
 </tr>
 </thead>
 <tbody id="dashBody"></tbody>
 </table>
 
-<h2>Add Candidate Entry</h2>
+<h2 style="margin-top:18px;">Add Candidate Entry</h2>
 
-<input id="nameInput" placeholder="Name">
-<input id="numberInput" placeholder="Number (10 digits)">
-<input id="ageInput" placeholder="Age">
-<input id="expInput" placeholder="Total Experience">
-<input id="locInput" placeholder="Location">
-<input id="ctcInput" placeholder="CTC">
-<input id="compInput" placeholder="Current Company">
+<div style="max-width:900px;">
+  <div class="panel">
+    <div><input id="nameInput" placeholder="Name"></div>
+    <div><input id="numberInput" placeholder="Number (10 digits)"></div>
+    <div><input id="ageInput" placeholder="Age"></div>
+    <div><input id="expInput" placeholder="Total Experience (years)"></div>
+  </div>
 
-<select id="channelInput">
-    <option value="">Select Channel</option>
-    <option>Banca</option>
-    <option>Agency</option>
-    <option>Direct</option>
-    <option>Tele calling</option>
-    <option>Other</option>
-</select>
+  <div class="panel">
+    <div><input id="locInput" placeholder="Location"></div>
+    <div><input id="ctcInput" placeholder="CTC"></div>
+    <div><input id="compInput" placeholder="Current Company"></div>
+  </div>
 
-<select id="statusInput">
-    <option value="">Call Status</option>
-    <option>Interested</option>
-    <option>Not Interested</option>
-    <option>Not Answered</option>
-</select>
+  <div class="panel">
+    <div>
+      <select id="channelInput">
+        <option value="">Select Channel</option>
+        <option>Banca</option>
+        <option>Agency</option>
+        <option>Direct</option>
+        <option>Tele calling</option>
+        <option>Other</option>
+      </select>
+    </div>
 
-<input id="remarkInput" placeholder="Remarks">
+    <div>
+      <select id="statusInput">
+        <option value="">Call Status</option>
+        <option>Interested</option>
+        <option>Not Interested</option>
+        <option>Not Answered</option>
+      </select>
+    </div>
 
-<button class="blueBtn" onclick="saveData()">Submit Entry</button>
-<button class="blueBtn" onclick="exportCSV()" style="margin-top:20px;">Download CSV</button>
+    <div><input id="remarkInput" placeholder="Remarks"></div>
+  </div>
 
-<h2 style="margin-top:30px;">Your Entries</h2>
+  <div style="margin-top:10px; display:flex; gap:10px;">
+    <button id="saveBtn" class="blueBtn">Submit Entry</button>
+    <button id="csvBtn" class="blueBtn">Download CSV</button>
+    <button id="toggleFilterBtn" class="greyBtn">Show Filters</button>
+  </div>
+</div>
 
-<!-- TABLE WRAPPER FOR SCROLL -->
+<!-- FILTER PANEL -->
+<div id="filterPanel" style="display:none; margin-top:10px;">
+  <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+    <div style="min-width:160px;">
+      <label style="font-size:12px;color:#aaa">Date Start</label>
+      <input id="f_dateStart" type="date">
+    </div>
+    <div style="min-width:160px;">
+      <label style="font-size:12px;color:#aaa">Date End</label>
+      <input id="f_dateEnd" type="date">
+    </div>
+
+    <div style="min-width:120px;">
+      <label style="font-size:12px;color:#aaa">CTC Min</label>
+      <input id="f_minCTC" placeholder="Min CTC" />
+    </div>
+    <div style="min-width:120px;">
+      <label style="font-size:12px;color:#aaa">CTC Max</label>
+      <input id="f_maxCTC" placeholder="Max CTC" />
+    </div>
+
+    <div style="min-width:160px;">
+      <label style="font-size:12px;color:#aaa">Channel</label>
+      <select id="f_channel">
+        <option value="">Any Channel</option>
+        <option>Banca</option>
+        <option>Agency</option>
+        <option>Direct</option>
+        <option>Tele calling</option>
+        <option>Other</option>
+      </select>
+    </div>
+
+    <div style="min-width:160px;">
+      <label style="font-size:12px;color:#aaa">Status</label>
+      <select id="f_status">
+        <option value="">Any Status</option>
+        <option>Interested</option>
+        <option>Not Interested</option>
+        <option>Not Answered</option>
+      </select>
+    </div>
+
+    <div style="min-width:160px;">
+      <label style="font-size:12px;color:#aaa">Location</label>
+      <input id="f_location" placeholder="Location (type or select)">
+    </div>
+
+    <div style="display:flex; gap:8px; margin-left:auto;">
+      <button id="applyFilterBtn" class="blueBtn">Apply Filters</button>
+      <button id="resetFilterBtn" class="greyBtn">Reset</button>
+    </div>
+  </div>
+</div>
+
+<h2 style="margin-top:18px;">Your Entries</h2>
+
 <div id="tableWrapper">
-    <div id="listTable"></div>
+  <div id="listTable"></div>
 </div>
 
 <script type="module">
@@ -144,171 +183,332 @@ let email = "";
 let all = [];
 let table = null;
 
+// formatting helper
 function formatTS(d){
-  const p=n=>n.toString().padStart(2,"0");
+  const p = n => n.toString().padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 }
 
-// Auth listener
+// Auth -> fetch empID from users collection then load callLogs for that empID
 auth.onAuthStateChanged(async user=>{
-    if(!user) {
-        location.href="login.html";
-        return;
-    }
+  if(!user) { location.href = "login.html"; return; }
+  uid = user.uid; email = user.email;
 
-    uid = user.uid;
-    email = user.email;
+  // map email -> empID
+  const uref = collection(db,"users");
+  const uq = query(uref, where("email","==", email));
 
-    // read empID from users collection
-    const ref = collection(db,"users");
-    const q = query(ref, where("email","==", email));
-
-    // listen for the user doc to obtain empID
-    onSnapshot(q, snap=>{
-        snap.forEach(d => empID = d.data().empID || "");
-        if(empID) loadData(empID);
-    });
+  onSnapshot(uq, snap=>{
+    snap.forEach(d=> { empID = d.data().empID || ""; });
+    if(empID) loadData(empID);
+  });
 });
 
-function loadData(empIDParam){
-    const q = query(collection(db,"callLogs"), where("empID","==", empIDParam));
+function loadData(empIDVal){
+  const q = query(collection(db,"callLogs"), where("empID","==", empIDVal));
 
-    onSnapshot(q, snap=>{
-        all = [];
-        snap.forEach(d => all.push({...d.data(), id:d.id}));
-
-        // latest first (ts stored as formatted string)
-        all.sort((a,b)=>{
-            // parse YYYY-MM-DD HH:MM:SS
-            return new Date(b.ts).getTime() - new Date(a.ts).getTime();
-        });
-
-        renderDashboard();
-        renderTable(all);
+  onSnapshot(q, snap=>{
+    all = [];
+    snap.forEach(d => all.push({...d.data(), id:d.id}));
+    // sort by ts descending - parse fallback
+    all.sort((a,b)=> {
+      let ta = a.ts ? new Date(a.ts) : new Date(0);
+      let tb = b.ts ? new Date(b.ts) : new Date(0);
+      return tb - ta;
     });
+
+    renderDashboard();
+    renderTable(all);
+    populateLocationOptions();
+  });
 }
 
 function renderDashboard(){
-    const today = new Date().toDateString();
-    const countToday = all.filter(e => new Date(e.ts).toDateString() === today).length;
+  const today = new Date().toDateString();
+  const countToday = all.filter(e => e.ts && new Date(e.ts).toDateString() === today).length;
 
-    dashBody.innerHTML = `
-        <tr>
-            <td style="border:1px solid #333; padding:10px;">${empID || ""}</td>
-            <td style="border:1px solid #333; padding:10px;">${countToday}</td>
-            <td style="border:1px solid #333; padding:10px;">${all.length}</td>
-        </tr>
-    `;
+  document.getElementById("dashBody").innerHTML = `
+    <tr>
+      <td style="border:1px solid #333; padding:8px;">${empID}</td>
+      <td style="border:1px solid #333; padding:8px;">${countToday}</td>
+      <td style="border:1px solid #333; padding:8px;">${all.length}</td>
+    </tr>
+  `;
 }
 
 async function saveData(){
-    const num = document.getElementById("numberInput").value.trim();
-    if(!/^\d{10}$/.test(num)){
-        alert("Enter valid 10-digit number");
-        return;
-    }
+  const num = document.getElementById("numberInput").value.trim();
+  if(!/^\d{10}$/.test(num)){
+    alert("Enter a valid 10-digit number");
+    return;
+  }
 
-    // duplicate detection (same recruiter)
-    const dup = all.find(e => e.number === num);
-    if(dup){
-        const ok = confirm("Duplicate found in your entries. Still add?");
-        if(!ok) return;
-    }
+  // duplicate detection for this recruiter only
+  const dup = all.find(x => x.number === num && x.empID === empID);
+  if(dup){
+    if(!confirm("Duplicate entry found for this number in your own entries. Add anyway?")) return;
+  }
 
-    await addDoc(collection(db,"callLogs"),{
-        ts: formatTS(new Date()),
-        uid,
-        empID,
-        email,
-        name: document.getElementById("nameInput").value || "",
-        number: num,
-        age: document.getElementById("ageInput").value || "",
-        exp: document.getElementById("expInput").value || "",
-        loc: document.getElementById("locInput").value || "",
-        ctc: document.getElementById("ctcInput").value || "",
-        comp: document.getElementById("compInput").value || "",
-        channel: document.getElementById("channelInput").value || "",
-        callStatus: document.getElementById("statusInput").value || "",
-        remarks: document.getElementById("remarkInput").value || ""
-    });
+  await addDoc(collection(db,"callLogs"), {
+    ts: formatTS(new Date()),
+    uid,
+    empID,
+    email,
+    name: document.getElementById("nameInput").value || "",
+    number: num,
+    age: document.getElementById("ageInput").value || "",
+    exp: document.getElementById("expInput").value || "",
+    loc: document.getElementById("locInput").value || "",
+    ctc: document.getElementById("ctcInput").value || "",
+    comp: document.getElementById("compInput").value || "",
+    channel: document.getElementById("channelInput").value || "",
+    callStatus: document.getElementById("statusInput").value || "",
+    remarks: document.getElementById("remarkInput").value || ""
+  });
 
-    // clear form
-    ["nameInput","numberInput","ageInput","expInput","locInput","ctcInput","compInput","channelInput","statusInput","remarkInput"]
-      .forEach(id => { const el = document.getElementById(id); if(el) el.value = ""; });
+  // clear inputs
+  ["nameInput","numberInput","ageInput","expInput","locInput","ctcInput","compInput","channelInput","statusInput","remarkInput"]
+    .forEach(id => document.getElementById(id).value = "");
 
-    alert("Entry Saved");
+  alert("Entry saved");
 }
 
+// Render Tabulator table (with per-column header filters)
 function renderTable(data){
-    if(table){
-        table.replaceData(data);
-        return;
-    }
+  if(table){
+    table.setData(data);
+    return;
+  }
 
-    table = new Tabulator("#listTable", {
-        data:data,
-        layout:"fitDataFill",
-        responsiveLayout:false,
-        height:"480px",
-        movableColumns:true,
-        pagination:false,
-        columnDefaults:{ resizable:true },
+  table = new Tabulator("#listTable", {
+    data: data,
+    layout:"fitDataFill",
+    height:"520px",
+    movableColumns:true,
+    pagination:false,
+    placeholder:"No entries",
+    columnDefaults:{ resizable:true },
+    columns:[
+      {title:"Call", field:"number", hozAlign:"center", width:80, formatter:cell=>`<a href="tel:${cell.getValue()}" style="color:#2B7FFF;font-size:18px;">📞</a>`},
+      {title:"Time ▼", field:"ts", sorter:"string", headerFilter:"input", headerFilterPlaceholder:"date or timestamp"},
+      {title:"Name ▼", field:"name", sorter:"string", headerFilter:"input"},
+      {title:"Number ▼", field:"number", sorter:"string", headerFilter:"input"},
+      {title:"Age ▼", field:"age", sorter:"number", headerFilter:"input"},
+      {title:"Experience ▼", field:"exp", sorter:"number", headerFilter:"input"},
+      {title:"Location ▼", field:"loc", sorter:"string", headerFilter:"input"},
+      {title:"CTC ▼", field:"ctc", sorter:"number", headerFilter:"input"},
+      {title:"Company ▼", field:"comp", sorter:"string", headerFilter:"input"},
+      {title:"Channel ▼", field:"channel", sorter:"string", headerFilter:"input"},
+      {title:"Status ▼", field:"callStatus", sorter:"string", headerFilter:"input"},
+      {title:"Remarks ▼", field:"remarks", sorter:"string", headerFilter:"input"}
+    ],
+  });
 
-        columns:[
-            {title:"Call", field:"number", hozAlign:"center", formatter:cell=>{
-                const v = cell.getValue() || "";
-                return `<a href="tel:${v}" style="color:#2B7FFF;font-size:20px;">📞</a>`;
-            }},
+  // apply Tabulator dark theme class
+  const tEl = document.querySelector(".tabulator");
+  if(tEl) tEl.classList.add("tabulator_midnight");
+}
 
-            {title:"Time ▼", field:"ts", sorter:"string", headerFilter:"input"},
-            {title:"Name ▼", field:"name", sorter:"string", headerFilter:"input"},
-            {title:"Number ▼", field:"number", sorter:"string", headerFilter:"input"},
-            {title:"Age ▼", field:"age", sorter:"number", headerFilter:"input"},
-            {title:"Experience ▼", field:"exp", sorter:"number", headerFilter:"input"},
-            {title:"Location ▼", field:"loc", sorter:"string", headerFilter:"input"},
-            {title:"CTC ▼", field:"ctc", sorter:"number", headerFilter:"input"},
-            {title:"Company ▼", field:"comp", sorter:"string", headerFilter:"input"},
-            {title:"Channel ▼", field:"channel", sorter:"string", headerFilter:"input"},
-            {title:"Status ▼", field:"callStatus", sorter:"string", headerFilter:"input"},
-            {title:"Remarks ▼", field:"remarks", sorter:"string", headerFilter:"input"},
-        ],
+// populate location filter suggestions (type or select)
+function populateLocationOptions(){
+  const locInput = document.getElementById("f_location");
+  // create datalist for suggestions
+  let vals = [...new Set(all.map(x => (x.loc||"").trim()).filter(Boolean))].sort();
+  let dlId = "locOptions";
+  let existing = document.getElementById(dlId);
+  if(existing) existing.remove();
+
+  let dl = document.createElement("datalist");
+  dl.id = dlId;
+  vals.forEach(v => {
+    let opt = document.createElement("option"); opt.value = v; dl.appendChild(opt);
+  });
+  document.body.appendChild(dl);
+  locInput.setAttribute("list", dlId);
+}
+
+// Apply filter panel -> build Tabulator filters (AND)
+function applyPanelFilters(){
+  if(!table) return;
+
+  const start = document.getElementById("f_dateStart").value;
+  const end = document.getElementById("f_dateEnd").value;
+  const minC = document.getElementById("f_minCTC").value;
+  const maxC = document.getElementById("f_maxCTC").value;
+  const channel = document.getElementById("f_channel").value;
+  const status = document.getElementById("f_status").value;
+  const location = document.getElementById("f_location").value.trim();
+
+  const filters = [];
+
+  // date range filter (convert row.ts to Date)
+  if(start){
+    filters.push(function(data){
+      if(!data.ts) return false;
+      let d = new Date(data.ts);
+      let s = new Date(start);
+      // include start day
+      s.setHours(0,0,0,0);
+      return d >= s;
     });
-}
+  }
+  if(end){
+    filters.push(function(data){
+      if(!data.ts) return false;
+      let d = new Date(data.ts);
+      let e = new Date(end);
+      // include end day
+      e.setHours(23,59,59,999);
+      return d <= e;
+    });
+  }
 
-function exportCSV(){
-    if(!table){
-        alert("Table is not ready yet.");
-        return;
-    }
-    const fileName = (empID || "recruiter") + "_data.csv";
-    table.download("csv", fileName);
-}
+  // CTC range
+  if(minC){
+    let minVal = Number(minC);
+    filters.push(function(data){
+      let v = data.ctc === undefined || data.ctc === null || data.ctc === "" ? NaN : Number(data.ctc);
+      return !isNaN(v) ? v >= minVal : false;
+    });
+  }
+  if(maxC){
+    let maxVal = Number(maxC);
+    filters.push(function(data){
+      let v = data.ctc === undefined || data.ctc === null || data.ctc === "" ? NaN : Number(data.ctc);
+      return !isNaN(v) ? v <= maxVal : false;
+    });
+  }
 
-function logout(){
-    auth.signOut();
-    location.href="login.html";
-}
+  // channel/status/location exact match if provided
+  if(channel) filters.push({field:"channel", type:"=", value:channel});
+  if(status) filters.push({field:"callStatus", type:"=", value:status});
+  if(location) filters.push({field:"loc", type:"like", value:location});
 
-function toggleTheme(){
-    document.body.classList.toggle("light");
-
-    // If table exists, refresh style: Tabulator adds its own DOM; class swap safe-guard
-    const tabEl = document.querySelector(".tabulator");
-    if(tabEl){
-        // add/remove midnight class - only if Tabulator CSS supports it
-        if(document.body.classList.contains("light")){
-            tabEl.classList.remove("tabulator_midnight");
+  // Clear existing filters and apply new
+  table.clearFilter(true); // clear header filters remain, but programmatic filters clear
+  if(filters.length) {
+    // Tabulator accepts array of filters; for function filters we pass them as functions
+    // we'll combine functions and field filters into a single filter function
+    const combined = function(data, filterParams){
+      // apply each filter in sequence
+      for(let f of filters){
+        if(typeof f === "function"){
+          if(!f(data)) return false;
         } else {
-            tabEl.classList.add("tabulator_midnight");
+          // field filter object {field,type,value}
+          let val = data[f.field] === undefined ? "" : String(data[f.field]);
+          if(f.type === "="){
+            if(String(f.value) !== String(val)) return false;
+          } else if(f.type === "like"){
+            if(!val.toLowerCase().includes(String(f.value).toLowerCase())) return false;
+          }
         }
-    }
+      }
+      return true;
+    };
+    table.setFilter(combined);
+  } else {
+    table.clearFilter();
+  }
 }
 
-// expose for inline onclick handlers
+// Reset filters both panel and Tabulator header filters
+function resetFilters(){
+  ["f_dateStart","f_dateEnd","f_minCTC","f_maxCTC","f_channel","f_status","f_location"]
+    .forEach(id => document.getElementById(id).value = "");
+  if(table){
+    table.clearFilter(true);       // clear all filters
+    // clear header filters on columns
+    table.getColumns().forEach(col => {
+      const headerFilterEl = col.getElement().querySelector(".tabulator-col .tabulator-header-filter");
+      if(headerFilterEl) headerFilterEl.value = "";
+      col.updateDefinition({ headerFilter:col.getDefinition().headerFilter || null });
+    });
+    table.redraw(true);
+  }
+}
+
+// CSV export: Tabulator will export current filtered data
+function exportCSV(){
+  if(!table){ alert("No data"); return; }
+  const filename = (empID || "recruiter") + "_data.csv";
+  table.download("csv", filename);
+}
+
+// logout & theme
+function logout(){ auth.signOut(); location.href="login.html"; }
+function toggleTheme(){
+  document.body.classList.toggle("light");
+  const tEl = document.querySelector(".tabulator");
+  if(tEl){
+    if(document.body.classList.contains("light")) tEl.classList.remove("tabulator_midnight");
+    else tEl.classList.add("tabulator_midnight");
+  }
+}
+
+// populate location suggestion list (datalist)
+function populateLocationOptions(){
+  const input = document.getElementById("f_location");
+  let vals = [...new Set(all.map(x => (x.loc||"").trim()).filter(Boolean))].sort();
+  let dlId = "locOptions";
+  let existing = document.getElementById(dlId);
+  if(existing) existing.remove();
+  let dl = document.createElement("datalist"); dl.id = dlId;
+  vals.forEach(v => { let opt = document.createElement("option"); opt.value = v; dl.appendChild(opt); });
+  document.body.appendChild(dl);
+  input.setAttribute("list", dlId);
+}
+
+// loadData similar to previous file
+function loadData(emp){
+  const q = query(collection(db,"callLogs"), where("empID","==", emp));
+  onSnapshot(q, snap=>{
+    all = [];
+    snap.forEach(d => all.push({...d.data(), id:d.id}));
+    all.sort((a,b)=> {
+      let ta = a.ts ? new Date(a.ts) : 0;
+      let tb = b.ts ? new Date(b.ts) : 0;
+      return tb - ta;
+    });
+    renderDashboard();
+    renderTable(all);
+    populateLocationOptions();
+  });
+}
+
+// Hook up events and auth
+auth.onAuthStateChanged(user=>{
+  if(!user) { location.href="login.html"; return; }
+  uid = user.uid; email = user.email;
+  const ref = collection(db,"users");
+  const uq = query(ref, where("email","==", email));
+  onSnapshot(uq, snap => {
+    snap.forEach(d=> { empID = d.data().empID || ""; });
+    if(empID) loadData(empID);
+  });
+});
+
+// DOM event bindings
+document.getElementById("saveBtn").addEventListener("click", saveData);
+document.getElementById("csvBtn").addEventListener("click", exportCSV);
+document.getElementById("logoutBtn").addEventListener("click", logout);
+document.getElementById("themeBtn").addEventListener("click", toggleTheme);
+document.getElementById("toggleFilterBtn").addEventListener("click", () => {
+  const p = document.getElementById("filterPanel");
+  const btn = document.getElementById("toggleFilterBtn");
+  if(p.style.display === "none" || p.style.display === "") { p.style.display = "block"; btn.textContent = "Hide Filters"; }
+  else { p.style.display = "none"; btn.textContent = "Show Filters"; }
+});
+document.getElementById("applyFilterBtn").addEventListener("click", applyPanelFilters);
+document.getElementById("resetFilterBtn").addEventListener("click", resetFilters);
+
+// expose some functions for debugging if needed
 window.saveData = saveData;
 window.exportCSV = exportCSV;
 window.logout = logout;
 window.toggleTheme = toggleTheme;
+window.applyPanelFilters = applyPanelFilters;
+window.resetFilters = resetFilters;
 
 </script>
 
