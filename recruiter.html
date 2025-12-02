@@ -1,141 +1,107 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Recruiter Panel</title>
 
 <link href="https://unpkg.com/tabulator-tables@6.2.1/dist/css/tabulator_midnight.min.css" rel="stylesheet">
 <script src="https://unpkg.com/tabulator-tables@6.2.1/dist/js/tabulator.min.js"></script>
 
 <style>
-/* base styles */
+/* ---------- base styles (kept) ---------- */
+:root{ --blue:#2B7FFF; }
 body{
-    background:#0b0b0c;
-    color:white;
-    font-family:Inter,sans-serif;
-    padding:20px;
-    transition:0.3s;
+  background:#0b0b0c;color:white;font-family:Inter,sans-serif;padding:20px;transition:0.3s;
 }
-body.light{
-    background:#f2f2f2;
-    color:#111;
-}
+body.light{ background:#f2f2f2;color:#111; }
 
 .topBar{
-    display:flex;
-    justify-content:flex-end;
-    gap:10px;
-    margin-bottom:20px;
+  display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-bottom:20px;
 }
-button{
-    padding:10px 18px;
-    border:none;
-    border-radius:6px;
-    font-weight:600;
-    cursor:pointer;
+
+/* Theme/Logout buttons (unchanged appearance) */
+button{ padding:10px 16px;border:none;border-radius:6px;cursor:pointer;font-weight:600; }
+.blueBtn{ background:var(--blue); color:#fff; }
+.greyBtn{ background:#555; color:#fff; }
+.redBtn{ background:#e74c3c; color:#fff; }
+
+/* NAME BADGE (target after animation) */
+#nameBadge{
+  display:none;
+  align-items:center; gap:10px; padding:8px 12px; border-radius:8px;
+  background: rgba(255,255,255,0.04); color: #fff; border:1px solid rgba(255,255,255,0.04);
+  font-weight:700;
+  white-space:nowrap;
 }
-.blueBtn{ background:#2B7FFF; color:white; }
-.greyBtn{ background:#555; color:white; }
-.redBtn{ background:#e74c3c; color:white; }
-input,select{
-    width:100%;
-    padding:12px;
-    margin-top:8px;
-    border:none;
-    border-radius:8px;
-    background:#111;
-    color:white;
-}
-body.light input,body.light select{
-    background:white;
-    color:#222;
-    border:1px solid #ccc;
-}
+body.light #nameBadge{ color:#111; background:#fff; border:1px solid rgba(0,0,0,0.06); }
+
+/* table + form styles */
 #tableWrapper { overflow-x:auto; width:100%; margin-top:20px; border:1px solid #333; }
 .tabulator { background:#0b0b0c !important; }
 body.light .tabulator{ background:#fff !important; }
+input,select{ width:100%; padding:12px; margin-top:8px; border:none; border-radius:8px; background:#111; color:white; }
+body.light input,body.light select{ background:#fff; color:#222; border:1px solid #ccc; }
 .tabulator-col-title, .tabulator-cell{ white-space:nowrap; }
 
-/* FULL-SCREEN WELCOME */
+/* ---------- full-screen welcome (updated) ---------- */
 #welcomeFull {
-  position:fixed; inset:0; z-index:99999;
-  display:flex; align-items:center; justify-content:center;
+  position:fixed; inset:0; z-index:99999; display:flex; align-items:center; justify-content:center;
   background:linear-gradient(180deg, rgba(2,6,23,0.95), rgba(8,13,30,0.95));
-  color:#fff; padding:28px;
-  opacity:0; pointer-events:none; transition:opacity .28s ease;
+  color:#fff; padding:28px; opacity:1;
+  transition:transform .6s cubic-bezier(.2,.9,.25,1), opacity .3s ease;
 }
-#welcomeFull.show { opacity:1; pointer-events:auto; }
-
 .welcomeCard {
-  width:min(820px,94vw);
-  border-radius:18px; padding:28px; text-align:center;
+  width:min(820px,94vw); border-radius:18px; padding:28px; text-align:center;
   background: linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-  border:1px solid rgba(255,255,255,0.06); box-shadow: 0 20px 60px rgba(0,0,0,0.6);
-  transform: translateY(8px) scale(.98); opacity:0; transition: transform .45s cubic-bezier(.2,.9,.25,1), opacity .45s;
+  border:1px solid rgba(255,255,255,0.06);
+  box-shadow:0 20px 60px rgba(0,0,0,0.6);
+  transform-origin:center;
+  transition: transform .45s cubic-bezier(.2,.9,.25,1), opacity .35s;
 }
-#welcomeFull.show .welcomeCard { transform: translateY(0) scale(1); opacity:1; }
-
 .avatar {
-  width:96px; height:96px; border-radius:999px; display:inline-grid; place-items:center;
-  background:linear-gradient(135deg,#2B7FFF,#6fb1ff);
-  margin:0 auto 12px; font-weight:800; font-size:32px; color:white;
-  box-shadow: 0 12px 30px rgba(43,127,255,0.12);
-  animation: popIn 600ms cubic-bezier(.2,.9,.25,1);
+  width:96px;height:96px;border-radius:999px;display:inline-grid;place-items:center;
+  background:linear-gradient(135deg,var(--blue),#6fb1ff); margin:0 auto 12px; font-weight:800; font-size:34px; color:white;
+  box-shadow:0 12px 30px rgba(43,127,255,0.12);
 }
-@keyframes popIn { 0% { transform: scale(.6); opacity:0; filter:blur(8px); } 60% { transform: scale(1.05); opacity:1; filter:blur(0); } 100% { transform: scale(1); opacity:1; filter:blur(0); } }
+.welcomeTitle{ font-size:30px; font-weight:800; margin:6px 0; }
+.welcomeSub{ font-size:16px; color:rgba(255,255,255,0.85); margin-bottom:18px; }
 
-.welcomeTitle { font-size:30px; font-weight:800; margin:6px 0; }
-.welcomeSub { font-size:16px; color:rgba(255,255,255,0.85); margin-bottom:18px; }
-
-/* MINI WELCOME */
-#welcomeMini{
-  position:fixed; left:20px; top:20px; z-index:9999; display:flex; align-items:center;
-  gap:14px; padding:14px 18px; border-radius:12px; background:rgba(11,11,12,0.9);
-  border:1px solid rgba(255,255,255,0.04); transform: translateY(-6px); opacity:0; transition:opacity .32s, transform .32s; pointer-events:none;
+/* ---------- animation state: minimize to top-right badge ---------- */
+/* When .minimize is added to welcomeFull, it shrinks + moves to top-right; then we show the name badge */
+#welcomeFull.minimize{
+  transform: translate(calc(50vw - 120px), calc(-42vh)) scale(.18);
+  opacity:0.95;
+  pointer-events:none;
 }
+#welcomeFull.minimize .welcomeCard{ transform: scale(.98); opacity:0.9; }
+
+/* small mini welcome (non-blocking) kept as fallback */
+#welcomeMini{ position:fixed; left:20px; top:20px; z-index:9999; display:flex; align-items:center; gap:14px; padding:14px 18px; border-radius:12px; background:rgba(11,11,12,0.9); border:1px solid rgba(255,255,255,0.04); transform: translateY(-6px); opacity:0; transition:opacity .32s, transform .32s; pointer-events:none; }
 #welcomeMini.show{ opacity:1; transform: translateY(0); pointer-events:auto; }
 #welcomeMini .title{ font-size:18px; font-weight:700; line-height:1; }
 #welcomeMini .sub{ font-size:13px; color:rgba(255,255,255,0.85); margin-top:4px; }
-#welcomeMini button { background:transparent; border:none; color:rgba(255,255,255,0.8); font-size:16px; cursor:pointer; }
+
+/* responsive tweaks */
+@media(max-width:720px){
+  #welcomeFull.minimize{ transform: translate(calc(40vw - 60px), calc(-44vh)) scale(.2); }
+}
 </style>
 </head>
-
 <body>
 
-<!-- FULL SCREEN welcome -->
-<div id="welcomeFull" aria-hidden="true">
-  <div class="welcomeCard" role="dialog" aria-modal="true">
-    <div class="avatar" id="fullAvatar">J</div>
-    <div class="welcomeTitle" id="fullTitle">Hi —</div>
-    <div class="welcomeSub" id="fullSub">Welcome back to Recruita.</div>
-    <div style="margin-top:18px;">
-      <button class="blueBtn" id="fullContinue">Continue</button>
-      <button class="greyBtn" id="fullDismiss" style="margin-left:10px;">Dismiss</button>
-    </div>
-  </div>
-</div>
-
-<!-- mini welcome -->
-<div id="welcomeMini" aria-live="polite" role="status" style="display:none">
-  <div style="display:flex;flex-direction:column;">
-    <div class="title" id="miniTitle">Hi —</div>
-    <div class="sub" id="miniSub">Welcome back.</div>
-  </div>
-  <div style="flex:1"></div>
-  <button id="miniClose" title="Dismiss">✕</button>
-</div>
-
+<!-- Top bar: nameBadge will appear left of Theme button -->
 <div class="topBar">
-    <button onclick="toggleTheme()" class="greyBtn">🌓 Theme</button>
-    <button onclick="logout()" class="redBtn">Logout</button>
+  <div id="nameBadge" aria-hidden="true"></div>
+  <button id="themeBtn" class="greyBtn" onclick="toggleTheme()">🌓 Theme</button>
+  <button onclick="logout()" class="redBtn">Logout</button>
 </div>
 
 <h2>Your Performance</h2>
 <table style="width:100%; border-collapse:collapse;">
 <thead>
 <tr>
-<th style="border:1px solid #333; padding:10px;">EmpID</th>
+<th style="border:1px solid #333; padding:10px;">Name</th>
 <th style="border:1px solid #333; padding:10px;">Today</th>
 <th style="border:1px solid #333; padding:10px;">Total</th>
 </tr>
@@ -175,266 +141,283 @@ body.light .tabulator{ background:#fff !important; }
 <button class="blueBtn" onclick="exportCSV()" style="margin-top:20px;">Download CSV</button>
 
 <h2 style="margin-top:30px;">Your Entries</h2>
+<div id="tableWrapper"><div id="listTable"></div></div>
 
-<div id="tableWrapper">
-    <div id="listTable"></div>
+<!-- Full-screen welcome dialog (single Continue button only) -->
+<div id="welcomeFull" aria-hidden="true" role="dialog">
+  <div class="welcomeCard" aria-label="Welcome">
+    <div class="avatar" id="fullAvatar">R</div>
+    <div class="welcomeTitle" id="fullTitle">Hi —</div>
+    <div class="welcomeSub" id="fullSub">Welcome back to Recruita.</div>
+    <div style="margin-top:18px;">
+      <button class="blueBtn" id="fullContinue">Continue</button>
+    </div>
+  </div>
+</div>
+
+<!-- mini welcome fallback -->
+<div id="welcomeMini" aria-live="polite" role="status" style="display:none">
+  <div style="display:flex;flex-direction:column;">
+    <div class="title" id="miniTitle">Hi —</div>
+    <div class="sub" id="miniSub">Welcome back.</div>
+  </div>
+  <div style="flex:1"></div>
+  <button id="miniClose" title="Dismiss">✕</button>
 </div>
 
 <script type="module">
 import { auth, db } from "./firebase.js";
-import {
-  collection, query, where, onSnapshot, addDoc
-} from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+import { collection, query, where, onSnapshot, addDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
-/* state */
-let empID = "";
+/* State */
 let uid = "";
 let email = "";
+let empID = "";
+let displayName = "";   // recruiter display name used across UI
 let all = [];
 let table = null;
 
-/* welcome elements */
 const welcomeFull = document.getElementById("welcomeFull");
 const fullAvatar = document.getElementById("fullAvatar");
 const fullTitle = document.getElementById("fullTitle");
 const fullSub = document.getElementById("fullSub");
 const fullContinue = document.getElementById("fullContinue");
-const fullDismiss = document.getElementById("fullDismiss");
 
 const welcomeMini = document.getElementById("welcomeMini");
 const miniTitle = document.getElementById("miniTitle");
 const miniSub = document.getElementById("miniSub");
 const miniClose = document.getElementById("miniClose");
 
-let welcomeTimeout = null;
+const nameBadge = document.getElementById("nameBadge");
+const themeBtn = document.getElementById("themeBtn");
+
 const KEY_LAST_FULL = "recruita_lastFullWelcome";
 const KEY_LAST_LOGOUT = "recruita_lastLogout";
 
-/* helper functions */
+/* time helpers */
 function hoursSince(ts){
   if(!ts) return Infinity;
   const then = Number(ts);
   if(!then) return Infinity;
-  return (Date.now() - then) / (1000 * 60 * 60);
+  return (Date.now() - then) / (1000*60*60);
 }
 
+/* Show mini welcome */
 function showMini(name){
   miniTitle.textContent = `Hi ${name} !`;
   miniSub.textContent = "Welcome back.";
   welcomeMini.style.display = "flex";
   requestAnimationFrame(()=> welcomeMini.classList.add("show"));
-  clearTimeout(welcomeTimeout);
-  welcomeTimeout = setTimeout(()=> {
+  setTimeout(()=> {
     welcomeMini.classList.remove("show");
     setTimeout(()=> { welcomeMini.style.display = "none"; }, 320);
   }, 3500);
 }
 
+/* Show full-screen welcome */
 function showFull(name){
   fullAvatar.textContent = (name && name[0]) ? name[0].toUpperCase() : "R";
   fullTitle.textContent = `Hi ${name} !`;
   fullSub.textContent = "Welcome back to Recruita.";
-  welcomeFull.classList.add("show");
   welcomeFull.setAttribute("aria-hidden", "false");
+  welcomeFull.style.display = "flex";
+}
+
+/* Minimize welcome into badge animation */
+function minimizeIntoBadge(name){
+  // Add class to trigger transform animation
+  welcomeFull.classList.add("minimize");
+
+  // After transition completes, hide the full overlay and show badge
+  const onEnd = () => {
+    welcomeFull.removeEventListener('transitionend', onEnd);
+    // hide full welcome
+    try{ welcomeFull.style.display = "none"; }catch(e){}
+    // show badge
+    nameBadge.textContent = name;
+    nameBadge.style.display = "flex";
+    nameBadge.setAttribute("aria-hidden", "false");
+    // persist that badge is visible in this session until logout
+    sessionStorage.setItem("recruita_nameBadgeVisible", "1");
+  };
+  welcomeFull.addEventListener('transitionend', onEnd);
+  // update last-full welcome timestamp
   try{ localStorage.setItem(KEY_LAST_FULL, Date.now().toString()); }catch(e){}
 }
 
-/* full-screen control */
-fullContinue.addEventListener("click", () => {
-  welcomeFull.classList.remove("show");
-  welcomeFull.setAttribute("aria-hidden", "true");
-});
-fullDismiss.addEventListener("click", () => {
-  welcomeFull.classList.remove("show");
-  welcomeFull.setAttribute("aria-hidden", "true");
-});
-miniClose.addEventListener("click", ()=>{
-  welcomeMini.classList.remove("show");
-  setTimeout(()=> { welcomeMini.style.display = "none"; }, 320);
+/* Event handlers */
+fullContinue.addEventListener('click', () => {
+  minimizeIntoBadge(displayName || empID || "User");
 });
 
-/* auth + data load */
+miniClose.addEventListener('click', ()=>{
+  welcomeMini.classList.remove('show');
+  setTimeout(()=> welcomeMini.style.display='none', 320);
+});
+
+/* Auth + load user doc */
 auth.onAuthStateChanged(async user=>{
-    if(!user) location.href="login.html";
+  if(!user) location.href = 'login.html';
+  uid = user.uid;
+  email = user.email;
 
-    uid = user.uid;
-    email = user.email;
+  // Fetch users doc by email (as previous logic)
+  const ref = collection(db, 'users');
+  const q = query(ref, where('email', '==', email));
+  onSnapshot(q, snap => {
+    snap.forEach(docSnap => {
+      const data = docSnap.data() || {};
+      empID = data.empID || (email ? email.split('@')[0] : 'User');
+      displayName = (data.fullName || data.name || empID || (email ? email.split('@')[0] : 'there')).trim();
 
-    const ref = collection(db,"users");
-    const q = query(ref, where("email","==", email));
+      // update dashboard name cell immediately
+      renderDashboard();
 
-    onSnapshot(q, snap=>{
-        snap.forEach(d => {
-            const data = d.data();
-            empID = data.empID || (email ? email.split("@")[0] : "User");
-            const displayName = (data.fullName || data.name || empID || (email ? email.split("@")[0] : "there")).trim();
+      // decide welcome behavior
+      const lastFull = localStorage.getItem(KEY_LAST_FULL);
+      const lastLogout = localStorage.getItem(KEY_LAST_LOGOUT);
+      const twelvePassed = hoursSince(lastFull) >= 12;
+      const afterLogout = !!lastLogout && Number(lastLogout) > Number(lastFull || 0);
 
-            const lastFull = localStorage.getItem(KEY_LAST_FULL);
-            const lastLogout = localStorage.getItem(KEY_LAST_LOGOUT);
-            const twelvePassed = hoursSince(lastFull) >= 12;
-            const afterLogout = !!lastLogout && Number(lastLogout) > Number(lastFull || 0);
-
-            if(afterLogout || twelvePassed){
-                showFull(displayName);
-            } else {
-                const shownKey = `welcomeMiniShown_${uid}`;
-                if(!sessionStorage.getItem(shownKey)){
-                    showMini(displayName);
-                    sessionStorage.setItem(shownKey, "1");
-                }
-            }
-        });
-
-        loadData(empID);
+      // if nameBadge already visible this session, show it (no animation)
+      const badgeVis = sessionStorage.getItem("recruita_nameBadgeVisible");
+      if(badgeVis){
+        nameBadge.textContent = displayName;
+        nameBadge.style.display = "flex";
+        nameBadge.setAttribute("aria-hidden", "false");
+      } else if(afterLogout || twelvePassed){
+        // show full-screen first
+        showFull(displayName);
+      } else {
+        // small overlay once per session
+        const shownKey = `welcomeMiniShown_${uid}`;
+        if(!sessionStorage.getItem(shownKey)){
+          showMini(displayName);
+          sessionStorage.setItem(shownKey, "1");
+        }
+      }
     });
+
+    // load call logs afterwards
+    loadData(empID);
+  });
 });
 
-/* timestamp helper used for saved CSV */
+/* Load call logs */
 function formatTS(d){
-  const p=n=>n.toString().padStart(2,"0");
+  const p=n=>n.toString().padStart(2,'0');
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 }
 
-/* load recruiter's call logs */
 function loadData(empIDVal){
-    const q = query(collection(db,"callLogs"), where("empID","==", empIDVal));
-
-    onSnapshot(q, snap=>{
-        all = [];
-        snap.forEach(d => all.push({...d.data(), id:d.id}));
-        all.sort((a,b)=> new Date(b.ts) - new Date(a.ts));
-        renderDashboard();
-        renderTable(all);
-    });
+  const q = query(collection(db, 'callLogs'), where('empID', '==', empIDVal));
+  onSnapshot(q, snap=>{
+    all = [];
+    snap.forEach(d => all.push({...d.data(), id: d.id}));
+    all.sort((a,b)=> new Date(b.ts) - new Date(a.ts));
+    renderDashboard();
+    renderTable(all);
+  });
 }
 
+/* Dashboard now uses displayName instead of EmpID */
 function renderDashboard(){
-    let today = new Date().toDateString();
-    let countToday = all.filter(e => new Date(e.ts).toDateString() === today).length;
-
-    dashBody.innerHTML = `
-        <tr>
-            <td style="border:1px solid #333; padding:10px;">${empID}</td>
-            <td style="border:1px solid #333; padding:10px;">${countToday}</td>
-            <td style="border:1px solid #333; padding:10px;">${all.length}</td>
-        </tr>
-    `;
+  let today = new Date().toDateString();
+  let countToday = all.filter(e => new Date(e.ts).toDateString() === today).length;
+  dashBody.innerHTML = `
+    <tr>
+      <td style="border:1px solid #333; padding:10px;">${displayName || empID}</td>
+      <td style="border:1px solid #333; padding:10px;">${countToday}</td>
+      <td style="border:1px solid #333; padding:10px;">${all.length}</td>
+    </tr>
+  `;
 }
 
-/* Save entry — robust to being called via inline onclick or programmatically */
+/* Save entry */
 async function saveData(evt){
-    // determine button element if passed
-    const btn = evt && evt.target && evt.target.tagName === 'BUTTON' ? evt.target : document.activeElement;
-
-    let num = (document.getElementById("numberInput") && document.getElementById("numberInput").value) || "";
-    num = num.trim();
-
-    if(!/^[0-9]{10}$/.test(num)){
-        alert("Enter valid 10-digit number");
-        return;
-    }
-
-    if(btn) btn.disabled = true;
-
-    try{
-        await addDoc(collection(db,"callLogs"),{
-            ts: formatTS(new Date()),
-            uid,
-            empID,
-            email,
-            name: document.getElementById("nameInput").value,
-            number: num,
-            age: document.getElementById("ageInput").value,
-            exp: document.getElementById("expInput").value,
-            loc: document.getElementById("locInput").value,
-            ctc: document.getElementById("ctcInput").value,
-            comp: document.getElementById("compInput").value,
-            channel: document.getElementById("channelInput").value,
-            callStatus: document.getElementById("statusInput").value,
-            remarks: document.getElementById("remarkInput").value
-        });
-
-        // clear fields
-        ["nameInput","numberInput","ageInput","expInput","locInput","ctcInput","compInput","channelInput","statusInput","remarkInput"]
-          .forEach(id=>{ const el = document.getElementById(id); if(el) el.value = ""; });
-
-        alert("Entry Saved");
-    }catch(err){
-        console.error(err);
-        alert("Error saving entry: " + (err.message || err));
-    }finally{
-        if(btn) btn.disabled = false;
-    }
-}
-
-/* Render table using Tabulator */
-function renderTable(data){
-    if(table){
-        table.replaceData(data);
-        return;
-    }
-
-    table = new Tabulator("#listTable", {
-        data:data,
-        layout:"fitDataFill",
-        responsiveLayout:false,
-        height:"480px",
-        movableColumns:true,
-        pagination:false,
-        columnDefaults:{ resizable:true },
-
-        columns:[
-            {title:"Call", field:"number",
-                formatter:cell=>`<a href="tel:${cell.getValue()}" style="color:#2B7FFF;font-size:20px;">📞</a>`},
-            {title:"Time ▼", field:"ts", sorter:"datetime", headerFilter:"input"},
-            {title:"Name ▼", field:"name", sorter:"string", headerFilter:"input"},
-            {title:"Number ▼", field:"number", sorter:"number", headerFilter:"input"},
-            {title:"Age ▼", field:"age", sorter:"number", headerFilter:"input"},
-            {title:"Experience ▼", field:"exp", sorter:"number", headerFilter:"input"},
-            {title:"Location ▼", field:"loc", sorter:"string", headerFilter:"input"},
-            {title:"CTC ▼", field:"ctc", sorter:"number", headerFilter:"input"},
-            {title:"Company ▼", field:"comp", sorter:"string", headerFilter:"input"},
-            {title:"Channel ▼", field:"channel", sorter:"string", headerFilter:"input"},
-            {title:"Status ▼", field:"callStatus", sorter:"string", headerFilter:"input"},
-            {title:"Remarks ▼", field:"remarks", sorter:"string", headerFilter:"input"},
-        ],
+  const btn = evt && evt.target && evt.target.tagName === 'BUTTON' ? evt.target : document.activeElement;
+  const numberEl = document.getElementById('numberInput');
+  const num = (numberEl && numberEl.value || '').trim();
+  if(!/^[0-9]{10}$/.test(num)){
+    alert('Enter valid 10-digit number');
+    return;
+  }
+  if(btn) btn.disabled = true;
+  try{
+    await addDoc(collection(db,'callLogs'), {
+      ts: formatTS(new Date()), uid, empID, email,
+      name: document.getElementById('nameInput').value,
+      number: num,
+      age: document.getElementById('ageInput').value,
+      exp: document.getElementById('expInput').value,
+      loc: document.getElementById('locInput').value,
+      ctc: document.getElementById('ctcInput').value,
+      comp: document.getElementById('compInput').value,
+      channel: document.getElementById('channelInput').value,
+      callStatus: document.getElementById('statusInput').value,
+      remarks: document.getElementById('remarkInput').value
     });
+    // clear input fields
+    ['nameInput','numberInput','ageInput','expInput','locInput','ctcInput','compInput','channelInput','statusInput','remarkInput']
+      .forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+    alert('Entry Saved');
+  }catch(err){
+    console.error(err); alert('Error saving entry: ' + (err.message || err));
+  }finally{ if(btn) btn.disabled = false; }
 }
 
-/* Export CSV — safe if table not ready */
+/* Render table */
+function renderTable(data){
+  if(table){ table.replaceData(data); return; }
+  table = new Tabulator('#listTable', {
+    data, layout:'fitDataFill', responsiveLayout:false, height:'480px',
+    movableColumns:true, pagination:false, columnDefaults:{ resizable:true },
+    columns:[
+      {title:'Call', field:'number', formatter:cell=>`<a href="tel:${cell.getValue()}" style="color:var(--blue);font-size:20px;">📞</a>`},
+      {title:'Time ▼', field:'ts', sorter:'datetime', headerFilter:'input'},
+      {title:'Name ▼', field:'name', sorter:'string', headerFilter:'input'},
+      {title:'Number ▼', field:'number', sorter:'number', headerFilter:'input'},
+      {title:'Age ▼', field:'age', sorter:'number', headerFilter:'input'},
+      {title:'Experience ▼', field:'exp', sorter:'number', headerFilter:'input'},
+      {title:'Location ▼', field:'loc', sorter:'string', headerFilter:'input'},
+      {title:'CTC ▼', field:'ctc', sorter:'number', headerFilter:'input'},
+      {title:'Company ▼', field:'comp', sorter:'string', headerFilter:'input'},
+      {title:'Channel ▼', field:'channel', sorter:'string', headerFilter:'input'},
+      {title:'Status ▼', field:'callStatus', sorter:'string', headerFilter:'input'},
+      {title:'Remarks ▼', field:'remarks', sorter:'string', headerFilter:'input'},
+    ]
+  });
+}
+
+/* Export CSV */
 function exportCSV(){
-    if(table && typeof table.download === 'function'){
-        table.download("csv", `${empID || "data"}_data.csv`);
-    } else {
-        alert("Table not ready yet.");
-    }
+  if(table && typeof table.download === 'function'){
+    table.download('csv', `${(displayName||empID).replace(/\s+/g,'_')}_data.csv`);
+  } else alert('Table not ready yet.');
 }
 
-/* logout: mark last logout timestamp and sign out */
-function logout(){
-    try{ localStorage.setItem("recruita_lastLogout", Date.now().toString()); }catch(e){}
-    auth.signOut();
-    location.href="login.html";
-}
-
-/* theme toggle */
+/* Theme toggle */
 function toggleTheme(){
-    document.body.classList.toggle("light");
-    if(document.body.classList.contains("light")){
-        const tb = document.querySelector(".tabulator");
-        if(tb) tb.classList.remove("tabulator_midnight");
-    } else {
-        const tb = document.querySelector(".tabulator");
-        if(tb) tb.classList.add("tabulator_midnight");
-    }
+  document.body.classList.toggle('light');
+  if(document.body.classList.contains('light')){
+    const tb = document.querySelector('.tabulator'); if(tb) tb.classList.remove('tabulator_midnight');
+  } else { const tb = document.querySelector('.tabulator'); if(tb) tb.classList.add('tabulator_midnight'); }
 }
 
-/* make these functions available for inline onclick attributes (module->global bridge) */
+/* Logout clears badge/session flags & signs out */
+function logout(){
+  try{ localStorage.setItem(KEY_LAST_LOGOUT, Date.now().toString()); }catch(e){}
+  try{ sessionStorage.removeItem('recruita_nameBadgeVisible'); }catch(e){}
+  try{ nameBadge.style.display = 'none'; }catch(e){}
+  auth.signOut();
+  location.href = 'login.html';
+}
+
+/* expose for inline onclick compatibility */
 window.saveData = saveData;
 window.exportCSV = exportCSV;
-window.logout = logout;
 window.toggleTheme = toggleTheme;
-
+window.logout = logout;
 </script>
 
 </body>
