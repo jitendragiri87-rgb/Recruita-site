@@ -1,178 +1,186 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Recruiter Panel</title>
+<title>Recruiter Panel — Recruita</title>
 
 <link href="https://unpkg.com/tabulator-tables@6.2.1/dist/css/tabulator_midnight.min.css" rel="stylesheet">
 <script src="https://unpkg.com/tabulator-tables@6.2.1/dist/js/tabulator.min.js"></script>
 
 <style>
-/* ---------- base styles (kept) ---------- */
-:root{ --blue:#2B7FFF; }
-body{
-  background:#0b0b0c;color:white;font-family:Inter,sans-serif;padding:20px;transition:0.3s;
-}
-body.light{ background:#f2f2f2;color:#111; }
+:root{ --blue:#2B7FFF; --blue-dark:#1f63cc; --bg-dark:#0b0b0c; --card:#0f1114; }
+html,body{ margin:0; padding:0; background:var(--bg-dark); color:#fff; font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; }
+body.light{ background:#f4f6f8; color:#111; }
 
-.topBar{
-  display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-bottom:20px;
-}
-
-/* Theme/Logout buttons (unchanged appearance) */
-button{ padding:10px 16px;border:none;border-radius:6px;cursor:pointer;font-weight:600; }
+.topBar{ display:flex; justify-content:flex-end; align-items:center; gap:10px; padding:18px 20px 0 20px; }
+button{ padding:10px 16px; border:none; border-radius:6px; cursor:pointer; font-weight:600; }
 .blueBtn{ background:var(--blue); color:#fff; }
+.blueBtn:hover{ background:var(--blue-dark); }
 .greyBtn{ background:#555; color:#fff; }
 .redBtn{ background:#e74c3c; color:#fff; }
 
-/* NAME BADGE (target after animation) */
-/* BLUE NAME BADGE LIKE DOWNLOAD BUTTON */
 #nameBadge{
   display:none;
   align-items:center;
-  padding:10px 16px;
-  border-radius:6px;
-  background:#2B7FFF;   /* same blue as buttons */
-  color:white;
-  font-weight:600;
+  gap:10px;
+  padding:8px 12px;
+  border-radius:8px;
+  background:var(--blue);
+  color:#fff;
+  font-weight:700;
   font-size:15px;
-  white-space:nowrap;
-  cursor:default;
-  border:none;
-  transition:background .25s;
+  cursor:pointer;
+  user-select:none;
+  box-shadow: 0 6px 18px rgba(43,127,255,0.12);
+  transition: transform .12s ease, background .18s;
+}
+#nameBadge:hover{ transform: translateY(-2px); background:var(--blue-dark); }
+
+/* avatar inside badge */
+#nameBadge .badgeAvatar{
+  width:28px; height:28px; border-radius:999px; display:inline-grid; place-items:center;
+  background: linear-gradient(135deg,#6fb1ff,var(--blue)); color:#fff; font-weight:700; font-size:13px;
+  flex:0 0 auto;
+  box-shadow: 0 6px 10px rgba(0,0,0,0.15) inset;
 }
 
-#nameBadge:hover{
-  background:#1f63cc;   /* same hover tone as your blue buttons */
-}
+/* table + form */
+.container{ padding:12px 20px 40px 20px; max-width:1200px; margin:0 auto; }
+h2{ margin:10px 0 6px; font-size:22px; }
+#tableWrapper { overflow-x:auto; width:100%; margin-top:12px; border:1px solid rgba(255,255,255,0.04); border-radius:6px; padding:8px; }
+.tabulator{ background:var(--bg-dark) !important; }
+input,select{ width:100%; padding:12px; margin-top:8px; border-radius:8px; border:none; background:#111; color:#fff; }
+body.light input, body.light select{ background:#fff; color:#222; border:1px solid #ddd; }
 
-/* Light mode (still white text on blue for consistency) */
-body.light #nameBadge{
-  background:#2B7FFF;
-  color:white;
-}
-
-/* table + form styles */
-#tableWrapper { overflow-x:auto; width:100%; margin-top:20px; border:1px solid #333; }
-.tabulator { background:#0b0b0c !important; }
-body.light .tabulator{ background:#fff !important; }
-input,select{ width:100%; padding:12px; margin-top:8px; border:none; border-radius:8px; background:#111; color:white; }
-body.light input,body.light select{ background:#fff; color:#222; border:1px solid #ccc; }
-.tabulator-col-title, .tabulator-cell{ white-space:nowrap; }
-
-/* ---------- full-screen welcome (updated) ---------- */
-#welcomeFull {
-  position:fixed; inset:0; z-index:99999; display:flex; align-items:center; justify-content:center;
+/* full-screen welcome */
+#welcomeFull{
+  position:fixed; inset:0; z-index:99990; display:flex; align-items:center; justify-content:center;
   background:linear-gradient(180deg, rgba(2,6,23,0.95), rgba(8,13,30,0.95));
-  color:#fff; padding:28px; opacity:1;
-  transition:transform .6s cubic-bezier(.2,.9,.25,1), opacity .3s ease;
+  transition: transform .6s cubic-bezier(.2,.9,.25,1), opacity .3s ease;
 }
-.welcomeCard {
-  width:min(820px,94vw); border-radius:18px; padding:28px; text-align:center;
+.welcomeCard{
+  width:min(820px,94vw); border-radius:18px; padding:36px 34px; text-align:center;
   background: linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-  border:1px solid rgba(255,255,255,0.06);
-  box-shadow:0 20px 60px rgba(0,0,0,0.6);
+  border:1px solid rgba(255,255,255,0.06); box-shadow: 0 20px 60px rgba(0,0,0,0.6);
   transform-origin:center;
-  transition: transform .45s cubic-bezier(.2,.9,.25,1), opacity .35s;
 }
-.avatar {
-  width:96px;height:96px;border-radius:999px;display:inline-grid;place-items:center;
-  background:linear-gradient(135deg,var(--blue),#6fb1ff); margin:0 auto 12px; font-weight:800; font-size:34px; color:white;
-  box-shadow:0 12px 30px rgba(43,127,255,0.12);
-}
+.avatarBig{ width:100px; height:100px; border-radius:999px; margin:0 auto 12px; display:grid; place-items:center; font-size:36px; font-weight:800; color:#fff; background:linear-gradient(135deg,#6fb1ff,var(--blue)); box-shadow: 0 12px 30px rgba(43,127,255,0.12); }
 .welcomeTitle{ font-size:30px; font-weight:800; margin:6px 0; }
-.welcomeSub{ font-size:16px; color:rgba(255,255,255,0.85); margin-bottom:18px; }
+.welcomeSub{ font-size:16px; color:rgba(255,255,255,0.88); margin-bottom:18px; }
 
-/* ---------- animation state: minimize to top-right badge ---------- */
-/* When .minimize is added to welcomeFull, it shrinks + moves to top-right; then we show the name badge */
-#welcomeFull.minimize{
-  transform: translate(calc(50vw - 120px), calc(-42vh)) scale(.18);
-  opacity:0.95;
-  pointer-events:none;
+/* minimize animation target */
+#welcomeFull.minimize{ transform: translate(calc(50vw - 120px), calc(-42vh)) scale(.18); opacity:1; pointer-events:none; }
+#welcomeFull.minimize .welcomeCard{ transform: scale(.98); opacity:.95; }
+
+/* cartoon speech box (hidden by default) */
+#cartoonBox{
+  position:fixed; right:130px; top:72px; z-index:100000; display:none;
+  width:260px; padding:14px; background:#fff; color:#111; border-radius:12px; box-shadow:0 18px 50px rgba(0,0,0,0.35);
+  font-weight:600; transform-origin:right top; animation:pop .32s ease;
 }
-#welcomeFull.minimize .welcomeCard{ transform: scale(.98); opacity:0.9; }
+#cartoonBox::after{
+  content:""; position:absolute; right:18px; top:100%; width:0; height:0; border-left:10px solid transparent; border-right:10px solid transparent; border-top:12px solid #fff;
+}
+@keyframes pop{ from{ transform: scale(.92); opacity:0 } to{ transform: scale(1); opacity:1 } }
 
-/* small mini welcome (non-blocking) kept as fallback */
+/* cartoon text style */
+#cartoonBox .greet{ font-size:15px; margin-bottom:6px; color:#0b0b0c; }
+#cartoonBox .line{ font-size:13px; color:#444; font-weight:500; }
+
+/* mini welcome (fallback) */
 #welcomeMini{ position:fixed; left:20px; top:20px; z-index:9999; display:flex; align-items:center; gap:14px; padding:14px 18px; border-radius:12px; background:rgba(11,11,12,0.9); border:1px solid rgba(255,255,255,0.04); transform: translateY(-6px); opacity:0; transition:opacity .32s, transform .32s; pointer-events:none; }
 #welcomeMini.show{ opacity:1; transform: translateY(0); pointer-events:auto; }
 #welcomeMini .title{ font-size:18px; font-weight:700; line-height:1; }
 #welcomeMini .sub{ font-size:13px; color:rgba(255,255,255,0.85); margin-top:4px; }
 
-/* responsive tweaks */
-@media(max-width:720px){
+/* responsive minor */
+@media(max-width:800px){
+  #cartoonBox{ right:18px; width:220px; top:72px; }
   #welcomeFull.minimize{ transform: translate(calc(40vw - 60px), calc(-44vh)) scale(.2); }
 }
 </style>
 </head>
 <body>
 
-<!-- Top bar: nameBadge will appear left of Theme button -->
+<!-- top bar -->
 <div class="topBar">
-  <div id="nameBadge" aria-hidden="true"></div>
+  <div id="nameBadge" title="Open message">
+    <div class="badgeAvatar" id="badgeAvatar">R</div>
+    <div id="badgeText">Recruiter</div>
+  </div>
+
   <button id="themeBtn" class="greyBtn" onclick="toggleTheme()">🌓 Theme</button>
-  <button onclick="logout()" class="redBtn">Logout</button>
+  <button class="redBtn" onclick="logout()">Logout</button>
 </div>
 
-<h2>Your Performance</h2>
-<table style="width:100%; border-collapse:collapse;">
-<thead>
-<tr>
-<th style="border:1px solid #333; padding:10px;">Name</th>
-<th style="border:1px solid #333; padding:10px;">Today</th>
-<th style="border:1px solid #333; padding:10px;">Total</th>
-</tr>
-</thead>
-<tbody id="dashBody"></tbody>
-</table>
+<!-- cartoon box -->
+<div id="cartoonBox" role="note" aria-live="polite">
+  <div class="greet" id="cartoonGreet">Hey —</div>
+  <div class="line" id="cartoonLine">What's up? 🎵</div>
+</div>
 
-<h2>Add Candidate Entry</h2>
+<div class="container">
+  <h2>Your Performance</h2>
+  <div id="tableWrapper">
+    <table style="width:100%; border-collapse:collapse;">
+      <thead>
+        <tr>
+          <th style="border:1px solid rgba(255,255,255,0.06); padding:10px;">Name</th>
+          <th style="border:1px solid rgba(255,255,255,0.06); padding:10px;">Today</th>
+          <th style="border:1px solid rgba(255,255,255,0.06); padding:10px;">Total</th>
+        </tr>
+      </thead>
+      <tbody id="dashBody"></tbody>
+    </table>
+  </div>
 
-<input id="nameInput" placeholder="Name">
-<input id="numberInput" placeholder="Number (10 digits)">
-<input id="ageInput" placeholder="Age">
-<input id="expInput" placeholder="Total Experience">
-<input id="locInput" placeholder="Location">
-<input id="ctcInput" placeholder="CTC">
-<input id="compInput" placeholder="Current Company">
-
-<select id="channelInput">
+  <h2 style="margin-top:18px">Add Candidate Entry</h2>
+  <input id="nameInput" placeholder="Name">
+  <input id="numberInput" placeholder="Number (10 digits)">
+  <input id="ageInput" placeholder="Age">
+  <input id="expInput" placeholder="Total Experience">
+  <input id="locInput" placeholder="Location">
+  <input id="ctcInput" placeholder="CTC">
+  <input id="compInput" placeholder="Current Company">
+  <select id="channelInput">
     <option value="">Select Channel</option>
     <option>Banca</option>
     <option>Agency</option>
     <option>Direct</option>
     <option>Tele calling</option>
     <option>Other</option>
-</select>
-
-<select id="statusInput">
+  </select>
+  <select id="statusInput">
     <option value="">Call Status</option>
     <option>Interested</option>
     <option>Not Interested</option>
     <option>Not Answered</option>
-</select>
+  </select>
+  <input id="remarkInput" placeholder="Remarks">
 
-<input id="remarkInput" placeholder="Remarks">
+  <div style="margin-top:12px;">
+    <button class="blueBtn" onclick="saveData(event)">Submit Entry</button>
+    <button class="blueBtn" onclick="exportCSV()" style="margin-left:10px;">Download CSV</button>
+  </div>
 
-<button class="blueBtn" onclick="saveData(event)">Submit Entry</button>
-<button class="blueBtn" onclick="exportCSV()" style="margin-top:20px;">Download CSV</button>
+  <h2 style="margin-top:30px;">Your Entries</h2>
+  <div id="listTable" style="margin-top:12px"></div>
+</div>
 
-<h2 style="margin-top:30px;">Your Entries</h2>
-<div id="tableWrapper"><div id="listTable"></div></div>
-
-<!-- Full-screen welcome dialog (single Continue button only) -->
+<!-- Full-screen welcome -->
 <div id="welcomeFull" aria-hidden="true" role="dialog">
   <div class="welcomeCard" aria-label="Welcome">
-    <div class="avatar" id="fullAvatar">R</div>
+    <div class="avatarBig" id="fullAvatar">R</div>
     <div class="welcomeTitle" id="fullTitle">Hi —</div>
     <div class="welcomeSub" id="fullSub">Welcome back to Recruita.</div>
     <div style="margin-top:18px;">
-      <button class="blueBtn" id="fullContinue">Continue</button>
+      <button id="fullContinue" class="blueBtn">Continue</button>
     </div>
   </div>
 </div>
 
-<!-- mini welcome fallback -->
+<!-- mini fallback -->
 <div id="welcomeMini" aria-live="polite" role="status" style="display:none">
   <div style="display:flex;flex-direction:column;">
     <div class="title" id="miniTitle">Hi —</div>
@@ -186,204 +194,202 @@ body.light input,body.light select{ background:#fff; color:#222; border:1px soli
 import { auth, db } from "./firebase.js";
 import { collection, query, where, onSnapshot, addDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
-/* State */
+/* state */
 let uid = "";
 let email = "";
 let empID = "";
-let displayName = "";   // recruiter display name used across UI
-let all = [];
+let displayName = "";
 let table = null;
+let all = [];
 
-const welcomeFull = document.getElementById("welcomeFull");
-const fullAvatar = document.getElementById("fullAvatar");
-const fullTitle = document.getElementById("fullTitle");
-const fullSub = document.getElementById("fullSub");
-const fullContinue = document.getElementById("fullContinue");
+const welcomeFull = document.getElementById('welcomeFull');
+const fullAvatar = document.getElementById('fullAvatar');
+const fullTitle = document.getElementById('fullTitle');
+const fullSub = document.getElementById('fullSub');
+const fullContinue = document.getElementById('fullContinue');
 
-const welcomeMini = document.getElementById("welcomeMini");
-const miniTitle = document.getElementById("miniTitle");
-const miniSub = document.getElementById("miniSub");
-const miniClose = document.getElementById("miniClose");
+const nameBadge = document.getElementById('nameBadge');
+const badgeAvatar = document.getElementById('badgeAvatar');
+const badgeText = document.getElementById('badgeText');
 
-const nameBadge = document.getElementById("nameBadge");
-const themeBtn = document.getElementById("themeBtn");
+const cartoonBox = document.getElementById('cartoonBox');
+const cartoonGreet = document.getElementById('cartoonGreet');
+const cartoonLine = document.getElementById('cartoonLine');
 
-const KEY_LAST_FULL = "recruita_lastFullWelcome";
-const KEY_LAST_LOGOUT = "recruita_lastLogout";
+const KEY_LAST_FULL = 'recruita_lastFullWelcome';
+const KEY_LAST_LOGOUT = 'recruita_lastLogout';
+const KEY_BADGE_VISIBLE = 'recruita_nameBadgeVisible';
 
-/* time helpers */
-function hoursSince(ts){
-  if(!ts) return Infinity;
-  const then = Number(ts);
-  if(!then) return Infinity;
-  return (Date.now() - then) / (1000*60*60);
+/* small audio jingle using WebAudio (no external file) */
+function playJingle(){
+  try{
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const now = ctx.currentTime;
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = 'sine';
+    // simple short melody
+    const seq = [660, 880, 990]; // frequencies
+    let t = now;
+    seq.forEach((freq,i)=>{
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, t);
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.linearRampToValueAtTime(0.09, t + 0.01);
+      gain.gain.linearRampToValueAtTime(0.0001, t + 0.22);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.23);
+      t += 0.12;
+    });
+    // small cleanup (context will close itself)
+    setTimeout(()=>{ try{ ctx.close(); }catch(e){} }, 800);
+  }catch(e){
+    console.warn('Audio not supported', e);
+  }
 }
 
-/* Show mini welcome */
-function showMini(name){
-  miniTitle.textContent = `Hi ${name} !`;
-  miniSub.textContent = "Welcome back.";
-  welcomeMini.style.display = "flex";
-  requestAnimationFrame(()=> welcomeMini.classList.add("show"));
+/* show cartoon box with message */
+function showCartoon(name){
+  cartoonGreet.textContent = `Hey ${name} —`;
+  cartoonLine.textContent = "What's up? 🎵";
+  cartoonBox.style.display = 'block';
+  cartoonBox.style.opacity = '1';
+  // play jingle
+  playJingle();
+  // auto-hide after 4.2s
   setTimeout(()=> {
-    welcomeMini.classList.remove("show");
-    setTimeout(()=> { welcomeMini.style.display = "none"; }, 320);
-  }, 3500);
+    cartoonBox.style.opacity = '0';
+    setTimeout(()=> cartoonBox.style.display='none', 320);
+  }, 4200);
 }
 
-/* Show full-screen welcome */
-function showFull(name){
-  fullAvatar.textContent = (name && name[0]) ? name[0].toUpperCase() : "R";
-  fullTitle.textContent = `Hi ${name} !`;
-  fullSub.textContent = "Welcome back to Recruita.";
-  welcomeFull.setAttribute("aria-hidden", "false");
-  welcomeFull.style.display = "flex";
-}
-
-/* Minimize welcome into badge animation */
+/* minimize welcome into badge (animation) */
 function minimizeIntoBadge(name){
-  // Add class to trigger transform animation
-  welcomeFull.classList.add("minimize");
+  // if already minimized, ignore
+  if(sessionStorage.getItem(KEY_BADGE_VISIBLE)) return;
 
-  // After transition completes, hide the full overlay and show badge
+  // ensure full overlay is showing so transform animates
+  welcomeFull.classList.add('minimize');
+
+  // after animation transition, hide full overlay and show badge
   const onEnd = () => {
     welcomeFull.removeEventListener('transitionend', onEnd);
-    // hide full welcome
-    try{ welcomeFull.style.display = "none"; }catch(e){}
-    // show badge
-    nameBadge.textContent = name;
-    nameBadge.style.display = "flex";
-    nameBadge.setAttribute("aria-hidden", "false");
-    // persist that badge is visible in this session until logout
-    sessionStorage.setItem("recruita_nameBadgeVisible", "1");
+    try{ welcomeFull.style.display = 'none'; }catch(e){}
+    badgeAvatar.textContent = (name && name[0]) ? name[0].toUpperCase() : 'R';
+    badgeText.textContent = name;
+    nameBadge.style.display = 'flex';
+    sessionStorage.setItem(KEY_BADGE_VISIBLE, '1');
+    // set last full welcome record
+    try{ localStorage.setItem(KEY_LAST_FULL, Date.now().toString()); }catch(e){}
   };
   welcomeFull.addEventListener('transitionend', onEnd);
-  // update last-full welcome timestamp
-  try{ localStorage.setItem(KEY_LAST_FULL, Date.now().toString()); }catch(e){}
 }
 
-/* Event handlers */
+/* decide welcome behavior: show full or mini or badge */
+function handleWelcomeLogic(){
+  const lastFull = localStorage.getItem(KEY_LAST_FULL);
+  const lastLogout = localStorage.getItem(KEY_LAST_LOGOUT);
+  const twelvePassed = (Date.now() - (Number(lastFull) || 0)) / (1000*60*60) >= 12;
+  const afterLogout = !!lastLogout && Number(lastLogout) > Number(lastFull || 0);
+  const badgeVisible = !!sessionStorage.getItem(KEY_BADGE_VISIBLE);
+
+  if(badgeVisible){
+    // show badge directly
+    badgeAvatar.textContent = (displayName && displayName[0]) ? displayName[0].toUpperCase() : 'R';
+    badgeText.textContent = displayName || empID;
+    nameBadge.style.display = 'flex';
+    return;
+  }
+
+  if(afterLogout || twelvePassed){
+    // show full-screen
+    fullAvatar.textContent = (displayName && displayName[0]) ? displayName[0].toUpperCase() : 'R';
+    fullTitle.textContent = `Hi ${displayName || empID} !`;
+    fullSub.textContent = 'Welcome back to Recruita.';
+    welcomeFull.style.display = 'flex';
+    welcomeFull.setAttribute('aria-hidden','false');
+    // fullContinue handler already attached
+  } else {
+    // show small inline mini once per session
+    const shownKey = `welcomeMiniShown_${uid}`;
+    if(!sessionStorage.getItem(shownKey)){
+      document.getElementById('miniTitle').textContent = `Hi ${displayName || empID} !`;
+      document.getElementById('miniSub').textContent = 'Welcome back.';
+      const mini = document.getElementById('welcomeMini');
+      mini.style.display = 'flex';
+      requestAnimationFrame(()=> mini.classList.add('show'));
+      sessionStorage.setItem(shownKey,'1');
+      setTimeout(()=> { mini.classList.remove('show'); setTimeout(()=> mini.style.display='none',320); }, 3500);
+    } else {
+      // nothing: leave screen clean
+    }
+  }
+}
+
+/* attach interactive behavior */
 fullContinue.addEventListener('click', () => {
-  minimizeIntoBadge(displayName || empID || "User");
+  minimizeIntoBadge(displayName || empID);
+});
+nameBadge.addEventListener('click', () => {
+  showCartoon(displayName || empID);
 });
 
-miniClose.addEventListener('click', ()=>{
-  welcomeMini.classList.remove('show');
-  setTimeout(()=> welcomeMini.style.display='none', 320);
-});
+/* auth + user doc */
+auth.onAuthStateChanged(async user => {
+  if(!user) { location.href='login.html'; return; }
+  uid = user.uid; email = user.email;
 
-/* Auth + load user doc */
-auth.onAuthStateChanged(async user=>{
-  if(!user) location.href = 'login.html';
-  uid = user.uid;
-  email = user.email;
-
-  // Fetch users doc by email (as previous logic)
-  const ref = collection(db, 'users');
-  const q = query(ref, where('email', '==', email));
+  // query users by email to get display name & empID
+  const ref = collection(db,'users');
+  const q = query(ref, where('email','==', email));
   onSnapshot(q, snap => {
-    snap.forEach(docSnap => {
-      const data = docSnap.data() || {};
+    snap.forEach(d => {
+      const data = d.data() || {};
       empID = data.empID || (email ? email.split('@')[0] : 'User');
       displayName = (data.fullName || data.name || empID || (email ? email.split('@')[0] : 'there')).trim();
-
-      // update dashboard name cell immediately
-      renderDashboard();
-
-      // decide welcome behavior
-      const lastFull = localStorage.getItem(KEY_LAST_FULL);
-      const lastLogout = localStorage.getItem(KEY_LAST_LOGOUT);
-      const twelvePassed = hoursSince(lastFull) >= 12;
-      const afterLogout = !!lastLogout && Number(lastLogout) > Number(lastFull || 0);
-
-      // if nameBadge already visible this session, show it (no animation)
-      const badgeVis = sessionStorage.getItem("recruita_nameBadgeVisible");
-      if(badgeVis){
-        nameBadge.textContent = displayName;
-        nameBadge.style.display = "flex";
-        nameBadge.setAttribute("aria-hidden", "false");
-      } else if(afterLogout || twelvePassed){
-        // show full-screen first
-        showFull(displayName);
-      } else {
-        // small overlay once per session
-        const shownKey = `welcomeMiniShown_${uid}`;
-        if(!sessionStorage.getItem(shownKey)){
-          showMini(displayName);
-          sessionStorage.setItem(shownKey, "1");
-        }
-      }
     });
 
-    // load call logs afterwards
+    // load call logs after getting empID
     loadData(empID);
+
+    // now handle welcome logic AFTER displayName is available
+    handleWelcomeLogic();
   });
 });
 
-/* Load call logs */
+/* load call logs and render */
 function formatTS(d){
   const p=n=>n.toString().padStart(2,'0');
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 }
 
 function loadData(empIDVal){
-  const q = query(collection(db, 'callLogs'), where('empID', '==', empIDVal));
-  onSnapshot(q, snap=>{
+  const q = query(collection(db,'callLogs'), where('empID','==', empIDVal));
+  onSnapshot(q, snap => {
     all = [];
-    snap.forEach(d => all.push({...d.data(), id: d.id}));
+    snap.forEach(d => all.push({...d.data(), id:d.id}));
     all.sort((a,b)=> new Date(b.ts) - new Date(a.ts));
     renderDashboard();
     renderTable(all);
   });
 }
 
-/* Dashboard now uses displayName instead of EmpID */
+/* dashboard shows name instead of empID */
 function renderDashboard(){
-  let today = new Date().toDateString();
-  let countToday = all.filter(e => new Date(e.ts).toDateString() === today).length;
-  dashBody.innerHTML = `
+  const today = new Date().toDateString();
+  const countToday = all.filter(e => new Date(e.ts).toDateString() === today).length;
+  document.getElementById('dashBody').innerHTML = `
     <tr>
-      <td style="border:1px solid #333; padding:10px;">${displayName || empID}</td>
-      <td style="border:1px solid #333; padding:10px;">${countToday}</td>
-      <td style="border:1px solid #333; padding:10px;">${all.length}</td>
-    </tr>
-  `;
+      <td style="border:1px solid rgba(255,255,255,0.06); padding:10px;">${displayName || empID}</td>
+      <td style="border:1px solid rgba(255,255,255,0.06); padding:10px;">${countToday}</td>
+      <td style="border:1px solid rgba(255,255,255,0.06); padding:10px;">${all.length}</td>
+    </tr>`;
 }
 
-/* Save entry */
-async function saveData(evt){
-  const btn = evt && evt.target && evt.target.tagName === 'BUTTON' ? evt.target : document.activeElement;
-  const numberEl = document.getElementById('numberInput');
-  const num = (numberEl && numberEl.value || '').trim();
-  if(!/^[0-9]{10}$/.test(num)){
-    alert('Enter valid 10-digit number');
-    return;
-  }
-  if(btn) btn.disabled = true;
-  try{
-    await addDoc(collection(db,'callLogs'), {
-      ts: formatTS(new Date()), uid, empID, email,
-      name: document.getElementById('nameInput').value,
-      number: num,
-      age: document.getElementById('ageInput').value,
-      exp: document.getElementById('expInput').value,
-      loc: document.getElementById('locInput').value,
-      ctc: document.getElementById('ctcInput').value,
-      comp: document.getElementById('compInput').value,
-      channel: document.getElementById('channelInput').value,
-      callStatus: document.getElementById('statusInput').value,
-      remarks: document.getElementById('remarkInput').value
-    });
-    // clear input fields
-    ['nameInput','numberInput','ageInput','expInput','locInput','ctcInput','compInput','channelInput','statusInput','remarkInput']
-      .forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
-    alert('Entry Saved');
-  }catch(err){
-    console.error(err); alert('Error saving entry: ' + (err.message || err));
-  }finally{ if(btn) btn.disabled = false; }
-}
-
-/* Render table */
+/* Tabulator table */
 function renderTable(data){
   if(table){ table.replaceData(data); return; }
   table = new Tabulator('#listTable', {
@@ -406,36 +412,53 @@ function renderTable(data){
   });
 }
 
+/* Save entry */
+async function saveData(evt){
+  const btn = evt && evt.target && evt.target.tagName === 'BUTTON' ? evt.target : document.activeElement;
+  const num = (document.getElementById('numberInput').value || '').trim();
+  if(!/^[0-9]{10}$/.test(num)){ alert('Enter valid 10-digit number'); return; }
+  if(btn) btn.disabled = true;
+  try{
+    await addDoc(collection(db,'callLogs'), {
+      ts: formatTS(new Date()), uid, empID, email,
+      name: document.getElementById('nameInput').value,
+      number: num,
+      age: document.getElementById('ageInput').value,
+      exp: document.getElementById('expInput').value,
+      loc: document.getElementById('locInput').value,
+      ctc: document.getElementById('ctcInput').value,
+      comp: document.getElementById('compInput').value,
+      channel: document.getElementById('channelInput').value,
+      callStatus: document.getElementById('statusInput').value,
+      remarks: document.getElementById('remarkInput').value
+    });
+    ['nameInput','numberInput','ageInput','expInput','locInput','ctcInput','compInput','channelInput','statusInput','remarkInput']
+      .forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+    alert('Entry Saved');
+  }catch(err){ console.error(err); alert('Error saving entry: ' + (err.message || err)); }
+  finally{ if(btn) btn.disabled = false; }
+}
+
 /* Export CSV */
-function exportCSV(){
-  if(table && typeof table.download === 'function'){
-    table.download('csv', `${(displayName||empID).replace(/\s+/g,'_')}_data.csv`);
-  } else alert('Table not ready yet.');
-}
+function exportCSV(){ if(table && typeof table.download === 'function'){ table.download('csv', `${(displayName||empID).replace(/\s+/g,'_')}_data.csv`); } else alert('Table not ready yet.'); }
 
-/* Theme toggle */
-function toggleTheme(){
-  document.body.classList.toggle('light');
-  if(document.body.classList.contains('light')){
-    const tb = document.querySelector('.tabulator'); if(tb) tb.classList.remove('tabulator_midnight');
-  } else { const tb = document.querySelector('.tabulator'); if(tb) tb.classList.add('tabulator_midnight'); }
-}
+/* theme toggle */
+function toggleTheme(){ document.body.classList.toggle('light'); const tb = document.querySelector('.tabulator'); if(tb){ tb.classList.toggle('tabulator_midnight'); } }
 
-/* Logout clears badge/session flags & signs out */
+/* logout: clear flags */
 function logout(){
   try{ localStorage.setItem(KEY_LAST_LOGOUT, Date.now().toString()); }catch(e){}
-  try{ sessionStorage.removeItem('recruita_nameBadgeVisible'); }catch(e){}
+  try{ sessionStorage.removeItem(KEY_BADGE_VISIBLE); }catch(e){}
   try{ nameBadge.style.display = 'none'; }catch(e){}
   auth.signOut();
   location.href = 'login.html';
 }
 
-/* expose for inline onclick compatibility */
+/* expose for inline attributes */
 window.saveData = saveData;
 window.exportCSV = exportCSV;
 window.toggleTheme = toggleTheme;
 window.logout = logout;
 </script>
-
 </body>
 </html>
