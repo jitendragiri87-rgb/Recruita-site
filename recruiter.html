@@ -27,14 +27,31 @@ button{ padding:10px 16px;border:none;border-radius:6px;cursor:pointer;font-weig
 .redBtn{ background:#e74c3c; color:#fff; }
 
 /* NAME BADGE (target after animation) */
+/* BLUE NAME BADGE LIKE DOWNLOAD BUTTON */
 #nameBadge{
   display:none;
-  align-items:center; gap:10px; padding:8px 12px; border-radius:8px;
-  background: rgba(255,255,255,0.04); color: #fff; border:1px solid rgba(255,255,255,0.04);
-  font-weight:700;
+  align-items:center;
+  padding:10px 16px;
+  border-radius:6px;
+  background:#2B7FFF;   /* same blue as buttons */
+  color:white;
+  font-weight:600;
+  font-size:15px;
   white-space:nowrap;
+  cursor:default;
+  border:none;
+  transition:background .25s;
 }
-body.light #nameBadge{ color:#111; background:#fff; border:1px solid rgba(0,0,0,0.06); }
+
+#nameBadge:hover{
+  background:#1f63cc;   /* same hover tone as your blue buttons */
+}
+
+/* Light mode (still white text on blue for consistency) */
+body.light #nameBadge{
+  background:#2B7FFF;
+  color:white;
+}
 
 /* table + form styles */
 #tableWrapper { overflow-x:auto; width:100%; margin-top:20px; border:1px solid #333; }
