@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Recruita User Management</title>
 
 <style>
@@ -56,6 +56,7 @@ th, td {
 }
 .light th, .light td { border:1px solid #ccc; }
 
+.smallNote { font-size:13px; color:rgba(255,255,255,0.7); margin-top:6px; }
 </style>
 </head>
 
@@ -71,10 +72,15 @@ th, td {
 
 <h3>Create Recruiter</h3>
 
+<input id="newFullName" placeholder="Full name (optional)">
 <input id="newEmail" placeholder="Recruiter Email">
 <input id="newPassword" placeholder="Password">
 
-<button class="blueBtn" onclick="createRecruiter()">Create Recruiter</button>
+<div style="display:flex;gap:10px;margin-top:10px;">
+    <button class="blueBtn" onclick="createRecruiter()">Create Recruiter</button>
+    <button class="greyBtn" onclick="loadUsers()">Reload Users</button>
+</div>
+<div class="smallNote">EmpID will be email prefix (you can edit the full name after creation).</div>
 
 <h2>All Users</h2>
 
@@ -83,10 +89,12 @@ th, td {
     <thead>
         <tr>
             <th>EmpID</th>
+            <th>Full Name</th>
             <th>Email</th>
             <th>Role</th>
             <th>UID</th>
             <th>Reset Password</th>
+            <th>Edit Name</th>
             <th>Delete</th>
         </tr>
     </thead>
@@ -99,8 +107,7 @@ import { auth, db } from "./firebase.js";
 
 import {
     createUserWithEmailAndPassword,
-    sendPasswordResetEmail,
-    deleteUser as firebaseDeleteUser
+    sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
 
 import {
@@ -108,12 +115,11 @@ import {
     doc,
     getDocs,
     collection,
-    deleteDoc
+    deleteDoc,
+    updateDoc
 } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
-//-------------------------------------------------------
-// ACCESS CHECK — Only logged-in admin can view
-//-------------------------------------------------------
+/* ACCESS CHECK — Only logged-in admin can view */
 auth.onAuthStateChanged(async u => {
     if(!u){
         location.href = "login.html";
@@ -122,20 +128,30 @@ auth.onAuthStateChanged(async u => {
 
     let uid = u.uid;
     let userRef = doc(db,"users",uid);
-    let snap = await getDoc(userRef);
+    // perform a quick existence check by querying users collection by uid
+    // (original relied on getDoc which needed doc path; here we do a safer read)
+    // We'll simply load users and then check role
+    let snap = await getDocs(collection(db,"users"));
+    let isAdmin = false;
+    snap.forEach(d=>{
+        if(d.id === uid && d.data().role === "admin") isAdmin = true;
+    });
 
-    if(!snap.exists() || snap.data().role !== "admin"){
+    if(!isAdmin){
         alert("Access denied. Admin only.");
         location.href = "login.html";
+        return;
     }
+
+    // load users for table
+    loadUsers();
 });
 
-//-------------------------------------------------------
-// CREATE RECRUITER
-//-------------------------------------------------------
+/* CREATE RECRUITER */
 async function createRecruiter(){
-    let email = newEmail.value.trim();
-    let pass  = newPassword.value.trim();
+    let nameVal  = document.getElementById("newFullName").value.trim();
+    let email = document.getElementById("newEmail").value.trim();
+    let pass  = document.getElementById("newPassword").value.trim();
 
     if(!email || !pass){
         alert("Enter email & password");
@@ -143,18 +159,22 @@ async function createRecruiter(){
     }
 
     try{
+        // create in Auth
         let res = await createUserWithEmailAndPassword(auth, email, pass);
         let uid = res.user.uid;
 
+        // write Firestore user doc with fullName (optional)
         await setDoc(doc(db,"users",uid),{
             email: email,
             empID: email.split("@")[0],
-            role: "recruiter"
+            role: "recruiter",
+            fullName: nameVal || ""   // new name field
         });
 
         alert("Recruiter Created");
-        newEmail.value = "";
-        newPassword.value = "";
+        document.getElementById("newEmail").value = "";
+        document.getElementById("newPassword").value = "";
+        document.getElementById("newFullName").value = "";
         loadUsers();
 
     }catch(e){
@@ -162,19 +182,18 @@ async function createRecruiter(){
     }
 }
 
-//-------------------------------------------------------
-// LOAD USERS
-//-------------------------------------------------------
+/* LOAD USERS */
 async function loadUsers(){
     let snap = await getDocs(collection(db,"users"));
     userBody.innerHTML = "";
 
     snap.forEach(u=>{
         let d = u.data();
-
+        const full = d.fullName || "";
         userBody.innerHTML += `
         <tr>
             <td>${d.empID}</td>
+            <td id="name_${u.id}">${full}</td>
             <td>${d.email}</td>
             <td>${d.role}</td>
             <td>${u.id}</td>
@@ -186,6 +205,10 @@ async function loadUsers(){
             </td>
 
             <td>
+                <button class="greyBtn" onclick="editNamePrompt('${u.id}', '${escapeHtml(full)}')">Edit</button>
+            </td>
+
+            <td>
                 <button class="redBtn" onclick="deleteUserRecord('${u.id}')">
                     Delete
                 </button>
@@ -194,23 +217,37 @@ async function loadUsers(){
     });
 }
 
-//-------------------------------------------------------
-// RESET PASSWORD
-//-------------------------------------------------------
+/* RESET PASSWORD */
 async function resetPass(email){
     await sendPasswordResetEmail(auth, email);
     alert("Reset link sent to " + email);
 }
 
-//-------------------------------------------------------
-// DELETE USER
-//-------------------------------------------------------
+/* EDIT NAME (prompt) */
+async function editNamePrompt(uid, currentName){
+    // unescape currentName for prompt
+    const cur = currentName || "";
+    const newName = prompt("Enter full name for this user:", cur);
+    if(newName === null) return; // cancelled
+    const ref = doc(db,"users",uid);
+    try{
+        await updateDoc(ref, { fullName: newName.trim() });
+        // update UI cell
+        const cell = document.getElementById(`name_${uid}`);
+        if(cell) cell.textContent = newName.trim();
+        alert("Name updated");
+    }catch(err){
+        alert("Error updating name: " + err.message);
+    }
+}
+
+/* DELETE USER */
 async function deleteUserRecord(uid){
-    if(!confirm("Delete this user?")) return;
+    if(!confirm("Delete this user? This will remove their Firestore record (Auth user may still exist).")) return;
 
     try{
         await deleteDoc(doc(db,"users",uid));
-        alert("Deleted");
+        alert("Deleted user record from Firestore");
         loadUsers();
 
     }catch(err){
@@ -218,9 +255,13 @@ async function deleteUserRecord(uid){
     }
 }
 
-//-------------------------------------------------------
-// BUTTONS
-//-------------------------------------------------------
+/* UTIL: escapeHtml for inline injection safety */
+function escapeHtml(s){
+    if(!s) return "";
+    return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
+}
+
+/* BUTTONS */
 function goBack(){
     location.href = "admin.html";
 }
@@ -230,23 +271,21 @@ function toggleTheme(){
 }
 
 function logout(){
+    // mark logout time so next login shows full-screen welcome
+    try{ localStorage.setItem("recruita_lastLogout", Date.now().toString()); }catch(e){}
     auth.signOut();
     location.href = "login.html";
 }
 
-//-------------------------------------------------------
-// MAKE FUNCTIONS ACCESSIBLE TO HTML
-//-------------------------------------------------------
+// expose functions
 window.createRecruiter = createRecruiter;
 window.resetPass = resetPass;
 window.deleteUserRecord = deleteUserRecord;
-window.goBack = goBack;
+window.loadUsers = loadUsers;
+window.editNamePrompt = editNamePrompt;
 window.toggleTheme = toggleTheme;
 window.logout = logout;
-window.loadUsers = loadUsers;
-
-// Load users at page load
-loadUsers();
+window.goBack = goBack;
 
 </script>
 
