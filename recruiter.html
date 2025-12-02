@@ -9,7 +9,7 @@
 <script src="https://unpkg.com/tabulator-tables@6.2.1/dist/js/tabulator.min.js"></script>
 
 <style>
-:root{ --blue:#2B7FFF; --blue-dark:#1f63cc; --bg-dark:#0b0b0c; --card:#0f1114; }
+:root{ --blue:#2B7FFF; --blue-dark:#1f63cc; --bg-dark:#0b0b0c; }
 html,body{ margin:0; padding:0; background:var(--bg-dark); color:#fff; font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; }
 body.light{ background:#f4f6f8; color:#111; }
 
@@ -20,32 +20,11 @@ button{ padding:10px 16px; border:none; border-radius:6px; cursor:pointer; font-
 .greyBtn{ background:#555; color:#fff; }
 .redBtn{ background:#e74c3c; color:#fff; }
 
-#nameBadge{
-  display:none;
-  align-items:center;
-  gap:10px;
-  padding:8px 12px;
-  border-radius:8px;
-  background:var(--blue);
-  color:#fff;
-  font-weight:700;
-  font-size:15px;
-  cursor:pointer;
-  user-select:none;
-  box-shadow: 0 6px 18px rgba(43,127,255,0.12);
-  transition: transform .12s ease, background .18s;
-}
+#nameBadge{ display:none; align-items:center; gap:10px; padding:8px 12px; border-radius:8px; background:var(--blue); color:#fff; font-weight:700; font-size:15px; cursor:pointer; user-select:none; box-shadow: 0 6px 18px rgba(43,127,255,0.12); transition: transform .12s ease, background .18s; }
 #nameBadge:hover{ transform: translateY(-2px); background:var(--blue-dark); }
+#nameBadge .badgeAvatar{ width:28px; height:28px; border-radius:999px; display:inline-grid; place-items:center; background: linear-gradient(135deg,#6fb1ff,var(--blue)); color:#fff; font-weight:700; font-size:13px; flex:0 0 auto; }
 
-/* avatar inside badge */
-#nameBadge .badgeAvatar{
-  width:28px; height:28px; border-radius:999px; display:inline-grid; place-items:center;
-  background: linear-gradient(135deg,#6fb1ff,var(--blue)); color:#fff; font-weight:700; font-size:13px;
-  flex:0 0 auto;
-  box-shadow: 0 6px 10px rgba(0,0,0,0.15) inset;
-}
-
-/* table + form */
+/* content */
 .container{ padding:12px 20px 40px 20px; max-width:1200px; margin:0 auto; }
 h2{ margin:10px 0 6px; font-size:22px; }
 #tableWrapper { overflow-x:auto; width:100%; margin-top:12px; border:1px solid rgba(255,255,255,0.04); border-radius:6px; padding:8px; }
@@ -53,57 +32,33 @@ h2{ margin:10px 0 6px; font-size:22px; }
 input,select{ width:100%; padding:12px; margin-top:8px; border-radius:8px; border:none; background:#111; color:#fff; }
 body.light input, body.light select{ background:#fff; color:#222; border:1px solid #ddd; }
 
-/* full-screen welcome */
-#welcomeFull{
-  position:fixed; inset:0; z-index:99990; display:flex; align-items:center; justify-content:center;
-  background:linear-gradient(180deg, rgba(2,6,23,0.95), rgba(8,13,30,0.95));
-  transition: transform .6s cubic-bezier(.2,.9,.25,1), opacity .3s ease;
-}
-.welcomeCard{
-  width:min(820px,94vw); border-radius:18px; padding:36px 34px; text-align:center;
-  background: linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-  border:1px solid rgba(255,255,255,0.06); box-shadow: 0 20px 60px rgba(0,0,0,0.6);
-  transform-origin:center;
-}
+/* welcome */
+#welcomeFull{ position:fixed; inset:0; z-index:99990; display:none; align-items:center; justify-content:center; background:linear-gradient(180deg, rgba(2,6,23,0.95), rgba(8,13,30,0.95)); transition: transform .55s cubic-bezier(.2,.9,.25,1), opacity .3s ease; }
+.welcomeCard{ width:min(820px,94vw); border-radius:18px; padding:36px 34px; text-align:center; background: linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.06); box-shadow: 0 20px 60px rgba(0,0,0,0.6); transform-origin:center; }
 .avatarBig{ width:100px; height:100px; border-radius:999px; margin:0 auto 12px; display:grid; place-items:center; font-size:36px; font-weight:800; color:#fff; background:linear-gradient(135deg,#6fb1ff,var(--blue)); box-shadow: 0 12px 30px rgba(43,127,255,0.12); }
 .welcomeTitle{ font-size:30px; font-weight:800; margin:6px 0; }
 .welcomeSub{ font-size:16px; color:rgba(255,255,255,0.88); margin-bottom:18px; }
-
-/* minimize animation target */
 #welcomeFull.minimize{ transform: translate(calc(50vw - 120px), calc(-42vh)) scale(.18); opacity:1; pointer-events:none; }
 #welcomeFull.minimize .welcomeCard{ transform: scale(.98); opacity:.95; }
 
-/* cartoon speech box (hidden by default) */
-#cartoonBox{
-  position:fixed; right:130px; top:72px; z-index:100000; display:none;
-  width:260px; padding:14px; background:#fff; color:#111; border-radius:12px; box-shadow:0 18px 50px rgba(0,0,0,0.35);
-  font-weight:600; transform-origin:right top; animation:pop .32s ease;
-}
-#cartoonBox::after{
-  content:""; position:absolute; right:18px; top:100%; width:0; height:0; border-left:10px solid transparent; border-right:10px solid transparent; border-top:12px solid #fff;
-}
+/* cartoon box */
+#cartoonBox{ position:fixed; right:130px; top:72px; z-index:100000; display:none; width:260px; padding:14px; background:#fff; color:#111; border-radius:12px; box-shadow:0 18px 50px rgba(0,0,0,0.35); font-weight:600; transform-origin:right top; animation:pop .32s ease; }
+#cartoonBox::after{ content:""; position:absolute; right:18px; top:100%; width:0; height:0; border-left:10px solid transparent; border-right:10px solid transparent; border-top:12px solid #fff; }
 @keyframes pop{ from{ transform: scale(.92); opacity:0 } to{ transform: scale(1); opacity:1 } }
-
-/* cartoon text style */
 #cartoonBox .greet{ font-size:15px; margin-bottom:6px; color:#0b0b0c; }
 #cartoonBox .line{ font-size:13px; color:#444; font-weight:500; }
 
-/* mini welcome (fallback) */
+/* mini fallback */
 #welcomeMini{ position:fixed; left:20px; top:20px; z-index:9999; display:flex; align-items:center; gap:14px; padding:14px 18px; border-radius:12px; background:rgba(11,11,12,0.9); border:1px solid rgba(255,255,255,0.04); transform: translateY(-6px); opacity:0; transition:opacity .32s, transform .32s; pointer-events:none; }
 #welcomeMini.show{ opacity:1; transform: translateY(0); pointer-events:auto; }
 #welcomeMini .title{ font-size:18px; font-weight:700; line-height:1; }
 #welcomeMini .sub{ font-size:13px; color:rgba(255,255,255,0.85); margin-top:4px; }
 
-/* responsive minor */
-@media(max-width:800px){
-  #cartoonBox{ right:18px; width:220px; top:72px; }
-  #welcomeFull.minimize{ transform: translate(calc(40vw - 60px), calc(-44vh)) scale(.2); }
-}
+@media(max-width:800px){ #cartoonBox{ right:18px; width:220px; top:72px; } #welcomeFull.minimize{ transform: translate(calc(40vw - 60px), calc(-44vh)) scale(.2); } }
 </style>
 </head>
 <body>
 
-<!-- top bar -->
 <div class="topBar">
   <div id="nameBadge" title="Open message">
     <div class="badgeAvatar" id="badgeAvatar">R</div>
@@ -114,7 +69,6 @@ body.light input, body.light select{ background:#fff; color:#222; border:1px sol
   <button class="redBtn" onclick="logout()">Logout</button>
 </div>
 
-<!-- cartoon box -->
 <div id="cartoonBox" role="note" aria-live="polite">
   <div class="greet" id="cartoonGreet">Hey —</div>
   <div class="line" id="cartoonLine">What's up? 🎵</div>
@@ -168,7 +122,6 @@ body.light input, body.light select{ background:#fff; color:#222; border:1px sol
   <div id="listTable" style="margin-top:12px"></div>
 </div>
 
-<!-- Full-screen welcome -->
 <div id="welcomeFull" aria-hidden="true" role="dialog">
   <div class="welcomeCard" aria-label="Welcome">
     <div class="avatarBig" id="fullAvatar">R</div>
@@ -180,7 +133,6 @@ body.light input, body.light select{ background:#fff; color:#222; border:1px sol
   </div>
 </div>
 
-<!-- mini fallback -->
 <div id="welcomeMini" aria-live="polite" role="status" style="display:none">
   <div style="display:flex;flex-direction:column;">
     <div class="title" id="miniTitle">Hi —</div>
@@ -195,12 +147,8 @@ import { auth, db } from "./firebase.js";
 import { collection, query, where, onSnapshot, addDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
 /* state */
-let uid = "";
-let email = "";
-let empID = "";
-let displayName = "";
-let table = null;
-let all = [];
+let uid = "", email = "", empID = "", displayName = "";
+let table = null, all = [];
 
 const welcomeFull = document.getElementById('welcomeFull');
 const fullAvatar = document.getElementById('fullAvatar');
@@ -216,20 +164,18 @@ const cartoonBox = document.getElementById('cartoonBox');
 const cartoonGreet = document.getElementById('cartoonGreet');
 const cartoonLine = document.getElementById('cartoonLine');
 
+const miniClose = document.getElementById('miniClose');
+
 const KEY_LAST_FULL = 'recruita_lastFullWelcome';
 const KEY_LAST_LOGOUT = 'recruita_lastLogout';
 const KEY_BADGE_VISIBLE = 'recruita_nameBadgeVisible';
 
-/* small audio jingle using WebAudio (no external file) */
+/* small audio jingle */
 function playJingle(){
   try{
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const now = ctx.currentTime;
-    const o = ctx.createOscillator();
-    const g = ctx.createGain();
-    o.type = 'sine';
-    // simple short melody
-    const seq = [660, 880, 990]; // frequencies
+    const seq = [660, 880, 990];
     let t = now;
     seq.forEach((freq,i)=>{
       const osc = ctx.createOscillator();
@@ -244,51 +190,60 @@ function playJingle(){
       osc.stop(t + 0.23);
       t += 0.12;
     });
-    // small cleanup (context will close itself)
     setTimeout(()=>{ try{ ctx.close(); }catch(e){} }, 800);
-  }catch(e){
-    console.warn('Audio not supported', e);
-  }
+  }catch(e){ console.warn('Audio not supported', e); }
 }
 
-/* show cartoon box with message */
+/* show cartoon box */
 function showCartoon(name){
+  console.log('showCartoon for', name);
   cartoonGreet.textContent = `Hey ${name} —`;
   cartoonLine.textContent = "What's up? 🎵";
   cartoonBox.style.display = 'block';
   cartoonBox.style.opacity = '1';
-  // play jingle
   playJingle();
-  // auto-hide after 4.2s
-  setTimeout(()=> {
-    cartoonBox.style.opacity = '0';
-    setTimeout(()=> cartoonBox.style.display='none', 320);
-  }, 4200);
+  setTimeout(()=> { cartoonBox.style.opacity = '0'; setTimeout(()=> cartoonBox.style.display='none', 320); }, 4200);
 }
 
-/* minimize welcome into badge (animation) */
+/* minimize welcome into badge with reliable fallback */
 function minimizeIntoBadge(name){
-  // if already minimized, ignore
-  if(sessionStorage.getItem(KEY_BADGE_VISIBLE)) return;
+  console.log('minimizeIntoBadge called with', name);
+  if(sessionStorage.getItem(KEY_BADGE_VISIBLE)){
+    console.log('badge already visible - skipping animation');
+    return;
+  }
 
-  // ensure full overlay is showing so transform animates
+  // show transform (will animate)
   welcomeFull.classList.add('minimize');
 
-  // after animation transition, hide full overlay and show badge
-  const onEnd = () => {
-    welcomeFull.removeEventListener('transitionend', onEnd);
+  // fallback timer for animation end (in case transitionend didn't fire)
+  const fallbackMs = 700; // slightly longer than CSS animation
+  let done = false;
+
+  function finish(){
+    if(done) return;
+    done = true;
     try{ welcomeFull.style.display = 'none'; }catch(e){}
     badgeAvatar.textContent = (name && name[0]) ? name[0].toUpperCase() : 'R';
     badgeText.textContent = name;
     nameBadge.style.display = 'flex';
     sessionStorage.setItem(KEY_BADGE_VISIBLE, '1');
-    // set last full welcome record
     try{ localStorage.setItem(KEY_LAST_FULL, Date.now().toString()); }catch(e){}
-  };
-  welcomeFull.addEventListener('transitionend', onEnd);
+    console.log('badge shown');
+  }
+
+  // try transitionend but also use fallback
+  welcomeFull.addEventListener('transitionend', function onEnd(ev){
+    // ensure it's the transform transition (protective)
+    if(ev.propertyName && ev.propertyName.indexOf('transform') === -1) return;
+    welcomeFull.removeEventListener('transitionend', onEnd);
+    finish();
+  });
+
+  setTimeout(()=> finish(), fallbackMs);
 }
 
-/* decide welcome behavior: show full or mini or badge */
+/* decide welcome behavior */
 function handleWelcomeLogic(){
   const lastFull = localStorage.getItem(KEY_LAST_FULL);
   const lastLogout = localStorage.getItem(KEY_LAST_LOGOUT);
@@ -297,23 +252,21 @@ function handleWelcomeLogic(){
   const badgeVisible = !!sessionStorage.getItem(KEY_BADGE_VISIBLE);
 
   if(badgeVisible){
-    // show badge directly
     badgeAvatar.textContent = (displayName && displayName[0]) ? displayName[0].toUpperCase() : 'R';
     badgeText.textContent = displayName || empID;
     nameBadge.style.display = 'flex';
+    console.log('badge restored from session');
     return;
   }
 
   if(afterLogout || twelvePassed){
-    // show full-screen
     fullAvatar.textContent = (displayName && displayName[0]) ? displayName[0].toUpperCase() : 'R';
     fullTitle.textContent = `Hi ${displayName || empID} !`;
     fullSub.textContent = 'Welcome back to Recruita.';
     welcomeFull.style.display = 'flex';
     welcomeFull.setAttribute('aria-hidden','false');
-    // fullContinue handler already attached
+    console.log('showing full welcome');
   } else {
-    // show small inline mini once per session
     const shownKey = `welcomeMiniShown_${uid}`;
     if(!sessionStorage.getItem(shownKey)){
       document.getElementById('miniTitle').textContent = `Hi ${displayName || empID} !`;
@@ -323,26 +276,38 @@ function handleWelcomeLogic(){
       requestAnimationFrame(()=> mini.classList.add('show'));
       sessionStorage.setItem(shownKey,'1');
       setTimeout(()=> { mini.classList.remove('show'); setTimeout(()=> mini.style.display='none',320); }, 3500);
+      console.log('showing mini welcome');
     } else {
-      // nothing: leave screen clean
+      console.log('no welcome needed this session');
     }
   }
 }
 
-/* attach interactive behavior */
-fullContinue.addEventListener('click', () => {
+/* attach handlers reliably (exposed globally) */
+function onFullContinueClick(){
+  console.log('fullContinue clicked');
   minimizeIntoBadge(displayName || empID);
-});
-nameBadge.addEventListener('click', () => {
+}
+function onBadgeClick(){
+  console.log('nameBadge clicked');
   showCartoon(displayName || empID);
+}
+
+/* bind handlers to elements and expose when script runs */
+fullContinue.addEventListener('click', onFullContinueClick);
+nameBadge.addEventListener('click', onBadgeClick);
+miniClose.addEventListener('click', ()=> {
+  const mini = document.getElementById('welcomeMini');
+  mini.classList.remove('show');
+  setTimeout(()=> mini.style.display='none', 320);
 });
 
 /* auth + user doc */
 auth.onAuthStateChanged(async user => {
-  if(!user) { location.href='login.html'; return; }
+  if(!user){ location.href='login.html'; return; }
   uid = user.uid; email = user.email;
+  console.log('auth state', uid, email);
 
-  // query users by email to get display name & empID
   const ref = collection(db,'users');
   const q = query(ref, where('email','==', email));
   onSnapshot(q, snap => {
@@ -350,21 +315,16 @@ auth.onAuthStateChanged(async user => {
       const data = d.data() || {};
       empID = data.empID || (email ? email.split('@')[0] : 'User');
       displayName = (data.fullName || data.name || empID || (email ? email.split('@')[0] : 'there')).trim();
+      console.log('user doc loaded:', displayName, empID);
     });
 
-    // load call logs after getting empID
     loadData(empID);
-
-    // now handle welcome logic AFTER displayName is available
     handleWelcomeLogic();
   });
 });
 
-/* load call logs and render */
-function formatTS(d){
-  const p=n=>n.toString().padStart(2,'0');
-  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
-}
+/* data load + UI render */
+function formatTS(d){ const p=n=>n.toString().padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`; }
 
 function loadData(empIDVal){
   const q = query(collection(db,'callLogs'), where('empID','==', empIDVal));
@@ -374,10 +334,10 @@ function loadData(empIDVal){
     all.sort((a,b)=> new Date(b.ts) - new Date(a.ts));
     renderDashboard();
     renderTable(all);
+    console.log('callLogs loaded:', all.length);
   });
 }
 
-/* dashboard shows name instead of empID */
 function renderDashboard(){
   const today = new Date().toDateString();
   const countToday = all.filter(e => new Date(e.ts).toDateString() === today).length;
@@ -389,7 +349,6 @@ function renderDashboard(){
     </tr>`;
 }
 
-/* Tabulator table */
 function renderTable(data){
   if(table){ table.replaceData(data); return; }
   table = new Tabulator('#listTable', {
@@ -412,7 +371,7 @@ function renderTable(data){
   });
 }
 
-/* Save entry */
+/* Save, Export, Theme, Logout */
 async function saveData(evt){
   const btn = evt && evt.target && evt.target.tagName === 'BUTTON' ? evt.target : document.activeElement;
   const num = (document.getElementById('numberInput').value || '').trim();
@@ -439,26 +398,16 @@ async function saveData(evt){
   finally{ if(btn) btn.disabled = false; }
 }
 
-/* Export CSV */
 function exportCSV(){ if(table && typeof table.download === 'function'){ table.download('csv', `${(displayName||empID).replace(/\s+/g,'_')}_data.csv`); } else alert('Table not ready yet.'); }
-
-/* theme toggle */
 function toggleTheme(){ document.body.classList.toggle('light'); const tb = document.querySelector('.tabulator'); if(tb){ tb.classList.toggle('tabulator_midnight'); } }
-
-/* logout: clear flags */
-function logout(){
-  try{ localStorage.setItem(KEY_LAST_LOGOUT, Date.now().toString()); }catch(e){}
-  try{ sessionStorage.removeItem(KEY_BADGE_VISIBLE); }catch(e){}
-  try{ nameBadge.style.display = 'none'; }catch(e){}
-  auth.signOut();
-  location.href = 'login.html';
-}
+function logout(){ try{ localStorage.setItem(KEY_LAST_LOGOUT, Date.now().toString()); }catch(e){} try{ sessionStorage.removeItem(KEY_BADGE_VISIBLE); }catch(e){} try{ nameBadge.style.display = 'none'; }catch(e){} auth.signOut(); location.href = 'login.html'; }
 
 /* expose for inline attributes */
 window.saveData = saveData;
 window.exportCSV = exportCSV;
 window.toggleTheme = toggleTheme;
 window.logout = logout;
+
 </script>
 </body>
 </html>
