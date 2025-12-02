@@ -20,11 +20,12 @@ button{ padding:10px 16px; border:none; border-radius:6px; cursor:pointer; font-
 .greyBtn{ background:#555; color:#fff; }
 .redBtn{ background:#e74c3c; color:#fff; }
 
+/* name badge */
 #nameBadge{ display:none; align-items:center; gap:10px; padding:8px 12px; border-radius:8px; background:var(--blue); color:#fff; font-weight:700; font-size:15px; cursor:pointer; user-select:none; box-shadow: 0 6px 18px rgba(43,127,255,0.12); transition: transform .12s ease, background .18s; }
 #nameBadge:hover{ transform: translateY(-2px); background:var(--blue-dark); }
 #nameBadge .badgeAvatar{ width:28px; height:28px; border-radius:999px; display:inline-grid; place-items:center; background: linear-gradient(135deg,#6fb1ff,var(--blue)); color:#fff; font-weight:700; font-size:13px; flex:0 0 auto; }
 
-/* content */
+/* layout */
 .container{ padding:12px 20px 40px 20px; max-width:1200px; margin:0 auto; }
 h2{ margin:10px 0 6px; }
 #tableWrapper { overflow-x:auto; width:100%; margin-top:12px; border:1px solid rgba(255,255,255,0.04); border-radius:6px; padding:8px; }
@@ -35,7 +36,7 @@ body.light input, body.light select{ background:#fff; color:#222; border:1px sol
 /* small inline duplicate hint under number */
 #dupHint{ margin-top:6px; font-size:13px; color:rgba(255,255,255,0.75); }
 
-/* welcome */
+/* welcome overlay */
 #welcomeFull{ position:fixed; inset:0; z-index:99990; display:none; align-items:center; justify-content:center; background:linear-gradient(180deg, rgba(2,6,23,0.95), rgba(8,13,30,0.95)); transition: transform .55s cubic-bezier(.2,.9,.25,1), opacity .3s ease; }
 .welcomeCard{ width:min(820px,94vw); border-radius:18px; padding:36px 34px; text-align:center; background: linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.06); box-shadow: 0 20px 60px rgba(0,0,0,0.6); transform-origin:center; }
 .avatarBig{ width:100px; height:100px; border-radius:999px; margin:0 auto 12px; display:grid; place-items:center; font-size:36px; font-weight:800; color:#fff; background:linear-gradient(135deg,#6fb1ff,var(--blue)); box-shadow: 0 12px 30px rgba(43,127,255,0.12); }
@@ -44,22 +45,16 @@ body.light input, body.light select{ background:#fff; color:#222; border:1px sol
 #welcomeFull.minimize{ transform: translate(calc(50vw - 120px), calc(-42vh)) scale(.18); opacity:1; pointer-events:none; }
 #welcomeFull.minimize .welcomeCard{ transform: scale(.98); opacity:.95; }
 
-/* cartoon box */
+/* cartoon popup */
 #cartoonBox{ position:fixed; right:130px; top:72px; z-index:100000; display:none; width:260px; padding:14px; background:#fff; color:#111; border-radius:12px; box-shadow:0 18px 50px rgba(0,0,0,0.35); font-weight:600; transform-origin:right top; animation:pop .32s ease; }
 #cartoonBox::after{ content:""; position:absolute; right:18px; top:100%; width:0; height:0; border-left:10px solid transparent; border-right:10px solid transparent; border-top:12px solid #fff; }
 @keyframes pop{ from{ transform: scale(.92); opacity:0 } to{ transform: scale(1); opacity:1 } }
 #cartoonBox .greet{ font-size:15px; margin-bottom:6px; color:#0b0b0c; }
 #cartoonBox .line{ font-size:13px; color:#444; font-weight:500; }
 
-/* modal for duplicates (keeps your look) */
-#dupModal{
-  position:fixed; inset:0; z-index:100005; display:none; align-items:center; justify-content:center;
-  background: rgba(2,6,23,0.6);
-}
-#dupCard{
-  width:520px; max-width:94vw; border-radius:12px; padding:18px; background:#0f1114; color:#fff; border:1px solid rgba(255,255,255,0.06);
-  box-shadow: 0 24px 80px rgba(0,0,0,0.6);
-}
+/* duplicate modal */
+#dupModal{ position:fixed; inset:0; z-index:100005; display:none; align-items:center; justify-content:center; background: rgba(2,6,23,0.6); }
+#dupCard{ width:520px; max-width:94vw; border-radius:12px; padding:18px; background:#0f1114; color:#fff; border:1px solid rgba(255,255,255,0.06); box-shadow: 0 24px 80px rgba(0,0,0,0.6); }
 #dupCard h3{ margin:0 0 8px; }
 .dupItem{ padding:10px; border-radius:8px; background:rgba(255,255,255,0.02); margin-bottom:8px; font-size:13px; }
 .dupBtns{ display:flex; gap:8px; justify-content:flex-end; margin-top:12px; }
@@ -85,6 +80,7 @@ body.light input, body.light select{ background:#fff; color:#222; border:1px sol
   <button class="redBtn" onclick="logout()">Logout</button>
 </div>
 
+<!-- cartoon -->
 <div id="cartoonBox" role="note" aria-live="polite">
   <div class="greet" id="cartoonGreet">Hey —</div>
   <div class="line" id="cartoonLine">What's up? 🎵</div>
@@ -108,11 +104,9 @@ body.light input, body.light select{ background:#fff; color:#222; border:1px sol
   <h2 style="margin-top:18px">Add Candidate Entry</h2>
   <input id="nameInput" placeholder="Name">
 
-  <!-- Number field with hint below -->
   <input id="numberInput" placeholder="Number (10 digits)">
   <div id="dupHint" aria-live="polite"></div>
 
-  <!-- Numeric fields: Age, Experience, CTC (accept digits and single decimal) -->
   <input id="ageInput" placeholder="Age (numbers only)">
   <input id="expInput" placeholder="Total Experience (years)">
   <input id="ctcInput" placeholder="CTC (numbers only)">
@@ -145,7 +139,7 @@ body.light input, body.light select{ background:#fff; color:#222; border:1px sol
   <div id="listTable" style="margin-top:12px"></div>
 </div>
 
-<!-- Full-screen welcome -->
+<!-- full welcome -->
 <div id="welcomeFull" aria-hidden="true" role="dialog">
   <div class="welcomeCard" aria-label="Welcome">
     <div class="avatarBig" id="fullAvatar">R</div>
@@ -157,16 +151,14 @@ body.light input, body.light select{ background:#fff; color:#222; border:1px sol
   </div>
 </div>
 
-<!-- Duplicate modal -->
+<!-- duplicate modal -->
 <div id="dupModal" role="dialog" aria-modal="true">
   <div id="dupCard" role="document">
     <h3>Possible duplicate found</h3>
     <div id="dupList"></div>
-
     <div style="margin-top:8px; font-size:13px; color:rgba(255,255,255,0.7);">
       Choose an action — completing previous is recommended for partial drafts.
     </div>
-
     <div class="dupBtns">
       <button id="dupEditPrev" class="greyBtn">Complete previous</button>
       <button id="dupSaveNew" class="blueBtn">Save as new</button>
@@ -186,17 +178,17 @@ body.light input, body.light select{ background:#fff; color:#222; border:1px sol
 </div>
 
 <script type="module">
-/* Core imports (keeps using your firebase.js) */
+/* Firebase imports (uses your firebase.js) */
 import { auth, db } from "./firebase.js";
 import {
   collection, query, where, onSnapshot, addDoc, getDocs, limit, doc, updateDoc
 } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
-/* state */
+/* State */
 let uid = "", email = "", empID = "", displayName = "";
 let table = null, all = [];
-let editingDocId = null;      // if set, Save will update that doc
-let lastDupMatches = [];      // cached matches from last check
+let editingDocId = null;
+let lastDupMatches = [];
 
 /* Elements */
 const dupHint = document.getElementById('dupHint');
@@ -226,34 +218,32 @@ const KEY_LAST_FULL = 'recruita_lastFullWelcome';
 const KEY_LAST_LOGOUT = 'recruita_lastLogout';
 const KEY_BADGE_VISIBLE = 'recruita_nameBadgeVisible';
 
-/* Utility: format timestamp string (same as existing pattern) */
+/* Helpers */
 function formatTS(d){ const p=n=>n.toString().padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`; }
+function debounce(fn, wait){ let t=null; return function(...a){ clearTimeout(t); t=setTimeout(()=>fn.apply(this,a), wait); }; }
 
-/* small audio jingle */
+/* Audio jingle */
 function playJingle(){
   try{
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const now = ctx.currentTime;
-    const seq = [660, 880, 990];
-    let t = now;
+    const seq = [660,880,990];
+    let t = ctx.currentTime;
     seq.forEach((freq,i)=>{
-      const osc = ctx.createOscillator();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, t);
-      const gain = ctx.createGain();
-      gain.gain.setValueAtTime(0.0001, t);
-      gain.gain.linearRampToValueAtTime(0.09, t + 0.01);
-      gain.gain.linearRampToValueAtTime(0.0001, t + 0.22);
-      osc.connect(gain).connect(ctx.destination);
-      osc.start(t);
-      osc.stop(t + 0.23);
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type='sine'; o.frequency.setValueAtTime(freq, t);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.linearRampToValueAtTime(0.09, t+0.01);
+      g.gain.linearRampToValueAtTime(0.0001, t+0.22);
+      o.connect(g).connect(ctx.destination);
+      o.start(t); o.stop(t+0.23);
       t += 0.12;
     });
     setTimeout(()=>{ try{ ctx.close(); }catch(e){} }, 800);
   }catch(e){ console.warn('Audio not supported', e); }
 }
 
-/* cartoon popup */
+/* Cartoon popup */
 function showCartoon(name){
   cartoonGreet.textContent = `Hey ${name} —`;
   cartoonLine.textContent = "What's up? 🎵";
@@ -263,14 +253,14 @@ function showCartoon(name){
   setTimeout(()=> { cartoonBox.style.opacity = '0'; setTimeout(()=> cartoonBox.style.display='none', 320); }, 4200);
 }
 
-/* minimize welcome into badge with fallback (keeps previous code) */
+/* Minimize welcome into badge (reliable) */
 function minimizeIntoBadge(name){
   if(sessionStorage.getItem(KEY_BADGE_VISIBLE)) return;
   welcomeFull.classList.add('minimize');
-  const fallbackMs = 700; let done = false;
+  const fallbackMs = 700; let done=false;
   function finish(){
-    if(done) return; done = true;
-    try{ welcomeFull.style.display = 'none'; }catch(e){}
+    if(done) return; done=true;
+    welcomeFull.style.display = 'none';
     badgeAvatar.textContent = (name && name[0]) ? name[0].toUpperCase() : 'R';
     badgeText.textContent = name;
     nameBadge.style.display = 'flex';
@@ -285,11 +275,11 @@ function minimizeIntoBadge(name){
   setTimeout(()=> finish(), fallbackMs);
 }
 
-/* show/hide modal */
+/* Modal helpers */
 function openDupModal(matches){
   lastDupMatches = matches;
   dupList.innerHTML = '';
-  matches.forEach((m, idx)=>{
+  matches.forEach(m=>{
     const when = m.ts || m.createdAt || '';
     const status = m.status || 'complete';
     const snippet = `
@@ -305,21 +295,17 @@ function openDupModal(matches){
   });
   dupModal.style.display = 'flex';
 }
-
 function closeDupModal(){ dupModal.style.display = 'none'; }
 
-/* check duplicates (limit 5) for a number — returns array of doc data + id */
+/* Duplicate check — limited to current recruiter's entries (createdBy == uid) */
 async function checkMatches(number){
-  if(!number || number.length < 6) return []; // skip for too-short values
+  if(!number || number.length < 6) return [];
   try{
-    const q = query(collection(db,'callLogs'), where('number','==', number), limit(5));
+    const q = query(collection(db,'callLogs'), where('number','==', number), where('createdBy','==', uid), limit(5));
     const snap = await getDocs(q);
     const res = [];
-    snap.forEach(d => res.push({...d.data(), id: d.id}));
-    res.sort((a,b)=>{
-      const at = a.ts || a.createdAt || ''; const bt = b.ts || b.createdAt || '';
-      return (bt > at) ? 1 : -1;
-    });
+    snap.forEach(d => res.push({...d.data(), id:d.id}));
+    res.sort((a,b)=> { const at = a.ts || a.createdAt || ''; const bt = b.ts || b.createdAt || ''; return (bt>at)?1:-1; });
     return res;
   }catch(err){
     console.error('checkMatches error', err);
@@ -327,44 +313,27 @@ async function checkMatches(number){
   }
 }
 
-/* debounce helper */
-function debounce(fn, wait){
-  let t = null;
-  return function(...args){
-    clearTimeout(t);
-    t = setTimeout(()=> fn.apply(this, args), wait);
-  };
-}
-
-/* inline pre-check on blur: show hint if matches found */
+/* Pre-check on number blur — non-blocking hint */
 const numberEl = document.getElementById('numberInput');
-const runPrecheck = debounce(async ()=> {
-  const val = (numberEl.value || '').trim();
-  if(!/^[0-9]{6,}$/.test(val)){ dupHint.textContent = ''; return; }
+const runPrecheck = debounce(async ()=>{
+  const val = (numberEl.value||'').trim();
+  if(!/^[0-9]{6,}$/.test(val)){ dupHint.textContent=''; return; }
   const matches = await checkMatches(val);
   if(matches.length){
-    const top = matches[0];
-    const status = top.status || 'complete';
-    const when = top.ts || top.createdAt || '';
-    dupHint.textContent = `Existing record found (${matches.length}). Most recent: ${top.name || '(no name)'} • ${when} • ${status}. On Save you will get options.`;
-  } else {
-    dupHint.textContent = '';
-  }
+    const top = matches[0], status = top.status||'complete', when = top.ts||top.createdAt||'';
+    dupHint.textContent = `Existing record found (${matches.length}). Most recent: ${top.name||'(no name)'} • ${when} • ${status}. On Save you will get options.`;
+  } else dupHint.textContent = '';
 }, 650);
 numberEl.addEventListener('blur', runPrecheck);
 
-/* numeric-only inputs for age, exp, ctc:
-   allow digits and at most one dot. Strip any other characters silently.
-*/
+/* Numeric-only enforcement for age, exp, ctc */
 function enforceNumericInput(el){
   el.addEventListener('input', ()=>{
     let v = el.value;
-    v = v.replace(/[^\d.]/g, '');
+    v = v.replace(/[^\d.]/g,'');
     const parts = v.split('.');
-    if(parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('');
-    if(v.indexOf('.') === -1){
-      v = v.replace(/^0+(\d)/, '$1');
-    }
+    if(parts.length>2) v = parts[0] + '.' + parts.slice(1).join('');
+    if(v.indexOf('.') === -1) v = v.replace(/^0+(\d)/, '$1');
     el.value = v;
   });
 }
@@ -372,7 +341,7 @@ enforceNumericInput(document.getElementById('ageInput'));
 enforceNumericInput(document.getElementById('expInput'));
 enforceNumericInput(document.getElementById('ctcInput'));
 
-/* modal buttons actions */
+/* Modal button handlers */
 dupEditPrev.addEventListener('click', async ()=>{
   closeDupModal();
   if(!lastDupMatches.length) return;
@@ -397,7 +366,6 @@ dupSaveNew.addEventListener('click', async ()=>{
     const res = await performSave({ forceNew: true, duplicateOf: (lastDupMatches[0] && lastDupMatches[0].id) || null });
     if(res === 'saved'){
       alert('Saved as new (duplicate allowed)');
-      // clear form after save
       ['nameInput','numberInput','ageInput','expInput','ctcInput','locInput','compInput','channelInput','statusInput','remarkInput']
         .forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
       dupHint.textContent = '';
@@ -407,7 +375,7 @@ dupSaveNew.addEventListener('click', async ()=>{
 
 dupDismiss.addEventListener('click', ()=> closeDupModal());
 
-/* performSave returns 'saved' or 'prompt' */
+/* performSave: saves updates/creates, returns 'saved' or 'prompt' */
 async function performSave(opts){
   opts = opts || {};
   const name = (document.getElementById('nameInput').value || '').trim();
@@ -421,7 +389,7 @@ async function performSave(opts){
   const statusSelect = (document.getElementById('statusInput').value || '').trim();
   const remarks = (document.getElementById('remarkInput').value || '').trim();
 
-  // number validation: require 10 digits
+  // require exactly 10 digits
   if(!/^[0-9]{10}$/.test(number)){
     throw new Error('Enter valid number (at least 10 digits).');
   }
@@ -438,7 +406,8 @@ async function performSave(opts){
         channel, callStatus: statusSelect, remarks,
         status: 'complete',
         updatedBy: uid,
-        updatedAt: formatTS(new Date())
+        updatedAt: formatTS(new Date()),
+        empID: empID
       });
       editingDocId = null;
       dupHint.textContent = '';
@@ -446,7 +415,7 @@ async function performSave(opts){
     }catch(err){ console.error('update error', err); throw err; }
   }
 
-  // forced new
+  // forced new from modal
   if(opts.forceNew){
     try{
       await addDoc(collection(db,'callLogs'), {
@@ -455,6 +424,7 @@ async function performSave(opts){
         channel, callStatus: statusSelect, remarks,
         createdBy: uid,
         createdAt: formatTS(new Date()),
+        empID: empID,
         status: isPartial ? 'partial' : 'complete',
         isDuplicate: !!opts.duplicateOf,
         duplicateOf: opts.duplicateOf || null
@@ -463,14 +433,14 @@ async function performSave(opts){
     }catch(err){ console.error('add forceNew error', err); throw err; }
   }
 
-  // normal duplication check
+  // normal duplicate check (scoped to current recruiter)
   const matches = await checkMatches(number);
   if(matches.length){
     openDupModal(matches);
     return 'prompt';
   }
 
-  // no matches — create
+  // create new
   try{
     await addDoc(collection(db,'callLogs'), {
       ts: formatTS(new Date()),
@@ -478,13 +448,14 @@ async function performSave(opts){
       channel, callStatus: statusSelect, remarks,
       createdBy: uid,
       createdAt: formatTS(new Date()),
+      empID: empID,
       status: isPartial ? 'partial' : 'complete'
     });
     return 'saved';
   }catch(err){ console.error('add error', err); throw err; }
 }
 
-/* wrapper used by Submit button */
+/* Submit wrapper */
 async function saveData(evt){
   const btn = document.getElementById('submitBtn');
   if(btn) btn.disabled = true;
@@ -492,27 +463,24 @@ async function saveData(evt){
     const result = await performSave();
     if(result === 'saved'){
       alert('Entry saved');
-      // clear form after save
       ['nameInput','numberInput','ageInput','expInput','ctcInput','locInput','compInput','channelInput','statusInput','remarkInput']
         .forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
       dupHint.textContent = '';
     } else if(result === 'prompt'){
-      // modal shown — do not show success alert
-      // do nothing here; modal actions will handle save or dismissal
+      // modal shown; user must choose action
     }
   }catch(err){
-    // show a single alert for validation or error
     alert(err.message || 'Error saving entry');
     console.error('saveData error', err);
   }finally{ if(btn) btn.disabled = false; }
 }
 
-/* Export CSV and other helpers (unchanged behavior) */
+/* Export CSV and small helpers */
 function exportCSV(){ if(table && typeof table.download === 'function'){ table.download('csv', `${(displayName||empID).replace(/\s+/g,'_')}_data.csv`); } else alert('Table not ready yet.'); }
-function toggleTheme(){ document.body.classList.toggle('light'); const tb = document.querySelector('.tabulator'); if(tb){ tb.classList.toggle('tabulator_midnight'); } }
+function toggleTheme(){ document.body.classList.toggle('light'); const tb = document.querySelector('.tabulator'); if(tb) tb.classList.toggle('tabulator_midnight'); }
 function logout(){ try{ localStorage.setItem(KEY_LAST_LOGOUT, Date.now().toString()); }catch(e){} try{ sessionStorage.removeItem(KEY_BADGE_VISIBLE); }catch(e){} try{ nameBadge.style.display = 'none'; }catch(e){} auth.signOut(); location.href = 'login.html'; }
 
-/* Cartoons & welcome behavior */
+/* Welcome behavior with a robust show (fixes intermittent no-show) */
 function showMini(name){
   document.getElementById('miniTitle').textContent = `Hi ${name} !`;
   document.getElementById('miniSub').textContent = 'Welcome back.';
@@ -522,7 +490,8 @@ function showMini(name){
   setTimeout(()=> { mini.classList.remove('show'); setTimeout(()=> mini.style.display='none',320); }, 3500);
 }
 
-function handleWelcomeLogic(){
+function handleWelcomeLogic(forceShow){
+  // forceShow is used when we want to ensure the welcome appears (fallback)
   const lastFull = localStorage.getItem(KEY_LAST_FULL);
   const lastLogout = localStorage.getItem(KEY_LAST_LOGOUT);
   const twelvePassed = (Date.now() - (Number(lastFull) || 0)) / (1000*60*60) >= 12;
@@ -536,48 +505,68 @@ function handleWelcomeLogic(){
     return;
   }
 
-  if(afterLogout || twelvePassed){
+  // If forceShow true, always show full welcome once (used as fallback)
+  if(forceShow || afterLogout || twelvePassed){
     fullAvatar.textContent = (displayName && displayName[0]) ? displayName[0].toUpperCase() : 'R';
     fullTitle.textContent = `Hi ${displayName || empID} !`;
     fullSub.textContent = 'Welcome back to Recruita.';
     welcomeFull.style.display = 'flex';
     welcomeFull.setAttribute('aria-hidden','false');
-  } else {
-    const shownKey = `welcomeMiniShown_${uid}`;
-    if(!sessionStorage.getItem(shownKey)){
-      showMini(displayName);
-      sessionStorage.setItem(shownKey,'1');
-    }
+    return;
+  }
+
+  const shownKey = `welcomeMiniShown_${uid}`;
+  if(!sessionStorage.getItem(shownKey)){
+    showMini(displayName || empID);
+    sessionStorage.setItem(shownKey,'1');
   }
 }
 
-/* Bind handlers */
+/* Bind UI events early */
 fullContinue.addEventListener('click', ()=> minimizeIntoBadge(displayName || empID));
 nameBadge.addEventListener('click', ()=> showCartoon(displayName || empID));
-miniClose.addEventListener('click', ()=> {
-  const mini = document.getElementById('welcomeMini'); mini.classList.remove('show'); setTimeout(()=> mini.style.display='none',320);
-});
+miniClose.addEventListener('click', ()=> { const mini = document.getElementById('welcomeMini'); mini.classList.remove('show'); setTimeout(()=> mini.style.display='none',320); });
 
-/* Firestore auth + load data */
+/* Firestore auth + load user doc. Ensure welcome is shown reliably */
 auth.onAuthStateChanged(async user => {
   if(!user){ location.href='login.html'; return; }
   uid = user.uid; email = user.email;
 
+  // Query user's doc and wait for first snapshot to ensure displayName available.
+  // Use a Promise wrapper to guarantee we call handleWelcomeLogic after we have user doc.
   const ref = collection(db,'users');
   const q = query(ref, where('email','==', email));
-  onSnapshot(q, snap => {
-    snap.forEach(d => {
-      const data = d.data() || {};
-      empID = data.empID || (email ? email.split('@')[0] : 'User');
-      displayName = (data.fullName || data.name || empID || (email ? email.split('@')[0] : 'there')).trim();
+  let docLoaded = false;
+  const waitForDoc = new Promise((resolve) => {
+    const unsub = onSnapshot(q, snap => {
+      snap.forEach(d => {
+        const data = d.data() || {};
+        empID = data.empID || (email ? email.split('@')[0] : 'User');
+        displayName = (data.fullName || data.name || empID || (email ? email.split('@')[0] : 'there')).trim();
+        docLoaded = true;
+      });
+      // resolve after a short delay to allow data to settle
+      resolve();
+      unsub();
+    }, err => {
+      console.warn('user doc snapshot error', err);
+      resolve();
+      unsub();
     });
-
-    loadData(empID);
-    handleWelcomeLogic();
   });
+
+  // Load call logs and table (non-blocking)
+  loadData(empID);
+
+  // Wait for user doc (but guard with timeout so welcome still appears)
+  const timeout = new Promise(r => setTimeout(r, 900)); // 900ms fallback
+  await Promise.race([waitForDoc, timeout]);
+
+  // Now show welcome reliably (forceShow if doc didn't arrive fast)
+  handleWelcomeLogic(!docLoaded);
 });
 
-/* Load call logs and table rendering */
+/* Load call logs and render table */
 function loadData(empIDVal){
   const q = query(collection(db,'callLogs'), where('empID','==', empIDVal));
   onSnapshot(q, snap => {
@@ -622,12 +611,11 @@ function renderTable(data){
   });
 }
 
-/* Expose functions for inline onclick attributes if present */
+/* expose for any inline handlers */
 window.saveData = saveData;
 window.exportCSV = exportCSV;
 window.toggleTheme = toggleTheme;
 window.logout = logout;
-
 </script>
 </body>
 </html>
