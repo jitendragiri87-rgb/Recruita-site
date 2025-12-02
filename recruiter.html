@@ -142,38 +142,46 @@ let empID = "";
 let uid = "";
 let email = "";
 let all = [];
+let table = null;
 
 function formatTS(d){
   const p=n=>n.toString().padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 }
 
+// Auth listener
 auth.onAuthStateChanged(async user=>{
-    if(!user) location.href="login.html";
+    if(!user) {
+        location.href="login.html";
+        return;
+    }
 
     uid = user.uid;
     email = user.email;
 
+    // read empID from users collection
     const ref = collection(db,"users");
     const q = query(ref, where("email","==", email));
 
+    // listen for the user doc to obtain empID
     onSnapshot(q, snap=>{
-        snap.forEach(d => empID = d.data().empID);
-        loadData(empID);
+        snap.forEach(d => empID = d.data().empID || "");
+        if(empID) loadData(empID);
     });
 });
 
-let table;
-
-function loadData(empID){
-    const q = query(collection(db,"callLogs"), where("empID","==", empID));
+function loadData(empIDParam){
+    const q = query(collection(db,"callLogs"), where("empID","==", empIDParam));
 
     onSnapshot(q, snap=>{
         all = [];
         snap.forEach(d => all.push({...d.data(), id:d.id}));
 
-        // latest first
-        all.sort((a,b)=> new Date(b.ts) - new Date(a.ts));
+        // latest first (ts stored as formatted string)
+        all.sort((a,b)=>{
+            // parse YYYY-MM-DD HH:MM:SS
+            return new Date(b.ts).getTime() - new Date(a.ts).getTime();
+        });
 
         renderDashboard();
         renderTable(all);
@@ -181,12 +189,12 @@ function loadData(empID){
 }
 
 function renderDashboard(){
-    let today = new Date().toDateString();
-    let countToday = all.filter(e => new Date(e.ts).toDateString() === today).length;
+    const today = new Date().toDateString();
+    const countToday = all.filter(e => new Date(e.ts).toDateString() === today).length;
 
     dashBody.innerHTML = `
         <tr>
-            <td style="border:1px solid #333; padding:10px;">${empID}</td>
+            <td style="border:1px solid #333; padding:10px;">${empID || ""}</td>
             <td style="border:1px solid #333; padding:10px;">${countToday}</td>
             <td style="border:1px solid #333; padding:10px;">${all.length}</td>
         </tr>
@@ -194,10 +202,17 @@ function renderDashboard(){
 }
 
 async function saveData(){
-    let num = numberInput.value.trim();
-    if(num.length !== 10){
+    const num = document.getElementById("numberInput").value.trim();
+    if(!/^\d{10}$/.test(num)){
         alert("Enter valid 10-digit number");
         return;
+    }
+
+    // duplicate detection (same recruiter)
+    const dup = all.find(e => e.number === num);
+    if(dup){
+        const ok = confirm("Duplicate found in your entries. Still add?");
+        if(!ok) return;
     }
 
     await addDoc(collection(db,"callLogs"),{
@@ -205,28 +220,21 @@ async function saveData(){
         uid,
         empID,
         email,
-        name: nameInput.value,
+        name: document.getElementById("nameInput").value || "",
         number: num,
-        age: ageInput.value,
-        exp: expInput.value,
-        loc: locInput.value,
-        ctc: ctcInput.value,
-        comp: compInput.value,
-        channel: channelInput.value,
-        callStatus: statusInput.value,
-        remarks: remarkInput.value
+        age: document.getElementById("ageInput").value || "",
+        exp: document.getElementById("expInput").value || "",
+        loc: document.getElementById("locInput").value || "",
+        ctc: document.getElementById("ctcInput").value || "",
+        comp: document.getElementById("compInput").value || "",
+        channel: document.getElementById("channelInput").value || "",
+        callStatus: document.getElementById("statusInput").value || "",
+        remarks: document.getElementById("remarkInput").value || ""
     });
 
-    nameInput.value="";
-    numberInput.value="";
-    ageInput.value="";
-    expInput.value="";
-    locInput.value="";
-    ctcInput.value="";
-    compInput.value="";
-    channelInput.value="";
-    statusInput.value="";
-    remarkInput.value="";
+    // clear form
+    ["nameInput","numberInput","ageInput","expInput","locInput","ctcInput","compInput","channelInput","statusInput","remarkInput"]
+      .forEach(id => { const el = document.getElementById(id); if(el) el.value = ""; });
 
     alert("Entry Saved");
 }
@@ -239,7 +247,7 @@ function renderTable(data){
 
     table = new Tabulator("#listTable", {
         data:data,
-        layout:"fitDataFill",   // auto-fit columns
+        layout:"fitDataFill",
         responsiveLayout:false,
         height:"480px",
         movableColumns:true,
@@ -247,12 +255,14 @@ function renderTable(data){
         columnDefaults:{ resizable:true },
 
         columns:[
-            {title:"Call", field:"number",
-                formatter:cell=>`<a href="tel:${cell.getValue()}" style="color:#2B7FFF;font-size:20px;">📞</a>`},
+            {title:"Call", field:"number", hozAlign:"center", formatter:cell=>{
+                const v = cell.getValue() || "";
+                return `<a href="tel:${v}" style="color:#2B7FFF;font-size:20px;">📞</a>`;
+            }},
 
-            {title:"Time ▼", field:"ts", sorter:"datetime", headerFilter:"input"},
+            {title:"Time ▼", field:"ts", sorter:"string", headerFilter:"input"},
             {title:"Name ▼", field:"name", sorter:"string", headerFilter:"input"},
-            {title:"Number ▼", field:"number", sorter:"number", headerFilter:"input"},
+            {title:"Number ▼", field:"number", sorter:"string", headerFilter:"input"},
             {title:"Age ▼", field:"age", sorter:"number", headerFilter:"input"},
             {title:"Experience ▼", field:"exp", sorter:"number", headerFilter:"input"},
             {title:"Location ▼", field:"loc", sorter:"string", headerFilter:"input"},
@@ -266,7 +276,12 @@ function renderTable(data){
 }
 
 function exportCSV(){
-    table.download("csv", `${empID}_data.csv`);
+    if(!table){
+        alert("Table is not ready yet.");
+        return;
+    }
+    const fileName = (empID || "recruiter") + "_data.csv";
+    table.download("csv", fileName);
 }
 
 function logout(){
@@ -277,13 +292,24 @@ function logout(){
 function toggleTheme(){
     document.body.classList.toggle("light");
 
-    // Change Tabulator theme
-    if(document.body.classList.contains("light")){
-        document.querySelector(".tabulator").classList.remove("tabulator_midnight");
-    } else {
-        document.querySelector(".tabulator").classList.add("tabulator_midnight");
+    // If table exists, refresh style: Tabulator adds its own DOM; class swap safe-guard
+    const tabEl = document.querySelector(".tabulator");
+    if(tabEl){
+        // add/remove midnight class - only if Tabulator CSS supports it
+        if(document.body.classList.contains("light")){
+            tabEl.classList.remove("tabulator_midnight");
+        } else {
+            tabEl.classList.add("tabulator_midnight");
+        }
     }
 }
+
+// expose for inline onclick handlers
+window.saveData = saveData;
+window.exportCSV = exportCSV;
+window.logout = logout;
+window.toggleTheme = toggleTheme;
+
 </script>
 
 </body>
