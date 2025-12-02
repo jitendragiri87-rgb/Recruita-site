@@ -137,7 +137,7 @@ body.light input, body.light select{ background:#fff; color:#222; border:1px sol
   <input id="remarkInput" placeholder="Remarks">
 
   <div style="margin-top:12px;">
-    <button class="blueBtn" onclick="saveData(event)">Submit Entry</button>
+    <button id="submitBtn" class="blueBtn" onclick="saveData(event)">Submit Entry</button>
     <button class="blueBtn" onclick="exportCSV()" style="margin-left:10px;">Download CSV</button>
   </div>
 
@@ -289,7 +289,6 @@ function minimizeIntoBadge(name){
 function openDupModal(matches){
   lastDupMatches = matches;
   dupList.innerHTML = '';
-  // Show the most relevant (most recent) match at top, then others
   matches.forEach((m, idx)=>{
     const when = m.ts || m.createdAt || '';
     const status = m.status || 'complete';
@@ -317,7 +316,6 @@ async function checkMatches(number){
     const snap = await getDocs(q);
     const res = [];
     snap.forEach(d => res.push({...d.data(), id: d.id}));
-    // sort by ts or createdAt desc (best effort)
     res.sort((a,b)=>{
       const at = a.ts || a.createdAt || ''; const bt = b.ts || b.createdAt || '';
       return (bt > at) ? 1 : -1;
@@ -338,14 +336,11 @@ function debounce(fn, wait){
   };
 }
 
-/* inline pre-check: on number blur, show hint if matches found */
+/* inline pre-check on blur: show hint if matches found */
 const numberEl = document.getElementById('numberInput');
-numberEl.addEventListener('input', (e)=> {
-  // nothing heavy here — we sanitize input in numeric fields later separately
-});
 const runPrecheck = debounce(async ()=> {
   const val = (numberEl.value || '').trim();
-  if(!/^[0-9]{6,}$/.test(val)){ dupHint.textContent = ''; return; } // need at least 6 digits to avoid noise
+  if(!/^[0-9]{6,}$/.test(val)){ dupHint.textContent = ''; return; }
   const matches = await checkMatches(val);
   if(matches.length){
     const top = matches[0];
@@ -356,24 +351,18 @@ const runPrecheck = debounce(async ()=> {
     dupHint.textContent = '';
   }
 }, 650);
-
 numberEl.addEventListener('blur', runPrecheck);
 
 /* numeric-only inputs for age, exp, ctc:
    allow digits and at most one dot. Strip any other characters silently.
-   This will prevent "3 LPA" being typed; it will only show "3".
 */
 function enforceNumericInput(el){
   el.addEventListener('input', ()=>{
     let v = el.value;
-    // remove all characters except digits and dot
     v = v.replace(/[^\d.]/g, '');
-    // allow only single dot
     const parts = v.split('.');
     if(parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('');
-    // remove leading zeros only if it's "00" etc. Keep single zero allowed.
     if(v.indexOf('.') === -1){
-      // integer part only; trim leading zeros unless it's just "0"
       v = v.replace(/^0+(\d)/, '$1');
     }
     el.value = v;
@@ -388,7 +377,6 @@ dupEditPrev.addEventListener('click', async ()=>{
   closeDupModal();
   if(!lastDupMatches.length) return;
   const top = lastDupMatches[0];
-  // fill form with top match and set editingDocId
   editingDocId = top.id;
   document.getElementById('nameInput').value = top.name || '';
   document.getElementById('numberInput').value = top.number || '';
@@ -400,28 +388,26 @@ dupEditPrev.addEventListener('click', async ()=>{
   document.getElementById('channelInput').value = top.channel || '';
   document.getElementById('statusInput').value = top.callStatus || '';
   document.getElementById('remarkInput').value = top.remarks || '';
-  // show small banner in dupHint indicating edit mode
   dupHint.textContent = `Editing existing entry (will update record id ${editingDocId}).`;
 });
 
 dupSaveNew.addEventListener('click', async ()=>{
   closeDupModal();
-  // mark that we will force-save as new despite duplicate
   try{
-    await performSave({ forceNew: true, duplicateOf: (lastDupMatches[0] && lastDupMatches[0].id) || null });
-    alert('Saved as new (duplicate allowed)');
+    const res = await performSave({ forceNew: true, duplicateOf: (lastDupMatches[0] && lastDupMatches[0].id) || null });
+    if(res === 'saved'){
+      alert('Saved as new (duplicate allowed)');
+      // clear form after save
+      ['nameInput','numberInput','ageInput','expInput','ctcInput','locInput','compInput','channelInput','statusInput','remarkInput']
+        .forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+      dupHint.textContent = '';
+    }
   }catch(e){ console.error(e); alert('Error saving new duplicate: ' + (e.message || e)); }
 });
 
-dupDismiss.addEventListener('click', ()=>{
-  closeDupModal();
-});
+dupDismiss.addEventListener('click', ()=> closeDupModal());
 
-/* core save logic:
-   - if editingDocId set => update that doc (set status='complete')
-   - else run checkMatches(number). If matches found => show modal (allow user to choose)
-   - else addDoc with status: 'partial' or 'complete' depending on completeness
-*/
+/* performSave returns 'saved' or 'prompt' */
 async function performSave(opts){
   opts = opts || {};
   const name = (document.getElementById('nameInput').value || '').trim();
@@ -435,16 +421,14 @@ async function performSave(opts){
   const statusSelect = (document.getElementById('statusInput').value || '').trim();
   const remarks = (document.getElementById('remarkInput').value || '').trim();
 
-  // minimal validation: number required
-  if(!/^[0-9]{6,}$/.test(number)){
-    alert('Enter valid number (at least 6 digits).');
-    return;
+  // number validation: require 10 digits
+  if(!/^[0-9]{10}$/.test(number)){
+    throw new Error('Enter valid number (at least 10 digits).');
   }
 
-  // determine completeness: treat as partial if only name+number provided (others empty)
   const isPartial = !(age || exp || ctc || loc || comp || channel || statusSelect || remarks);
 
-  // update (editing existing)
+  // update existing
   if(editingDocId){
     try{
       const ref = doc(db, 'callLogs', editingDocId);
@@ -458,12 +442,11 @@ async function performSave(opts){
       });
       editingDocId = null;
       dupHint.textContent = '';
-      alert('Existing entry updated');
-      return;
-    }catch(err){ console.error(err); throw err; }
+      return 'saved';
+    }catch(err){ console.error('update error', err); throw err; }
   }
 
-  // if forced new (user clicked save-as-new on modal)
+  // forced new
   if(opts.forceNew){
     try{
       await addDoc(collection(db,'callLogs'), {
@@ -476,19 +459,18 @@ async function performSave(opts){
         isDuplicate: !!opts.duplicateOf,
         duplicateOf: opts.duplicateOf || null
       });
-      return;
-    }catch(err){ console.error(err); throw err; }
+      return 'saved';
+    }catch(err){ console.error('add forceNew error', err); throw err; }
   }
 
-  // normal flow: check duplicates
+  // normal duplication check
   const matches = await checkMatches(number);
   if(matches.length){
-    // show modal and let user decide
     openDupModal(matches);
-    return;
+    return 'prompt';
   }
 
-  // no matches: add doc normally
+  // no matches — create
   try{
     await addDoc(collection(db,'callLogs'), {
       ts: formatTS(new Date()),
@@ -498,27 +480,30 @@ async function performSave(opts){
       createdAt: formatTS(new Date()),
       status: isPartial ? 'partial' : 'complete'
     });
-    return;
-  }catch(err){ console.error(err); throw err; }
+    return 'saved';
+  }catch(err){ console.error('add error', err); throw err; }
 }
 
-/* wrapper used by button onclick */
+/* wrapper used by Submit button */
 async function saveData(evt){
-  const btn = evt && evt.target && evt.target.tagName === 'BUTTON' ? evt.target : document.activeElement;
+  const btn = document.getElementById('submitBtn');
   if(btn) btn.disabled = true;
   try{
-    await performSave();
-    // If performSave added a doc without returning earlier, show success
-    // (Note: when modal opens, performSave returns before saving; success occurs on subsequent actions)
-    if(!dupModal.style.display || dupModal.style.display === 'none'){
+    const result = await performSave();
+    if(result === 'saved'){
       alert('Entry saved');
-      // clear form after save if we actually saved
+      // clear form after save
       ['nameInput','numberInput','ageInput','expInput','ctcInput','locInput','compInput','channelInput','statusInput','remarkInput']
         .forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
       dupHint.textContent = '';
+    } else if(result === 'prompt'){
+      // modal shown — do not show success alert
+      // do nothing here; modal actions will handle save or dismissal
     }
   }catch(err){
-    console.error(err); alert('Error saving entry: ' + (err.message||err));
+    // show a single alert for validation or error
+    alert(err.message || 'Error saving entry');
+    console.error('saveData error', err);
   }finally{ if(btn) btn.disabled = false; }
 }
 
@@ -527,9 +512,7 @@ function exportCSV(){ if(table && typeof table.download === 'function'){ table.d
 function toggleTheme(){ document.body.classList.toggle('light'); const tb = document.querySelector('.tabulator'); if(tb){ tb.classList.toggle('tabulator_midnight'); } }
 function logout(){ try{ localStorage.setItem(KEY_LAST_LOGOUT, Date.now().toString()); }catch(e){} try{ sessionStorage.removeItem(KEY_BADGE_VISIBLE); }catch(e){} try{ nameBadge.style.display = 'none'; }catch(e){} auth.signOut(); location.href = 'login.html'; }
 
-/* Duplicate modal save-as-new handled above. */
-/* Cartoons & welcome behavior (kept same as previous working version) */
-
+/* Cartoons & welcome behavior */
 function showMini(name){
   document.getElementById('miniTitle').textContent = `Hi ${name} !`;
   document.getElementById('miniSub').textContent = 'Welcome back.';
@@ -575,14 +558,11 @@ miniClose.addEventListener('click', ()=> {
   const mini = document.getElementById('welcomeMini'); mini.classList.remove('show'); setTimeout(()=> mini.style.display='none',320);
 });
 
-/* Duplicate dismiss auto closes modal already handled */
-
-/* Firestore auth + load data, same as before */
+/* Firestore auth + load data */
 auth.onAuthStateChanged(async user => {
   if(!user){ location.href='login.html'; return; }
   uid = user.uid; email = user.email;
 
-  // fetch display name
   const ref = collection(db,'users');
   const q = query(ref, where('email','==', email));
   onSnapshot(q, snap => {
@@ -597,7 +577,7 @@ auth.onAuthStateChanged(async user => {
   });
 });
 
-/* Load call logs (keeps same Tabulator behavior) */
+/* Load call logs and table rendering */
 function loadData(empIDVal){
   const q = query(collection(db,'callLogs'), where('empID','==', empIDVal));
   onSnapshot(q, snap => {
@@ -620,7 +600,6 @@ function renderDashboard(){
     </tr>`;
 }
 
-/* Tabulator table */
 function renderTable(data){
   if(table){ table.replaceData(data); return; }
   table = new Tabulator('#listTable', {
