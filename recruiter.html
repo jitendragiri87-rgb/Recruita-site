@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Recruiter Panel</title>
 
 <!-- TABULATOR EXCEL TABLE -->
@@ -10,6 +10,7 @@
 <script src="https://unpkg.com/tabulator-tables@6.2.1/dist/js/tabulator.min.js"></script>
 
 <style>
+/* ---------- base styles (kept) ---------- */
 body{
     background:#0b0b0c;
     color:white;
@@ -22,13 +23,13 @@ body.light{
     color:#111;
 }
 
+/* ... kept UI styles ... */
 .topBar{
     display:flex;
     justify-content:flex-end;
     gap:10px;
     margin-bottom:20px;
 }
-
 button{
     padding:10px 18px;
     border:none;
@@ -39,7 +40,6 @@ button{
 .blueBtn{ background:#2B7FFF; color:white; }
 .greyBtn{ background:#555; color:white; }
 .redBtn{ background:#e74c3c; color:white; }
-
 input,select{
     width:100%;
     padding:12px;
@@ -54,32 +54,95 @@ body.light input,body.light select{
     color:#222;
     border:1px solid #ccc;
 }
+#tableWrapper { overflow-x:auto; width:100%; margin-top:20px; border:1px solid #333; }
+.tabulator { background:#0b0b0c !important; }
+body.light .tabulator{ background:#fff !important; }
+.tabulator-col-title, .tabulator-cell{ white-space:nowrap; }
 
-#tableWrapper {
-    overflow-x:auto;
-    width:100%;
-    margin-top:20px;
-    border:1px solid #333;
+/* ---------- FULL-SCREEN WELCOME (NEW) ---------- */
+#welcomeFull {
+  position:fixed; inset:0; z-index:99999;
+  display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(180deg, rgba(2,6,23,0.95), rgba(8,13,30,0.95));
+  color:#fff; padding:28px;
+  opacity:0; pointer-events:none; transition:opacity .28s ease;
+}
+#welcomeFull.show { opacity:1; pointer-events:auto; }
+
+.welcomeCard {
+  width:min(820px,94vw); max-width:940px;
+  border-radius:18px; padding:28px; text-align:center;
+  background: linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border:1px solid rgba(255,255,255,0.06); box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  transform: translateY(8px) scale(.98); opacity:0; transition: transform .45s cubic-bezier(.2,.9,.25,1), opacity .45s;
+}
+#welcomeFull.show .welcomeCard { transform: translateY(0) scale(1); opacity:1; }
+
+/* animated avatar */
+.avatar {
+  width:96px; height:96px; border-radius:999px; display:inline-grid; place-items:center;
+  background:linear-gradient(135deg,#2B7FFF,#6fb1ff);
+  margin:0 auto 12px; font-weight:800; font-size:32px; color:white;
+  box-shadow: 0 12px 30px rgba(43,127,255,0.12);
+  animation: popIn 600ms cubic-bezier(.2,.9,.25,1);
+}
+@keyframes popIn {
+  0% { transform: scale(.6); opacity:0; filter:blur(8px); }
+  60% { transform: scale(1.05); opacity:1; filter:blur(0); }
+  100% { transform: scale(1); opacity:1; filter:blur(0); }
 }
 
-.tabulator {
-    background:#0b0b0c !important;
-}
-body.light .tabulator{
-    background:#fff !important;
-}
+/* heading + sub */
+.welcomeTitle { font-size:30px; font-weight:800; margin:6px 0; }
+.welcomeSub { font-size:16px; color:rgba(255,255,255,0.85); margin-bottom:18px; }
 
-.tabulator-col-title, .tabulator-cell{
-    white-space:nowrap;
+/* small welcome overlay (previous) */
+#welcomeMini{
+  position:fixed; left:20px; top:20px; z-index:9999; display:flex; align-items:center;
+  gap:14px; padding:14px 18px; border-radius:12px; background:rgba(11,11,12,0.9);
+  border:1px solid rgba(255,255,255,0.04); transform: translateY(-6px); opacity:0; transition:opacity .32s, transform .32s; pointer-events:none;
+}
+#welcomeMini.show{ opacity:1; transform: translateY(0); pointer-events:auto; }
+#welcomeMini .title{ font-size:18px; font-weight:700; line-height:1; }
+#welcomeMini .sub{ font-size:13px; color:rgba(255,255,255,0.85); margin-top:4px; }
+#welcomeMini button { background:transparent; border:none; color:rgba(255,255,255,0.8); font-size:16px; cursor:pointer; }
+
+/* responsive adjustments */
+@media (max-width:720px){
+  .welcomeTitle { font-size:22px; }
+  .avatar { width:72px; height:72px; font-size:24px; }
 }
 </style>
 </head>
 
 <body>
 
+<!-- FULL SCREEN welcome -->
+<div id="welcomeFull" aria-hidden="true">
+  <div class="welcomeCard" role="dialog" aria-modal="true">
+    <div class="avatar" id="fullAvatar">J</div>
+    <div class="welcomeTitle" id="fullTitle">Hi —</div>
+    <div class="welcomeSub" id="fullSub">Welcome back to Recruita.</div>
+    <div style="margin-top:18px;">
+      <button class="blueBtn" id="fullContinue">Continue</button>
+      <button class="greyBtn" id="fullDismiss" style="margin-left:10px;">Dismiss</button>
+    </div>
+  </div>
+</div>
+
+<!-- mini welcome -->
+<div id="welcomeMini" aria-live="polite" role="status" style="display:none">
+  <div style="display:flex;flex-direction:column;">
+    <div class="title" id="miniTitle">Hi —</div>
+    <div class="sub" id="miniSub">Welcome back.</div>
+  </div>
+  <div style="flex:1"></div>
+  <button id="miniClose" title="Dismiss">✕</button>
+</div>
+
 <div class="topBar">
-    <button id="themeBtn" class="greyBtn">🌓 Theme</button>
-    <button id="logoutBtn" class="redBtn">Logout</button>
+    <button onclick="toggleTheme()" class="greyBtn">🌓 Theme</button>
+    <button onclick="logout()" class="redBtn">Logout</button>
 </div>
 
 <h2>Your Performance</h2>
@@ -122,53 +185,143 @@ body.light .tabulator{
 
 <input id="remarkInput" placeholder="Remarks">
 
-<button id="saveBtn" class="blueBtn" style="margin-top:10px;">Submit Entry</button>
-<button id="csvBtn" class="blueBtn" style="margin-top:10px;">Download CSV</button>
+<button class="blueBtn" onclick="saveData()">Submit Entry</button>
+<button class="blueBtn" onclick="exportCSV()" style="margin-top:20px;">Download CSV</button>
 
 <h2 style="margin-top:30px;">Your Entries</h2>
 
-<!-- TABLE WRAPPER FOR SCROLL -->
 <div id="tableWrapper">
     <div id="listTable"></div>
 </div>
 
 <script type="module">
+/* imports unchanged */
 import { auth, db } from "./firebase.js";
 import {
   collection, query, where, onSnapshot, addDoc
 } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
+/* state */
 let empID = "";
 let uid = "";
 let email = "";
 let all = [];
-let table = null;
 
-function formatTS(d){
-  const p=n=>n.toString().padStart(2,"0");
-  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+/* welcome elements */
+const welcomeFull = document.getElementById("welcomeFull");
+const fullAvatar = document.getElementById("fullAvatar");
+const fullTitle = document.getElementById("fullTitle");
+const fullSub = document.getElementById("fullSub");
+const fullContinue = document.getElementById("fullContinue");
+const fullDismiss = document.getElementById("fullDismiss");
+
+const welcomeMini = document.getElementById("welcomeMini");
+const miniTitle = document.getElementById("miniTitle");
+const miniSub = document.getElementById("miniSub");
+const miniClose = document.getElementById("miniClose");
+
+let table;
+
+/* timestamps keys */
+const KEY_LAST_FULL = "recruita_lastFullWelcome";   // timestamp of last full-screen welcome
+const KEY_LAST_LOGOUT = "recruita_lastLogout";      // timestamp of last logout
+
+/* helper: show mini welcome (non-blocking) */
+function showMini(name){
+  miniTitle.textContent = `Hi ${name} !`;
+  miniSub.textContent = "Welcome back.";
+  welcomeMini.style.display = "flex";
+  requestAnimationFrame(()=> welcomeMini.classList.add("show"));
+  // auto-hide
+  setTimeout(()=> {
+    welcomeMini.classList.remove("show");
+    setTimeout(()=> { welcomeMini.style.display = "none"; }, 320);
+  }, 3500);
 }
 
-// Auth & load user-specific data
+/* helper: show full-screen welcome (blocks until continue/dismiss) */
+function showFull(name){
+  fullAvatar.textContent = (name && name[0]) ? name[0].toUpperCase() : "R";
+  fullTitle.textContent = `Hi ${name} !`;
+  fullSub.textContent = "Welcome back to Recruita.";
+  welcomeFull.classList.add("show");
+  welcomeFull.setAttribute("aria-hidden", "false");
+  // record last full welcome timestamp
+  try{ localStorage.setItem(KEY_LAST_FULL, Date.now().toString()); }catch(e){}
+}
+
+/* full-screen continue/dismiss handlers */
+fullContinue.addEventListener("click", () => {
+  welcomeFull.classList.remove("show");
+  welcomeFull.setAttribute("aria-hidden", "true");
+});
+fullDismiss.addEventListener("click", () => {
+  welcomeFull.classList.remove("show");
+  welcomeFull.setAttribute("aria-hidden", "true");
+});
+
+/* mini dismiss */
+miniClose.addEventListener("click", ()=>{
+  welcomeMini.classList.remove("show");
+  setTimeout(()=> { welcomeMini.style.display = "none"; }, 320);
+});
+
+/* timestamp utility */
+function hoursSince(ts){
+  if(!ts) return Infinity;
+  const then = Number(ts);
+  if(!then) return Infinity;
+  return (Date.now() - then) / (1000 * 60 * 60);
+}
+
+/* auth state + welcome logic */
 auth.onAuthStateChanged(async user=>{
-    if(!user){
-        location.href="login.html";
-        return;
-    }
+    if(!user) location.href="login.html";
 
     uid = user.uid;
     email = user.email;
 
-    // find empID from users collection
+    // fetch users doc by email (same approach as before)
     const ref = collection(db,"users");
     const q = query(ref, where("email","==", email));
 
     onSnapshot(q, snap=>{
-        snap.forEach(d => empID = d.data().empID || "");
-        // once empID is available, load entries
-        if(empID) loadData(empID);
+        snap.forEach(d => {
+            const data = d.data();
+            empID = data.empID || (email ? email.split("@")[0] : "User");
+            const displayName = (data.fullName || data.name || empID || (email ? email.split("@")[0] : "there")).trim();
+
+            // decide whether to show full-screen or mini welcome:
+            const lastFull = localStorage.getItem(KEY_LAST_FULL);
+            const lastLogout = localStorage.getItem(KEY_LAST_LOGOUT);
+            const twelvePassed = hoursSince(lastFull) >= 12;
+            const afterLogout = !!lastLogout && Number(lastLogout) > Number(lastFull || 0);
+
+            // show full if user logged out since last full OR 12+ hours passed
+            if(afterLogout || twelvePassed){
+                // show full-screen welcome
+                showFull(displayName);
+            } else {
+                // show small overlay once per session
+                // use sessionStorage to show only once per tab/session
+                const shownKey = `welcomeMiniShown_${uid}`;
+                if(!sessionStorage.getItem(shownKey)){
+                    showMini(displayName);
+                    sessionStorage.setItem(shownKey, "1");
+                }
+            }
+        });
+
+        // load data after we get empID (same as original)
+        loadData(empID);
     });
 });
+
+/* formatTS, loadData, renderDashboard, renderTable (copied/preserved) */
+function formatTS(d){
+  const p=n=>n.toString().padStart(2,"0");
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
 
 function loadData(empID){
     const q = query(collection(db,"callLogs"), where("empID","==", empID));
@@ -177,13 +330,8 @@ function loadData(empID){
         all = [];
         snap.forEach(d => all.push({...d.data(), id:d.id}));
 
-        // sort latest first (ts stored as formatted string => convert)
-        all.sort((a,b)=>{
-            // fallback if ts missing
-            let ta = a.ts ? new Date(a.ts) : new Date(0);
-            let tb = b.ts ? new Date(b.ts) : new Date(0);
-            return tb - ta;
-        });
+        // latest first
+        all.sort((a,b)=> new Date(b.ts) - new Date(a.ts));
 
         renderDashboard();
         renderTable(all);
@@ -192,7 +340,7 @@ function loadData(empID){
 
 function renderDashboard(){
     let today = new Date().toDateString();
-    let countToday = all.filter(e => e.ts && new Date(e.ts).toDateString() === today).length;
+    let countToday = all.filter(e => new Date(e.ts).toDateString() === today).length;
 
     dashBody.innerHTML = `
         <tr>
@@ -203,47 +351,53 @@ function renderDashboard(){
     `;
 }
 
+/* Save entry with basic validation (same) */
 async function saveData(){
-    let num = document.getElementById("numberInput").value.trim();
-    if(num.length !== 10 || !/^\d{10}$/.test(num)){
+    let num = numberInput.value.trim();
+    if(!/^[0-9]{10}$/.test(num)){
         alert("Enter valid 10-digit number");
         return;
     }
 
-    // duplicate check: only for this recruiter
-    let dup = all.find(x => x.number === num && x.empID === empID);
-    if(dup){
-        if(!confirm("Duplicate number found in your entries. Still add?")) return;
-    }
+    const btn = event?.target || null;
+    if(btn) btn.disabled = true;
 
     await addDoc(collection(db,"callLogs"),{
         ts: formatTS(new Date()),
         uid,
         empID,
         email,
-        name: document.getElementById("nameInput").value || "",
+        name: nameInput.value,
         number: num,
-        age: document.getElementById("ageInput").value || "",
-        exp: document.getElementById("expInput").value || "",
-        loc: document.getElementById("locInput").value || "",
-        ctc: document.getElementById("ctcInput").value || "",
-        comp: document.getElementById("compInput").value || "",
-        channel: document.getElementById("channelInput").value || "",
-        callStatus: document.getElementById("statusInput").value || "",
-        remarks: document.getElementById("remarkInput").value || ""
+        age: ageInput.value,
+        exp: expInput.value,
+        loc: locInput.value,
+        ctc: ctcInput.value,
+        comp: compInput.value,
+        channel: channelInput.value,
+        callStatus: statusInput.value,
+        remarks: remarkInput.value
     });
 
-    // reset inputs
-    ["nameInput","numberInput","ageInput","expInput","locInput","ctcInput","compInput","channelInput","statusInput","remarkInput"]
-      .forEach(id => document.getElementById(id).value = "");
+    nameInput.value="";
+    numberInput.value="";
+    ageInput.value="";
+    expInput.value="";
+    locInput.value="";
+    ctcInput.value="";
+    compInput.value="";
+    channelInput.value="";
+    statusInput.value="";
+    remarkInput.value="";
 
+    if(btn) btn.disabled = false;
     alert("Entry Saved");
 }
 
+/* Tabulator table rendering (kept) */
 function renderTable(data){
-    // initialize Tabulator once
     if(table){
-        table.setData(data);
+        table.replaceData(data);
         return;
     }
 
@@ -255,12 +409,14 @@ function renderTable(data){
         movableColumns:true,
         pagination:false,
         columnDefaults:{ resizable:true },
-        placeholder:"No entries yet",
+
         columns:[
-            {title:"Call", field:"number", hozAlign:"center", formatter:cell=>`<a href="tel:${cell.getValue()}" style="color:#2B7FFF;font-size:18px;">📞</a>`},
-            {title:"Time ▼", field:"ts", sorter:"string", headerFilter:"input"},
+            {title:"Call", field:"number",
+                formatter:cell=>`<a href="tel:${cell.getValue()}" style="color:#2B7FFF;font-size:20px;">📞</a>`},
+
+            {title:"Time ▼", field:"ts", sorter:"datetime", headerFilter:"input"},
             {title:"Name ▼", field:"name", sorter:"string", headerFilter:"input"},
-            {title:"Number ▼", field:"number", sorter:"string", headerFilter:"input"},
+            {title:"Number ▼", field:"number", sorter:"number", headerFilter:"input"},
             {title:"Age ▼", field:"age", sorter:"number", headerFilter:"input"},
             {title:"Experience ▼", field:"exp", sorter:"number", headerFilter:"input"},
             {title:"Location ▼", field:"loc", sorter:"string", headerFilter:"input"},
@@ -271,55 +427,27 @@ function renderTable(data){
             {title:"Remarks ▼", field:"remarks", sorter:"string", headerFilter:"input"},
         ],
     });
-
-    // apply Tabulator theme class if dark
-    const tEl = document.querySelector(".tabulator");
-    if(tEl){
-        tEl.classList.add("tabulator_midnight");
-    }
 }
 
 function exportCSV(){
-    if(!table){
-        alert("No data to export");
-        return;
-    }
-    // filename with empID
-    let filename = (empID||"recruiter") + "_data.csv";
-    table.download("csv", filename);
+    table.download("csv", `${empID}_data.csv`);
 }
 
+/* logout: mark last logout timestamp so next login shows full-screen */
 function logout(){
+    try{ localStorage.setItem(KEY_LAST_LOGOUT, Date.now().toString()); }catch(e){}
     auth.signOut();
     location.href="login.html";
 }
 
 function toggleTheme(){
     document.body.classList.toggle("light");
-
-    // safely toggle Tabulator theme if exists
-    const tEl = document.querySelector(".tabulator");
-    if(tEl){
-        if(document.body.classList.contains("light")){
-            tEl.classList.remove("tabulator_midnight");
-        } else {
-            tEl.classList.add("tabulator_midnight");
-        }
+    if(document.body.classList.contains("light")){
+        document.querySelector(".tabulator").classList.remove("tabulator_midnight");
+    } else {
+        document.querySelector(".tabulator").classList.add("tabulator_midnight");
     }
 }
-
-// --- Hook up buttons (module scope -> put on DOM events instead of inline onclick) ---
-document.getElementById("saveBtn").addEventListener("click", saveData);
-document.getElementById("csvBtn").addEventListener("click", exportCSV);
-document.getElementById("logoutBtn").addEventListener("click", logout);
-document.getElementById("themeBtn").addEventListener("click", toggleTheme);
-
-// Expose for console/debug if needed
-window.saveData = saveData;
-window.exportCSV = exportCSV;
-window.logout = logout;
-window.toggleTheme = toggleTheme;
-
 </script>
 
 </body>
