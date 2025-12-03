@@ -101,7 +101,7 @@ th, td {
 <table>
     <thead>
         <tr>
-            <th>EmpID</th>
+            <th>User</th>
             <th>Today</th>
             <th>Total</th>
         </tr>
@@ -169,7 +169,7 @@ th, td {
             <option>Not Answered</option>
         </select>
 
-        <input id="f_empid" placeholder="Filter by EmpID">
+        <input id="f_empid" placeholder="Filter by EmpID or User">
 
         <input id="f_minAge" placeholder="Min Age">
         <input id="f_maxAge" placeholder="Max Age">
@@ -196,7 +196,7 @@ th, td {
     <tr>
       <th>Call</th>
       <th>Time</th>
-      <th>EmpID</th>
+      <th>User</th>
       <th>Name</th>
       <th>Number</th>
       <th>Age</th>
@@ -226,6 +226,9 @@ import {
 let all = [];
 let adminEmpID = "";
 let adminEmail = "";
+let adminUID = "";
+let displayName = "";
+let usersMap = {}; // empID -> displayName
 let editingID = null;
 let filteredData = [];
 
@@ -235,49 +238,85 @@ function formatTS(d){
     return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 }
 
-/* Auth */
-auth.onAuthStateChanged(async user=>{
-    if(!user){ location.href="login.html"; return; }
-
-    adminEmail = user.email;
-
-    let ref = collection(db,"users");
-    let q = query(ref, where("email","==", adminEmail));
-    let snap = await getDocs(q);
-    snap.forEach(d => adminEmpID = d.data().empID);
-
-    loadEntries();
-});
-
-/* Load All */
-function loadEntries(){
-    onSnapshot(collection(db,"callLogs"), snap=>{
-        all = [];
-        snap.forEach(d => all.push({ id:d.id, ...d.data() }));
+/* Build usersMap so dashboard shows name instead of EmpID */
+function loadUsersMap(){
+    const ref = collection(db,"users");
+    // listen for realtime updates to keep mapping fresh
+    onSnapshot(ref, snap=>{
+        usersMap = {};
+        snap.forEach(d=>{
+            const data = d.data() || {};
+            const id = data.empID || d.id;
+            const name = data.fullName || data.name || id;
+            usersMap[id] = name;
+        });
+        // re-render dashboard/table to reflect any name updates
         renderDashboard();
         renderTable();
     });
 }
 
-/* Dashboard */
+/* Auth */
+auth.onAuthStateChanged(async user=>{
+    if(!user){ location.href="login.html"; return; }
+
+    adminUID = user.uid;
+    adminEmail = user.email;
+
+    // fetch admin user's doc to get empID and displayName
+    let ref = collection(db,"users");
+    let q = query(ref, where("email","==", adminEmail));
+    let snap = await getDocs(q);
+    snap.forEach(d => {
+        adminEmpID = d.data().empID || "";
+        displayName = d.data().fullName || d.data().name || adminEmpID || adminEmail.split('@')[0];
+    });
+
+    // users map for name display
+    loadUsersMap();
+
+    // now load entries
+    loadEntries();
+});
+
+/* Load All entries */
+function loadEntries(){
+    onSnapshot(collection(db,"callLogs"), snap=>{
+        all = [];
+        snap.forEach(d => all.push({ id:d.id, ...d.data() }));
+        // sort newest first
+        all.sort((a,b)=> {
+          const at = a.ts || a.createdAt || '';
+          const bt = b.ts || b.createdAt || '';
+          return (bt > at) ? 1 : ((bt < at) ? -1 : 0);
+        });
+        renderDashboard();
+        renderTable();
+    });
+}
+
+/* Dashboard: show user name instead of EmpID */
 function renderDashboard(){
     dashBody.innerHTML = "";
 
     let stats = {};
 
     all.forEach(d=>{
-        if(!stats[d.empID]) stats[d.empID] = {today:0, total:0};
+        const key = d.empID || d.createdBy || 'unknown';
+        if(!stats[key]) stats[key] = {today:0, total:0};
 
         let today = new Date().toDateString();
-        if(new Date(d.ts).toDateString() === today) stats[d.empID].today++;
+        const ts = d.ts || d.createdAt || '';
+        if(ts && new Date(ts).toDateString() === today) stats[key].today++;
 
-        stats[d.empID].total++;
+        stats[key].total++;
     });
 
     Object.keys(stats).forEach(id=>{
+        const name = usersMap[id] || id;
         dashBody.innerHTML += `
             <tr>
-                <td>${id}</td>
+                <td>${name}</td>
                 <td>${stats[id].today}</td>
                 <td>${stats[id].total}</td>
             </tr>
@@ -285,12 +324,12 @@ function renderDashboard(){
     });
 }
 
-/* Filter toggle */
+/* Toggle filter panel */
 function toggleFilters(){
     const panel = document.getElementById("filterPanel");
     const btn = document.getElementById("filterToggleBtn");
 
-    if(panel.style.display === "none"){
+    if(panel.style.display === "none" || panel.style.display === ""){
         panel.style.display = "block";
         btn.textContent = "Hide Filters";
     } else {
@@ -299,7 +338,7 @@ function toggleFilters(){
     }
 }
 
-/* Save entry */
+/* Save entry (admin) - duplicate check now robust like recruiter */
 async function saveData(){
     let num = numberInput.value.trim();
     if(num.length !== 10){
@@ -307,7 +346,9 @@ async function saveData(){
         return;
     }
 
-    let duplicate = all.find(e => e.number===num && e.empID===adminEmpID);
+    // duplicate logic: check existing entries where number matches and either
+    // createdBy === current uid OR empID === adminEmpID (covers older entries)
+    const duplicate = all.find(e => e.number === num && (e.createdBy === adminUID || e.empID === adminEmpID));
     if(duplicate){
         let ok = confirm("This number already exists in your entries. Still add?");
         if(!ok) return;
@@ -317,6 +358,7 @@ async function saveData(){
         ts: formatTS(new Date()),
         empID: adminEmpID,
         email: adminEmail,
+        createdBy: adminUID,
 
         name: nameInput.value,
         number: num,
@@ -330,6 +372,7 @@ async function saveData(){
         remarks: remarkInput.value || ""
     });
 
+    // Reset fields
     nameInput.value="";
     numberInput.value="";
     ageInput.value="";
@@ -344,21 +387,21 @@ async function saveData(){
     alert("Entry Saved");
 }
 
-/* Apply filters */
+/* Apply Filters */
 function applyFilters(){
     let data = all;
 
     if(f_name.value)
-        data = data.filter(x => x.name.toLowerCase().includes(f_name.value.toLowerCase()));
+        data = data.filter(x => (x.name||'').toLowerCase().includes(f_name.value.toLowerCase()));
 
     if(f_number.value)
-        data = data.filter(x => x.number.includes(f_number.value));
+        data = data.filter(x => (x.number||'').includes(f_number.value));
 
     if(f_company.value)
-        data = data.filter(x => x.comp.toLowerCase().includes(f_company.value.toLowerCase()));
+        data = data.filter(x => (x.comp||'').toLowerCase().includes(f_company.value.toLowerCase()));
 
     if(f_location.value)
-        data = data.filter(x => x.loc.toLowerCase().includes(f_location.value.toLowerCase()));
+        data = data.filter(x => (x.loc||'').toLowerCase().includes(f_location.value.toLowerCase()));
 
     if(f_channel.value)
         data = data.filter(x => x.channel === f_channel.value);
@@ -367,7 +410,11 @@ function applyFilters(){
         data = data.filter(x => x.callStatus === f_status.value);
 
     if(f_empid.value)
-        data = data.filter(x => x.empID === f_empid.value);
+        data = data.filter(x => {
+            const uidVal = x.empID || x.createdBy || '';
+            const name = usersMap[uidVal] || uidVal;
+            return (uidVal === f_empid.value) || (name && name.toLowerCase().includes(f_empid.value.toLowerCase()));
+        });
 
     if(f_minAge.value)
         data = data.filter(x => Number(x.age) >= Number(f_minAge.value));
@@ -382,16 +429,16 @@ function applyFilters(){
         data = data.filter(x => Number(x.ctc) <= Number(f_maxCTC.value));
 
     if(f_dateStart.value)
-        data = data.filter(x => new Date(x.ts) >= new Date(f_dateStart.value));
+        data = data.filter(x => new Date(x.ts || x.createdAt) >= new Date(f_dateStart.value));
 
     if(f_dateEnd.value)
-        data = data.filter(x => new Date(x.ts) <= new Date(f_dateEnd.value));
+        data = data.filter(x => new Date(x.ts || x.createdAt) <= new Date(f_dateEnd.value));
 
     filteredData = data;
     renderTableFiltered();
 }
 
-/* Reset filters */
+/* Reset Filters */
 function resetFilters(){
     f_name.value="";
     f_number.value="";
@@ -411,35 +458,37 @@ function resetFilters(){
     renderTable();
 }
 
-/* Render all */
+/* Render full table */
 function renderTable(){
     listBody.innerHTML = "";
     all.forEach(d=> renderRow(d));
 }
 
-/* Render filtered */
+/* Render filtered table */
 function renderTableFiltered(){
     listBody.innerHTML = "";
     filteredData.forEach(d=> renderRow(d));
 }
 
-/* Render row */
+/* Render row (shows display name) */
 function renderRow(d){
-    if(editingID === d.id){
+    const userKey = d.empID || d.createdBy || 'unknown';
+    const userName = usersMap[userKey] || userKey;
 
+    if(editingID === d.id){
         listBody.innerHTML += `
         <tr>
             <td><a href="tel:${d.number}" class="callBtn">📞</a></td>
-            <td>${d.ts}</td>
-            <td>${d.empID}</td>
+            <td>${d.ts || d.createdAt || ''}</td>
+            <td>${userName}</td>
 
-            <td><input class="editInput" id="e_name" value="${d.name}"></td>
-            <td><input class="editInput" id="e_number" value="${d.number}"></td>
-            <td><input class="editInput" id="e_age" value="${d.age}"></td>
-            <td><input class="editInput" id="e_exp" value="${d.exp}"></td>
-            <td><input class="editInput" id="e_loc" value="${d.loc}"></td>
-            <td><input class="editInput" id="e_ctc" value="${d.ctc}"></td>
-            <td><input class="editInput" id="e_comp" value="${d.comp}"></td>
+            <td><input class="editInput" id="e_name" value="${d.name || ''}"></td>
+            <td><input class="editInput" id="e_number" value="${d.number || ''}"></td>
+            <td><input class="editInput" id="e_age" value="${d.age || ''}"></td>
+            <td><input class="editInput" id="e_exp" value="${d.exp || ''}"></td>
+            <td><input class="editInput" id="e_loc" value="${d.loc || ''}"></td>
+            <td><input class="editInput" id="e_ctc" value="${d.ctc || ''}"></td>
+            <td><input class="editInput" id="e_comp" value="${d.comp || ''}"></td>
 
             <td>
                 <select id="e_channel" class="editInput">
@@ -458,30 +507,28 @@ function renderRow(d){
                 </select>
             </td>
 
-            <td><input class="editInput" id="e_remark" value="${d.remarks}"></td>
+            <td><input class="editInput" id="e_remark" value="${d.remarks || ''}"></td>
 
             <td><button class="blueBtn" onclick="saveEdit('${d.id}')">Save</button></td>
             <td><button class="greyBtn" onclick="cancelEdit()">Cancel</button></td>
         </tr>
         `;
-
     } else {
-
         listBody.innerHTML += `
         <tr>
             <td><a href="tel:${d.number}" class="callBtn">📞</a></td>
-            <td>${d.ts}</td>
-            <td>${d.empID}</td>
-            <td>${d.name}</td>
-            <td>${d.number}</td>
-            <td>${d.age}</td>
-            <td>${d.exp}</td>
-            <td>${d.loc}</td>
-            <td>${d.ctc}</td>
-            <td>${d.comp}</td>
-            <td>${d.channel}</td>
-            <td>${d.callStatus}</td>
-            <td>${d.remarks}</td>
+            <td>${d.ts || d.createdAt || ''}</td>
+            <td>${userName}</td>
+            <td>${d.name || ''}</td>
+            <td>${d.number || ''}</td>
+            <td>${d.age || ''}</td>
+            <td>${d.exp || ''}</td>
+            <td>${d.loc || ''}</td>
+            <td>${d.ctc || ''}</td>
+            <td>${d.comp || ''}</td>
+            <td>${d.channel || ''}</td>
+            <td>${d.callStatus || ''}</td>
+            <td>${d.remarks || ''}</td>
 
             <td><button class="blueBtn" onclick="startEdit('${d.id}')">Edit</button></td>
             <td><button class="redBtn" onclick="deleteEntry('${d.id}')">Delete</button></td>
@@ -530,10 +577,12 @@ async function deleteEntry(id){
 function exportCSV(){
     let data = filteredData.length > 0 ? filteredData : all;
 
-    let csv = "Time,EmpID,Name,Number,Age,Experience,Location,CTC,Company,Channel,Status,Remarks\n";
+    let csv = "Time,User,Name,Number,Age,Experience,Location,CTC,Company,Channel,Status,Remarks\n";
 
     data.forEach(d=>{
-        csv += `${formatTS(new Date(d.ts))},${d.empID},${d.name},${d.number},${d.age},${d.exp},${d.loc},${d.ctc},${d.comp},${d.channel},${d.callStatus},${d.remarks}\n`;
+        const userKey = d.empID || d.createdBy || 'unknown';
+        const userName = usersMap[userKey] || userKey;
+        csv += `${formatTS(new Date(d.ts || d.createdAt || ''))},${userName},${d.name || ''},${d.number || ''},${d.age || ''},${d.exp || ''},${d.loc || ''},${d.ctc || ''},${d.comp || ''},${d.channel || ''},${d.callStatus || ''},${(d.remarks || '').replace(/(\r\n|\n|\r)/gm," ")}\n`;
     });
 
     let blob = new Blob([csv],{type:"text/csv"});
