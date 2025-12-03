@@ -20,23 +20,19 @@ button{ padding:10px 16px; border:none; border-radius:6px; cursor:pointer; font-
 .greyBtn{ background:#555; color:#fff; }
 .redBtn{ background:#e74c3c; color:#fff; }
 
-/* name badge */
 #nameBadge{ display:none; align-items:center; gap:10px; padding:8px 12px; border-radius:8px; background:var(--blue); color:#fff; font-weight:700; font-size:15px; cursor:pointer; user-select:none; box-shadow: 0 6px 18px rgba(43,127,255,0.12); transition: transform .12s ease, background .18s; }
 #nameBadge:hover{ transform: translateY(-2px); background:var(--blue-dark); }
 #nameBadge .badgeAvatar{ width:28px; height:28px; border-radius:999px; display:inline-grid; place-items:center; background: linear-gradient(135deg,#6fb1ff,var(--blue)); color:#fff; font-weight:700; font-size:13px; flex:0 0 auto; }
 
-/* layout */
 .container{ padding:12px 20px 40px 20px; max-width:1200px; margin:0 auto; }
 h2{ margin:10px 0 6px; }
 #tableWrapper { overflow-x:auto; width:100%; margin-top:12px; border:1px solid rgba(255,255,255,0.04); border-radius:6px; padding:8px; }
 .tabulator{ background:var(--bg-dark) !important; }
-input,select{ width:100%; padding:12px; margin-top:8px; border-radius:8px; border:none; background:#111; color:#fff; }
+input,select{ width:100%; padding:12px; margin-top:8px; border:none; border-radius:8px; background:#111; color:#fff; }
 body.light input, body.light select{ background:#fff; color:#222; border:1px solid #ddd; }
 
-/* small inline duplicate hint under number */
 #dupHint{ margin-top:6px; font-size:13px; color:rgba(255,255,255,0.75); }
 
-/* welcome overlay */
 #welcomeFull{ position:fixed; inset:0; z-index:99990; display:none; align-items:center; justify-content:center; background:linear-gradient(180deg, rgba(2,6,23,0.95), rgba(8,13,30,0.95)); transition: transform .55s cubic-bezier(.2,.9,.25,1), opacity .3s ease; }
 .welcomeCard{ width:min(820px,94vw); border-radius:18px; padding:36px 34px; text-align:center; background: linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.06); box-shadow: 0 20px 60px rgba(0,0,0,0.6); transform-origin:center; }
 .avatarBig{ width:100px; height:100px; border-radius:999px; margin:0 auto 12px; display:grid; place-items:center; font-size:36px; font-weight:800; color:#fff; background:linear-gradient(135deg,#6fb1ff,var(--blue)); box-shadow: 0 12px 30px rgba(43,127,255,0.12); }
@@ -45,25 +41,22 @@ body.light input, body.light select{ background:#fff; color:#222; border:1px sol
 #welcomeFull.minimize{ transform: translate(calc(50vw - 120px), calc(-42vh)) scale(.18); opacity:1; pointer-events:none; }
 #welcomeFull.minimize .welcomeCard{ transform: scale(.98); opacity:.95; }
 
-/* cartoon popup */
 #cartoonBox{ position:fixed; right:130px; top:72px; z-index:100000; display:none; width:260px; padding:14px; background:#fff; color:#111; border-radius:12px; box-shadow:0 18px 50px rgba(0,0,0,0.35); font-weight:600; transform-origin:right top; animation:pop .32s ease; }
 #cartoonBox::after{ content:""; position:absolute; right:18px; top:100%; width:0; height:0; border-left:10px solid transparent; border-right:10px solid transparent; border-top:12px solid #fff; }
 @keyframes pop{ from{ transform: scale(.92); opacity:0 } to{ transform: scale(1); opacity:1 } }
 #cartoonBox .greet{ font-size:15px; margin-bottom:6px; color:#0b0b0c; }
 #cartoonBox .line{ font-size:13px; color:#444; font-weight:500; }
 
-/* duplicate modal */
 #dupModal{ position:fixed; inset:0; z-index:100005; display:none; align-items:center; justify-content:center; background: rgba(2,6,23,0.6); }
 #dupCard{ width:520px; max-width:94vw; border-radius:12px; padding:18px; background:#0f1114; color:#fff; border:1px solid rgba(255,255,255,0.06); box-shadow: 0 24px 80px rgba(0,0,0,0.6); }
 #dupCard h3{ margin:0 0 8px; }
 .dupItem{ padding:10px; border-radius:8px; background:rgba(255,255,255,0.02); margin-bottom:8px; font-size:13px; }
 .dupBtns{ display:flex; gap:8px; justify-content:flex-end; margin-top:12px; }
 
-/* mini fallback */
 #welcomeMini{ position:fixed; left:20px; top:20px; z-index:9999; display:flex; align-items:center; gap:14px; padding:14px 18px; border-radius:12px; background:rgba(11,11,12,0.9); border:1px solid rgba(255,255,255,0.04); transform: translateY(-6px); opacity:0; transition:opacity .32s, transform .32s; pointer-events:none; }
 #welcomeMini.show{ opacity:1; transform: translateY(0); pointer-events:auto; }
 #welcomeMini .title{ font-size:18px; font-weight:700; line-height:1; }
-#welcomeMini .sub{ font-size:13px; color:rgba(255,255,255,0.85); margin-top:4px; }
+#welcomeMini .sub{ font-size:13px; color:rgba(255,255,255,0.85); margin-top:4px }
 
 @media(max-width:800px){ #cartoonBox{ right:18px; width:220px; top:72px; } #welcomeFull.minimize{ transform: translate(calc(40vw - 60px), calc(-44vh)) scale(.2); } }
 </style>
@@ -78,12 +71,6 @@ body.light input, body.light select{ background:#fff; color:#222; border:1px sol
 
   <button id="themeBtn" class="greyBtn" onclick="toggleTheme()">🌓 Theme</button>
   <button class="redBtn" onclick="logout()">Logout</button>
-</div>
-
-<!-- cartoon -->
-<div id="cartoonBox" role="note" aria-live="polite">
-  <div class="greet" id="cartoonGreet">Hey —</div>
-  <div class="line" id="cartoonLine">What's up? 🎵</div>
 </div>
 
 <div class="container">
@@ -139,7 +126,6 @@ body.light input, body.light select{ background:#fff; color:#222; border:1px sol
   <div id="listTable" style="margin-top:12px"></div>
 </div>
 
-<!-- full welcome -->
 <div id="welcomeFull" aria-hidden="true" role="dialog">
   <div class="welcomeCard" aria-label="Welcome">
     <div class="avatarBig" id="fullAvatar">R</div>
@@ -151,7 +137,6 @@ body.light input, body.light select{ background:#fff; color:#222; border:1px sol
   </div>
 </div>
 
-<!-- duplicate modal -->
 <div id="dupModal" role="dialog" aria-modal="true">
   <div id="dupCard" role="document">
     <h3>Possible duplicate found</h3>
@@ -167,7 +152,6 @@ body.light input, body.light select{ background:#fff; color:#222; border:1px sol
   </div>
 </div>
 
-<!-- mini fallback -->
 <div id="welcomeMini" aria-live="polite" role="status" style="display:none">
   <div style="display:flex;flex-direction:column;">
     <div class="title" id="miniTitle">Hi —</div>
@@ -222,7 +206,6 @@ const KEY_BADGE_VISIBLE = 'recruita_nameBadgeVisible';
 function formatTS(d){ const p=n=>n.toString().padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`; }
 function debounce(fn, wait){ let t=null; return function(...a){ clearTimeout(t); t=setTimeout(()=>fn.apply(this,a), wait); }; }
 
-/* Audio jingle */
 function playJingle(){
   try{
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -243,7 +226,6 @@ function playJingle(){
   }catch(e){ console.warn('Audio not supported', e); }
 }
 
-/* Cartoon popup */
 function showCartoon(name){
   cartoonGreet.textContent = `Hey ${name} —`;
   cartoonLine.textContent = "What's up? 🎵";
@@ -253,7 +235,6 @@ function showCartoon(name){
   setTimeout(()=> { cartoonBox.style.opacity = '0'; setTimeout(()=> cartoonBox.style.display='none', 320); }, 4200);
 }
 
-/* Minimize welcome into badge (reliable) */
 function minimizeIntoBadge(name){
   if(sessionStorage.getItem(KEY_BADGE_VISIBLE)) return;
   welcomeFull.classList.add('minimize');
@@ -275,7 +256,6 @@ function minimizeIntoBadge(name){
   setTimeout(()=> finish(), fallbackMs);
 }
 
-/* Modal helpers */
 function openDupModal(matches){
   lastDupMatches = matches;
   dupList.innerHTML = '';
@@ -297,23 +277,47 @@ function openDupModal(matches){
 }
 function closeDupModal(){ dupModal.style.display = 'none'; }
 
-/* Duplicate check — limited to current recruiter's entries (createdBy == uid) */
+/* NEW: checkMatches now queries both createdBy==uid AND empID==empID (in two queries) and merges results.
+   That ensures older rows saved before `createdBy` existed (but with empID) are still found.
+*/
 async function checkMatches(number){
   if(!number || number.length < 6) return [];
   try{
-    const q = query(collection(db,'callLogs'), where('number','==', number), where('createdBy','==', uid), limit(5));
-    const snap = await getDocs(q);
-    const res = [];
-    snap.forEach(d => res.push({...d.data(), id:d.id}));
-    res.sort((a,b)=> { const at = a.ts || a.createdAt || ''; const bt = b.ts || b.createdAt || ''; return (bt>at)?1:-1; });
-    return res;
+    const results = [];
+    // Query A: records created by this auth uid
+    const qA = query(collection(db,'callLogs'), where('number','==', number), where('createdBy','==', uid), limit(50));
+    const snapA = await getDocs(qA);
+    snapA.forEach(d => results.push({...d.data(), id:d.id}));
+
+    // Query B: records with empID equal to this user's empID (covers older records)
+    if(empID){
+      const qB = query(collection(db,'callLogs'), where('number','==', number), where('empID','==', empID), limit(50));
+      const snapB = await getDocs(qB);
+      snapB.forEach(d => {
+        const id = d.id;
+        // avoid duplicate id push
+        if(!results.find(r=>r.id === id)) results.push({...d.data(), id});
+      });
+    }
+
+    // sort by timestamp descending (newest first). handles ts as string iso-format used across files.
+    results.sort((a,b)=> {
+      const at = a.ts || a.createdAt || '';
+      const bt = b.ts || b.createdAt || '';
+      if(!at && !bt) return 0;
+      if(!at) return 1;
+      if(!bt) return -1;
+      return bt.localeCompare(at);
+    });
+
+    return results;
   }catch(err){
     console.error('checkMatches error', err);
     return [];
   }
 }
 
-/* Pre-check on number blur — non-blocking hint */
+/* pre-check on number blur */
 const numberEl = document.getElementById('numberInput');
 const runPrecheck = debounce(async ()=>{
   const val = (numberEl.value||'').trim();
@@ -326,7 +330,7 @@ const runPrecheck = debounce(async ()=>{
 }, 650);
 numberEl.addEventListener('blur', runPrecheck);
 
-/* Numeric-only enforcement for age, exp, ctc */
+/* numeric enforcement */
 function enforceNumericInput(el){
   el.addEventListener('input', ()=>{
     let v = el.value;
@@ -341,7 +345,7 @@ enforceNumericInput(document.getElementById('ageInput'));
 enforceNumericInput(document.getElementById('expInput'));
 enforceNumericInput(document.getElementById('ctcInput'));
 
-/* Modal button handlers */
+/* modal buttons */
 dupEditPrev.addEventListener('click', async ()=>{
   closeDupModal();
   if(!lastDupMatches.length) return;
@@ -375,7 +379,7 @@ dupSaveNew.addEventListener('click', async ()=>{
 
 dupDismiss.addEventListener('click', ()=> closeDupModal());
 
-/* performSave: saves updates/creates, returns 'saved' or 'prompt' */
+/* save/update logic */
 async function performSave(opts){
   opts = opts || {};
   const name = (document.getElementById('nameInput').value || '').trim();
@@ -389,9 +393,8 @@ async function performSave(opts){
   const statusSelect = (document.getElementById('statusInput').value || '').trim();
   const remarks = (document.getElementById('remarkInput').value || '').trim();
 
-  // require exactly 10 digits
   if(!/^[0-9]{10}$/.test(number)){
-    throw new Error('Enter valid number (at least 10 digits).');
+    throw new Error('Enter valid number (exactly 10 digits).');
   }
 
   const isPartial = !(age || exp || ctc || loc || comp || channel || statusSelect || remarks);
@@ -433,7 +436,7 @@ async function performSave(opts){
     }catch(err){ console.error('add forceNew error', err); throw err; }
   }
 
-  // normal duplicate check (scoped to current recruiter)
+  // normal duplicate check (scoped to current recruiter - now robust)
   const matches = await checkMatches(number);
   if(matches.length){
     openDupModal(matches);
@@ -455,7 +458,6 @@ async function performSave(opts){
   }catch(err){ console.error('add error', err); throw err; }
 }
 
-/* Submit wrapper */
 async function saveData(evt){
   const btn = document.getElementById('submitBtn');
   if(btn) btn.disabled = true;
@@ -475,12 +477,11 @@ async function saveData(evt){
   }finally{ if(btn) btn.disabled = false; }
 }
 
-/* Export CSV and small helpers */
+/* CSV export */
 function exportCSV(){ if(table && typeof table.download === 'function'){ table.download('csv', `${(displayName||empID).replace(/\s+/g,'_')}_data.csv`); } else alert('Table not ready yet.'); }
 function toggleTheme(){ document.body.classList.toggle('light'); const tb = document.querySelector('.tabulator'); if(tb) tb.classList.toggle('tabulator_midnight'); }
 function logout(){ try{ localStorage.setItem(KEY_LAST_LOGOUT, Date.now().toString()); }catch(e){} try{ sessionStorage.removeItem(KEY_BADGE_VISIBLE); }catch(e){} try{ nameBadge.style.display = 'none'; }catch(e){} auth.signOut(); location.href = 'login.html'; }
 
-/* Welcome behavior with robust show (fixes intermittent no-show) */
 function showMini(name){
   document.getElementById('miniTitle').textContent = `Hi ${name} !`;
   document.getElementById('miniSub').textContent = 'Welcome back.';
@@ -490,8 +491,10 @@ function showMini(name){
   setTimeout(()=> { mini.classList.remove('show'); setTimeout(()=> mini.style.display='none',320); }, 3500);
 }
 
+/* Improved welcome logic:
+   Force show if there is no prior KEY_LAST_FULL (first time), or doc didn't load quickly.
+*/
 function handleWelcomeLogic(forceShow){
-  // forceShow is used when we want to ensure the welcome appears (fallback)
   const lastFull = localStorage.getItem(KEY_LAST_FULL);
   const lastLogout = localStorage.getItem(KEY_LAST_LOGOUT);
   const twelvePassed = (Date.now() - (Number(lastFull) || 0)) / (1000*60*60) >= 12;
@@ -521,17 +524,16 @@ function handleWelcomeLogic(forceShow){
   }
 }
 
-/* Bind UI events early */
+/* UI binds */
 fullContinue.addEventListener('click', ()=> minimizeIntoBadge(displayName || empID));
 nameBadge.addEventListener('click', ()=> showCartoon(displayName || empID));
 miniClose.addEventListener('click', ()=> { const mini = document.getElementById('welcomeMini'); mini.classList.remove('show'); setTimeout(()=> mini.style.display='none',320); });
 
-/* Firestore auth + load user doc. Ensure welcome is shown reliably and only then register callLogs listener */
+/* Auth -> get user doc -> then register callLogs listener */
 auth.onAuthStateChanged(async user => {
   if(!user){ location.href='login.html'; return; }
   uid = user.uid; email = user.email;
 
-  // Query user's doc and wait for first snapshot to ensure displayName & empID available.
   const ref = collection(db,'users');
   const q = query(ref, where('email','==', email));
 
@@ -553,18 +555,20 @@ auth.onAuthStateChanged(async user => {
     });
   });
 
-  // Load call logs listener only after we have empID (or after a short timeout)
   const timeout = new Promise(r => setTimeout(r, 900));
   await Promise.race([waitForDoc, timeout]);
 
   // Now register listener using the determined empID
   loadData(empID);
 
-  // Show welcome reliably (force show if doc didn't load quickly)
-  handleWelcomeLogic(!docLoaded);
+  // Force show welcome if first time (no KEY_LAST_FULL) or doc didn't load
+  const forceShow = !localStorage.getItem(KEY_LAST_FULL) || !docLoaded;
+  handleWelcomeLogic(forceShow);
 });
 
 /* Load call logs and render table */
+import { collection as colRef } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js"; // alias to avoid bundling confusion
+
 function loadData(empIDVal){
   const q = query(collection(db,'callLogs'), where('empID','==', empIDVal));
   onSnapshot(q, snap => {
@@ -609,7 +613,7 @@ function renderTable(data){
   });
 }
 
-/* expose for any inline needs */
+/* expose small set for debug/inline */
 window.saveData = saveData;
 window.exportCSV = exportCSV;
 window.toggleTheme = toggleTheme;
