@@ -82,6 +82,43 @@ th, td {
 }
 .light .editInput { background:#fff; color:#222; }
 
+/* --- Welcome overlay (non-destructive, can be removed) --- */
+#recruitaWelcomeOverlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  background: rgba(6,6,7,0.6);
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity .25s ease, visibility .25s ease;
+}
+#recruitaWelcomeOverlay.show {
+  visibility: visible;
+  opacity: 1;
+}
+.welcomeCard {
+  background: #0f1720;
+  color: white;
+  padding: 28px 30px;
+  border-radius: 14px;
+  max-width: 520px;
+  width: 92%;
+  text-align: center;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+  border: 1px solid rgba(255,255,255,0.03);
+}
+.welcomeTitle { font-size:20px; margin-bottom:6px; font-weight:700; }
+.welcomeSub { color: rgba(255,255,255,0.85); margin-bottom:14px; }
+.welcomeActions { display:flex; gap:10px; justify-content:center; margin-top:10px; }
+.welcomeBtn { padding:10px 14px; border-radius:10px; border:none; cursor:pointer; font-weight:600; }
+.welcomePrimary { background:#2B7FFF; color:white; }
+.welcomeSecondary { background:transparent; color:#ddd; border:1px solid rgba(255,255,255,0.06); }
+
+/* small note below welcome when present */
+.welcomeSmall { font-size:13px; color:rgba(255,255,255,0.7); margin-top:8px; }
 </style>
 </head>
 
@@ -215,6 +252,19 @@ th, td {
 </table>
 </div>
 
+<!-- Welcome overlay (will be shown once after login when key is set) -->
+<div id="recruitaWelcomeOverlay" role="dialog" aria-modal="true" aria-hidden="true">
+  <div class="welcomeCard" role="document" aria-labelledby="welcomeTitle">
+    <div id="welcomeTitle" class="welcomeTitle">Welcome</div>
+    <div id="welcomeSub" class="welcomeSub">Nice to see you back</div>
+    <div id="welcomeSmall" class="welcomeSmall"></div>
+    <div class="welcomeActions">
+      <button class="welcomeBtn welcomePrimary" id="welcomeContinue">Continue</button>
+      <button class="welcomeBtn welcomeSecondary" id="welcomeClose">Close</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
 
 import { auth, db } from "./firebase.js";
@@ -256,6 +306,46 @@ function loadUsersMap(){
     });
 }
 
+/* WELCOME: show overlay if login set the flag.
+   This is safe, non-destructive, and will be removed after showing once. */
+function showWelcomeScreenOnce() {
+    try {
+        const key = localStorage.getItem("recruita_show_welcome");
+        if (!key) return;
+
+        // prepare welcome text
+        const overlay = document.getElementById("recruitaWelcomeOverlay");
+        const titleEl = document.getElementById("welcomeTitle");
+        const subEl = document.getElementById("welcomeSub");
+        const smallEl = document.getElementById("welcomeSmall");
+
+        const nameToShow = displayName || adminEmpID || (adminEmail ? adminEmail.split('@')[0] : "User");
+        titleEl.textContent = `Welcome, ${nameToShow}`;
+        subEl.textContent = `You're signed in as ${adminEmail || nameToShow}`;
+        smallEl.textContent = "This will show once after you sign in.";
+
+        overlay.classList.add("show");
+        overlay.setAttribute("aria-hidden", "false");
+
+        // handlers
+        const hide = () => {
+            overlay.classList.remove("show");
+            overlay.setAttribute("aria-hidden", "true");
+            try { localStorage.removeItem("recruita_show_welcome"); } catch(e){}
+        };
+
+        // primary and close buttons
+        document.getElementById("welcomeContinue").onclick = hide;
+        document.getElementById("welcomeClose").onclick = hide;
+
+        // auto-hide after 4 seconds so it doesn't block users
+        setTimeout(hide, 4000);
+    } catch (e) {
+        console.info("Welcome overlay error:", e);
+        try { localStorage.removeItem("recruita_show_welcome"); } catch(e){}
+    }
+}
+
 /* Auth */
 auth.onAuthStateChanged(async user=>{
     if(!user){ location.href="login.html"; return; }
@@ -277,6 +367,10 @@ auth.onAuthStateChanged(async user=>{
 
     // now load entries
     loadEntries();
+
+    // ensure welcome shows (call after we've established displayName)
+    // small timeout ensures UI elements exist and mapping has been initiated
+    setTimeout(showWelcomeScreenOnce, 180);
 });
 
 /* Load All entries */
