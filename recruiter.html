@@ -192,10 +192,6 @@ const nameBadge = document.getElementById('nameBadge');
 const badgeAvatar = document.getElementById('badgeAvatar');
 const badgeText = document.getElementById('badgeText');
 
-const cartoonBox = document.getElementById('cartoonBox');
-const cartoonGreet = document.getElementById('cartoonGreet');
-const cartoonLine = document.getElementById('cartoonLine');
-
 const miniClose = document.getElementById('miniClose');
 
 const KEY_LAST_FULL = 'recruita_lastFullWelcome';
@@ -206,6 +202,7 @@ const KEY_BADGE_VISIBLE = 'recruita_nameBadgeVisible';
 function formatTS(d){ const p=n=>n.toString().padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`; }
 function debounce(fn, wait){ let t=null; return function(...a){ clearTimeout(t); t=setTimeout(()=>fn.apply(this,a), wait); }; }
 
+/* small jingle (non-blocking, optional) */
 function playJingle(){
   try{
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -223,18 +220,15 @@ function playJingle(){
       t += 0.12;
     });
     setTimeout(()=>{ try{ ctx.close(); }catch(e){} }, 800);
-  }catch(e){ console.warn('Audio not supported', e); }
+  }catch(e){ /* ignore */ }
 }
 
 function showCartoon(name){
-  cartoonGreet.textContent = `Hey ${name} —`;
-  cartoonLine.textContent = "What's up? 🎵";
-  cartoonBox.style.display = 'block';
-  cartoonBox.style.opacity = '1';
+  // small cheeky pop (kept for UX)
   playJingle();
-  setTimeout(()=> { cartoonBox.style.opacity = '0'; setTimeout(()=> cartoonBox.style.display='none', 320); }, 4200);
 }
 
+/* UI helpers for welcome/card minimization */
 function minimizeIntoBadge(name){
   if(sessionStorage.getItem(KEY_BADGE_VISIBLE)) return;
   welcomeFull.classList.add('minimize');
@@ -277,30 +271,26 @@ function openDupModal(matches){
 }
 function closeDupModal(){ dupModal.style.display = 'none'; }
 
-/* NEW: checkMatches now queries both createdBy==uid AND empID==empID (in two queries) and merges results.
-   That ensures older rows saved before `createdBy` existed (but with empID) are still found.
-*/
+/* Robust duplicate search (createdBy===uid OR empID===empID) */
 async function checkMatches(number){
   if(!number || number.length < 6) return [];
   try{
     const results = [];
-    // Query A: records created by this auth uid
+    // Query A
     const qA = query(collection(db,'callLogs'), where('number','==', number), where('createdBy','==', uid), limit(50));
     const snapA = await getDocs(qA);
     snapA.forEach(d => results.push({...d.data(), id:d.id}));
 
-    // Query B: records with empID equal to this user's empID (covers older records)
+    // Query B (empID)
     if(empID){
       const qB = query(collection(db,'callLogs'), where('number','==', number), where('empID','==', empID), limit(50));
       const snapB = await getDocs(qB);
       snapB.forEach(d => {
         const id = d.id;
-        // avoid duplicate id push
         if(!results.find(r=>r.id === id)) results.push({...d.data(), id});
       });
     }
 
-    // sort by timestamp descending (newest first). handles ts as string iso-format used across files.
     results.sort((a,b)=> {
       const at = a.ts || a.createdAt || '';
       const bt = b.ts || b.createdAt || '';
@@ -351,6 +341,7 @@ dupEditPrev.addEventListener('click', async ()=>{
   if(!lastDupMatches.length) return;
   const top = lastDupMatches[0];
   editingDocId = top.id;
+  // populate form with previous record for completion
   document.getElementById('nameInput').value = top.name || '';
   document.getElementById('numberInput').value = top.number || '';
   document.getElementById('ageInput').value = top.age || '';
@@ -379,7 +370,7 @@ dupSaveNew.addEventListener('click', async ()=>{
 
 dupDismiss.addEventListener('click', ()=> closeDupModal());
 
-/* save/update logic */
+/* save/update logic (now validates that name and number are not empty on save/update) */
 async function performSave(opts){
   opts = opts || {};
   const name = (document.getElementById('nameInput').value || '').trim();
@@ -393,9 +384,9 @@ async function performSave(opts){
   const statusSelect = (document.getElementById('statusInput').value || '').trim();
   const remarks = (document.getElementById('remarkInput').value || '').trim();
 
-  if(!/^[0-9]{10}$/.test(number)){
-    throw new Error('Enter valid number (exactly 10 digits).');
-  }
+  // required validations
+  if(!name) throw new Error('Name cannot be empty.');
+  if(!/^[0-9]{10}$/.test(number)) throw new Error('Enter a valid 10 digit number.');
 
   const isPartial = !(age || exp || ctc || loc || comp || channel || statusSelect || remarks);
 
@@ -436,7 +427,7 @@ async function performSave(opts){
     }catch(err){ console.error('add forceNew error', err); throw err; }
   }
 
-  // normal duplicate check (scoped to current recruiter - now robust)
+  // normal duplicate check
   const matches = await checkMatches(number);
   if(matches.length){
     openDupModal(matches);
@@ -477,7 +468,7 @@ async function saveData(evt){
   }finally{ if(btn) btn.disabled = false; }
 }
 
-/* CSV export */
+/* CSV export using Tabulator */
 function exportCSV(){ if(table && typeof table.download === 'function'){ table.download('csv', `${(displayName||empID).replace(/\s+/g,'_')}_data.csv`); } else alert('Table not ready yet.'); }
 function toggleTheme(){ document.body.classList.toggle('light'); const tb = document.querySelector('.tabulator'); if(tb) tb.classList.toggle('tabulator_midnight'); }
 function logout(){ try{ localStorage.setItem(KEY_LAST_LOGOUT, Date.now().toString()); }catch(e){} try{ sessionStorage.removeItem(KEY_BADGE_VISIBLE); }catch(e){} try{ nameBadge.style.display = 'none'; }catch(e){} auth.signOut(); location.href = 'login.html'; }
@@ -491,9 +482,7 @@ function showMini(name){
   setTimeout(()=> { mini.classList.remove('show'); setTimeout(()=> mini.style.display='none',320); }, 3500);
 }
 
-/* Improved welcome logic:
-   Force show if there is no prior KEY_LAST_FULL (first time), or doc didn't load quickly.
-*/
+/* Improved welcome logic */
 function handleWelcomeLogic(forceShow){
   const lastFull = localStorage.getItem(KEY_LAST_FULL);
   const lastLogout = localStorage.getItem(KEY_LAST_LOGOUT);
@@ -558,6 +547,15 @@ auth.onAuthStateChanged(async user => {
   const timeout = new Promise(r => setTimeout(r, 900));
   await Promise.race([waitForDoc, timeout]);
 
+  // ensure inputs are empty by default (prevents stray "India" or other defaults)
+  try{
+    const inputsToClear = ['locInput'];
+    inputsToClear.forEach(id => {
+      const el = document.getElementById(id);
+      if(el && !el.value) el.value = ''; // explicit ensure empty
+    });
+  }catch(e){}
+
   // Now register listener using the determined empID
   loadData(empID);
 
@@ -567,14 +565,21 @@ auth.onAuthStateChanged(async user => {
 });
 
 /* Load call logs and render table */
-import { collection as colRef } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js"; // alias to avoid bundling confusion
+import { collection as colRef } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js"; // alias
 
 function loadData(empIDVal){
   const q = query(collection(db,'callLogs'), where('empID','==', empIDVal));
   onSnapshot(q, snap => {
     all = [];
     snap.forEach(d => all.push({...d.data(), id:d.id}));
-    all.sort((a,b)=> new Date(b.ts) - new Date(a.ts));
+    all.sort((a,b)=> {
+      const at = a.ts || a.createdAt || '';
+      const bt = b.ts || b.createdAt || '';
+      if(!at && !bt) return 0;
+      if(!at) return 1;
+      if(!bt) return -1;
+      return bt.localeCompare(at);
+    });
     renderDashboard();
     renderTable(all);
   });
@@ -593,6 +598,7 @@ function renderDashboard(){
 
 function renderTable(data){
   if(table){ table.replaceData(data); return; }
+
   table = new Tabulator('#listTable', {
     data, layout:'fitDataFill', responsiveLayout:false, height:'480px',
     movableColumns:true, pagination:false, columnDefaults:{ resizable:true },
@@ -609,8 +615,36 @@ function renderTable(data){
       {title:'Channel ▼', field:'channel', sorter:'string', headerFilter:'input'},
       {title:'Status ▼', field:'callStatus', sorter:'string', headerFilter:'input'},
       {title:'Remarks ▼', field:'remarks', sorter:'string', headerFilter:'input'},
+      // Edit column - opens record in form for editing (safe)
+      {title:'Edit', hozAlign:'center', headerSort:false, formatter: function(cell, formatterParams){
+         return "<button class='blueBtn' style='padding:6px 8px; font-size:13px;'>Edit</button>";
+      }, cellClick:function(e, cell){
+         const row = cell.getRow().getData();
+         startEdit(row);
+      }},
     ]
   });
+}
+
+/* start edit from table row - populates form and sets editingDocId */
+function startEdit(row){
+  if(!row || !row.id) return;
+  editingDocId = row.id;
+
+  document.getElementById('nameInput').value = row.name || '';
+  document.getElementById('numberInput').value = row.number || '';
+  document.getElementById('ageInput').value = row.age || '';
+  document.getElementById('expInput').value = row.exp || '';
+  document.getElementById('ctcInput').value = row.ctc || '';
+  document.getElementById('locInput').value = row.loc || '';
+  document.getElementById('compInput').value = row.comp || '';
+  document.getElementById('channelInput').value = row.channel || '';
+  document.getElementById('statusInput').value = row.callStatus || '';
+  document.getElementById('remarkInput').value = row.remarks || '';
+
+  dupHint.textContent = `Editing existing entry (will update record id ${editingDocId}).`;
+  // scroll to form top for user convenience
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 /* expose small set for debug/inline */
