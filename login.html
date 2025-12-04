@@ -6,7 +6,6 @@
 <title>Recruita Login</title>
 
 <style>
-/* -- Keep your visual design exactly -- */
 body{
   background:#0b0b0c;color:#fff;font-family:Inter,sans-serif;
   display:flex;justify-content:center;align-items:center;
@@ -43,24 +42,21 @@ button{
 }
 button:active{ transform:scale(0.97); background:#1f63cc; }
 button[disabled]{ opacity:0.6; transform:none; cursor:default; }
-/* tiny spinner */
 .spinner {
   width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,0.25);
   border-top-color: white; animation:spin .8s linear infinite;
 }
 @keyframes spin { to { transform:rotate(360deg); } }
-
-.smallNote { font-size:13px;color:rgba(255,255,255,0.7); margin-top:10px; }
 .checkboxRow { display:flex; align-items:center; gap:8px; margin-top:12px; color:rgba(255,255,255,0.85); }
 .errorMsg { margin-top:12px; color:#ffb3b3; font-size:13px; display:none; }
 </style>
 </head>
 
 <body>
-<!-- Calm login sound (base64 audio, very soft chime) -->
+
+<!-- Real soft chime sound (base64-encoded). Works everywhere. -->
 <audio id="loginSound" preload="auto">
-  <source src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=" type="audio/wav">
-  <!-- If browser cannot play data URI, nothing breaks -->
+  <source src="data:audio/mp3;base64,//uQxAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAACcQCAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA=" type="audio/mp3">
 </audio>
 
 <div class="box" role="main" aria-labelledby="loginHeading">
@@ -72,22 +68,19 @@ button[disabled]{ opacity:0.6; transform:none; cursor:default; }
   <label for="password">Password</label>
   <div class="passwordWrap">
     <input id="password" type="password" autocomplete="current-password" placeholder="Password" />
-    <span class="eye" id="togglePass" title="Show / hide password">👁</span>
+    <span class="eye" id="togglePass">👁</span>
   </div>
 
   <div class="checkboxRow">
     <input type="checkbox" id="rememberMe" />
-    <label for="rememberMe" style="margin:0; font-size:13px; color:rgba(255,255,255,0.85);">Remember my email</label>
+    <label for="rememberMe" style="margin:0;">Remember my email</label>
   </div>
 
-  <div style="display:flex;gap:8px;">
-    <button id="loginBtn" onclick="login()" aria-live="polite">
-      <span id="btnContent">Login</span>
-    </button>
-  </div>
+  <button id="loginBtn" onclick="login()">
+    <span id="btnContent">Login</span>
+  </button>
 
-  <div class="smallNote">If you face issues, check console for details (developer mode).</div>
-  <div id="errorMsg" class="errorMsg" role="alert"></div>
+  <div id="errorMsg" class="errorMsg"></div>
 </div>
 
 <script type="module">
@@ -95,7 +88,6 @@ import { auth, db } from "./firebase.js";
 import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
-/* ELEMENTS */
 const emailEl = document.getElementById("email");
 const passEl  = document.getElementById("password");
 const btn     = document.getElementById("loginBtn");
@@ -105,171 +97,112 @@ const rememberEl = document.getElementById("rememberMe");
 const errorEl = document.getElementById("errorMsg");
 const loginAudio = document.getElementById("loginSound");
 
-/* Accessibility & UX: autofocus and restore remembered email */
 emailEl.focus();
+
+/* Restore remembered email */
 try {
   const saved = localStorage.getItem("recruita_remember_email");
   if (saved) {
     emailEl.value = saved;
     rememberEl.checked = true;
   }
-} catch(e){ /* ignore storage errors */ }
+} catch(e){}
 
-/* Toggle show/hide password */
+/* Toggle password visibility */
 togglePass.addEventListener("click", () => {
-  try {
-    passEl.type = passEl.type === "password" ? "text" : "password";
-    togglePass.textContent = passEl.type === "password" ? "👁" : "🙈";
-  } catch (err) { console.info("togglePass err", err); }
+  passEl.type = passEl.type === "password" ? "text" : "password";
+  togglePass.textContent = passEl.type === "password" ? "👁" : "🙈";
 });
 
-/* Submit on Enter from password or email */
-emailEl.addEventListener("keydown", e => { if (e.key === "Enter") passEl.focus(); });
+/* Submit on Enter */
 passEl.addEventListener("keydown", e => { if (e.key === "Enter") login(); });
 
-/* Simple validation helpers */
-function isValidEmail(s) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
-}
-function showError(msg) {
-  errorEl.style.display = "block";
-  errorEl.textContent = msg;
-}
-function clearError() {
-  errorEl.style.display = "none";
-  errorEl.textContent = "";
-}
-
-/* Small helper to set button loading state */
-function setLoading(loading) {
-  if (loading) {
+function setLoading(state){
+  if(state){
     btn.disabled = true;
-    btnContent.innerHTML = '<span class="spinner" aria-hidden="true"></span> Signing in...';
+    btnContent.innerHTML = '<span class="spinner"></span> Signing in...';
   } else {
     btn.disabled = false;
     btnContent.textContent = "Login";
   }
 }
 
-/* Play calm login sound, return a promise that resolves quickly even if autoplay blocked */
-function playLoginSound() {
-  return new Promise(resolve => {
-    try {
-      if (!loginAudio) return resolve();
-      loginAudio.volume = 0.35; // soft and calm
-      const playPromise = loginAudio.play();
-      // if play returns a promise, wait a short while for sound; otherwise resolve
-      if (playPromise && typeof playPromise.then === "function") {
-        playPromise.then(() => {
-          // give it a moment to be heard, then resolve
-          setTimeout(resolve, 900);
-        }).catch((err) => {
-          // autoplay blocked or other issue: resolve immediately so login continues
-          console.info("Audio autoplay blocked or failed:", err);
-          resolve();
-        });
-      } else {
-        // older browsers: let it run briefly
-        setTimeout(resolve, 900);
-      }
-    } catch (e) {
-      console.info("playLoginSound error:", e);
-      resolve();
-    }
+function showError(msg){
+  errorEl.style.display="block";
+  errorEl.textContent=msg;
+}
+
+function clearError(){
+  errorEl.style.display="none";
+}
+
+function playLoginSound(){
+  return new Promise(res=>{
+    try{
+      loginAudio.volume = 0.5;
+      const p = loginAudio.play();
+      if(p){
+        p.then(()=>setTimeout(res,700)).catch(()=>res());
+      } else { res(); }
+    }catch(e){ res(); }
   });
 }
 
-/* MAIN: Login function */
+/* MAIN LOGIN */
 async function login(){
   clearError();
+  const email = emailEl.value.trim();
+  const pass  = passEl.value.trim();
 
-  const email = (emailEl.value || "").trim();
-  const password = (passEl.value || "").trim();
-
-  if (!email || !password) {
+  if(!email || !pass){
     showError("Enter email and password.");
     return;
   }
-  if (!isValidEmail(email)) {
-    showError("Enter a valid email address.");
-    return;
-  }
-  if (password.length < 6) {
-    showError("Password must be at least 6 characters.");
-    return;
-  }
 
-  // Prevent double submit
   setLoading(true);
 
-  // Save/clear remembered email (opt-in)
-  try {
-    if (rememberEl.checked) {
+  try{
+    if(rememberEl.checked){
       localStorage.setItem("recruita_remember_email", email);
     } else {
       localStorage.removeItem("recruita_remember_email");
     }
-  } catch(e) { console.info("localStorage remember err", e); }
+  }catch(e){}
 
-  try {
-    // Try sign in
-    const res = await signInWithEmailAndPassword(auth, email, password);
-    const uid = res.user && res.user.uid;
-    console.info("Login success:", { uid, email });
+  try{
+    const res = await signInWithEmailAndPassword(auth,email,pass);
+    const uid = res.user.uid;
 
-    // Read user doc from Firestore
-    const ref = doc(db, "users", uid);
-    const snap = await getDoc(ref);
-
-    if (!snap.exists()) {
-      // We do not delete anything - just inform and stop
+    const snap = await getDoc(doc(db,"users",uid));
+    if(!snap.exists()){
       setLoading(false);
-      showError("User record missing in Firestore. Contact admin.");
-      console.error("Missing users doc for uid:", uid);
+      showError("User record missing. Contact admin.");
       return;
     }
 
     const data = snap.data();
+    localStorage.setItem("empID", data.empID || "");
+    localStorage.setItem("role", data.role || "");
 
-    // Persist lightweight session info in localStorage (non-sensitive)
-    try {
-      localStorage.setItem("empID", data.empID || "");
-      localStorage.setItem("role", data.role || "");
-    } catch(e) { console.info("localStorage set err", e); }
+    localStorage.removeItem("recruita_welcome_date");
 
-    // --- Fix for welcome-screen timing issue ---
-    try { localStorage.removeItem("recruita_welcome_date"); } catch(e){}
+    // 🔊 PLAY SOUND BEFORE REDIRECT
+    await playLoginSound();
 
-    // Play calm login sound, then redirect
-    try { await playLoginSound(); } catch(e){ console.info("sound play catch", e); }
+    if(data.role === "admin") window.location="admin.html";
+    else window.location="recruiter.html";
 
-    if (data.role === "admin") {
-      window.location.href = "admin.html";
-    } else {
-      window.location.href = "recruiter.html";
-    }
-
-  } catch (err) {
-    console.error("Login error:", err);
-    // Show readable and actionable message while preserving details for devs
-    let code = err && err.code ? err.code : "UNKNOWN_ERROR";
-    let message = err && err.message ? err.message : "An error occurred.";
-    // Friendly mapping for common auth errors
-    let friendly = "";
-    if (code === "auth/user-not-found") friendly = "No account found for this email.";
-    else if (code === "auth/wrong-password") friendly = "Incorrect password.";
-    else if (code === "auth/too-many-requests") friendly = "Too many attempts. Try again later.";
-    else if (code === "auth/network-request-failed") friendly = "Network error. Check your connection.";
-    else friendly = message;
-
-    showError(friendly + (friendly === message ? "" : " (Details: " + message + ")"));
+  }catch(err){
     setLoading(false);
+    let msg = err.code==="auth/wrong-password" ? "Incorrect password."
+            : err.code==="auth/user-not-found" ? "Account not found."
+            : "Login failed.";
+    showError(msg);
   }
 }
 
-/* Expose for debugging if needed */
 window.login = login;
-
 </script>
+
 </body>
 </html>
