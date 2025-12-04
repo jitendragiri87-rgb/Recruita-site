@@ -58,6 +58,8 @@ body.light input, body.light select{ background:#fff; color:#222; border:1px sol
 #welcomeMini .title{ font-size:18px; font-weight:700; line-height:1; }
 #welcomeMini .sub{ font-size:13px; color:rgba(255,255,255,0.85); margin-top:4px }
 
+.inlineError { color:#ffb3b3; font-size:12px; margin-top:6px; }
+
 @media(max-width:800px){ #cartoonBox{ right:18px; width:220px; top:72px; } #welcomeFull.minimize{ transform: translate(calc(40vw - 60px), calc(-44vh)) scale(.2); } }
 </style>
 </head>
@@ -203,30 +205,9 @@ function formatTS(d){ const p=n=>n.toString().padStart(2,'0'); return `${d.getFu
 function debounce(fn, wait){ let t=null; return function(...a){ clearTimeout(t); t=setTimeout(()=>fn.apply(this,a), wait); }; }
 
 /* small jingle (non-blocking, optional) */
-function playJingle(){
-  try{
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const seq = [660,880,990];
-    let t = ctx.currentTime;
-    seq.forEach((freq,i)=>{
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-      o.type='sine'; o.frequency.setValueAtTime(freq, t);
-      g.gain.setValueAtTime(0.0001, t);
-      g.gain.linearRampToValueAtTime(0.09, t+0.01);
-      g.gain.linearRampToValueAtTime(0.0001, t+0.22);
-      o.connect(g).connect(ctx.destination);
-      o.start(t); o.stop(t+0.23);
-      t += 0.12;
-    });
-    setTimeout(()=>{ try{ ctx.close(); }catch(e){} }, 800);
-  }catch(e){ /* ignore */ }
-}
+function playJingle(){ try{ const ctx = new (window.AudioContext || window.webkitAudioContext)(); const seq = [660,880,990]; let t = ctx.currentTime; seq.forEach((freq,i)=>{ const o = ctx.createOscillator(); const g = ctx.createGain(); o.type='sine'; o.frequency.setValueAtTime(freq, t); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.09, t+0.01); g.gain.linearRampToValueAtTime(0.0001, t+0.22); o.connect(g).connect(ctx.destination); o.start(t); o.stop(t+0.23); t += 0.12; }); setTimeout(()=>{ try{ ctx.close(); }catch(e){} }, 800); }catch(e){ } }
 
-function showCartoon(name){
-  // small cheeky pop (kept for UX)
-  playJingle();
-}
+function showCartoon(name){ playJingle(); }
 
 /* UI helpers for welcome/card minimization */
 function minimizeIntoBadge(name){
@@ -249,27 +230,6 @@ function minimizeIntoBadge(name){
   });
   setTimeout(()=> finish(), fallbackMs);
 }
-
-function openDupModal(matches){
-  lastDupMatches = matches;
-  dupList.innerHTML = '';
-  matches.forEach(m=>{
-    const when = m.ts || m.createdAt || '';
-    const status = m.status || 'complete';
-    const snippet = `
-      <div class="dupItem">
-        <div><strong>${m.name || '(no name)'}</strong> — ${m.number}</div>
-        <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:6px;">
-          status: ${status} • ${when}
-          ${m.channel ? ' • ' + m.channel : ''}
-          ${m.remarks ? ' • ' + (m.remarks.length>40 ? m.remarks.slice(0,40)+'…' : m.remarks) : ''}
-        </div>
-      </div>`;
-    dupList.insertAdjacentHTML('beforeend', snippet);
-  });
-  dupModal.style.display = 'flex';
-}
-function closeDupModal(){ dupModal.style.display = 'none'; }
 
 /* Robust duplicate search (createdBy===uid OR empID===empID) */
 async function checkMatches(number){
@@ -335,13 +295,12 @@ enforceNumericInput(document.getElementById('ageInput'));
 enforceNumericInput(document.getElementById('expInput'));
 enforceNumericInput(document.getElementById('ctcInput'));
 
-/* modal buttons */
+/* modal buttons (kept for duplicate flows if needed) */
 dupEditPrev.addEventListener('click', async ()=>{
   closeDupModal();
   if(!lastDupMatches.length) return;
   const top = lastDupMatches[0];
   editingDocId = top.id;
-  // populate form with previous record for completion
   document.getElementById('nameInput').value = top.name || '';
   document.getElementById('numberInput').value = top.number || '';
   document.getElementById('ageInput').value = top.age || '';
@@ -370,7 +329,7 @@ dupSaveNew.addEventListener('click', async ()=>{
 
 dupDismiss.addEventListener('click', ()=> closeDupModal());
 
-/* save/update logic (now validates that name and number are not empty on save/update) */
+/* save/update logic (used by top form) */
 async function performSave(opts){
   opts = opts || {};
   const name = (document.getElementById('nameInput').value || '').trim();
@@ -390,7 +349,7 @@ async function performSave(opts){
 
   const isPartial = !(age || exp || ctc || loc || comp || channel || statusSelect || remarks);
 
-  // update existing
+  // update existing if editingDocId set (top form editing)
   if(editingDocId){
     try{
       const ref = doc(db, 'callLogs', editingDocId);
@@ -547,12 +506,12 @@ auth.onAuthStateChanged(async user => {
   const timeout = new Promise(r => setTimeout(r, 900));
   await Promise.race([waitForDoc, timeout]);
 
-  // ensure inputs are empty by default (prevents stray "India" or other defaults)
+  // ensure inputs are empty by default (prevents stray "India")
   try{
     const inputsToClear = ['locInput'];
     inputsToClear.forEach(id => {
       const el = document.getElementById(id);
-      if(el && !el.value) el.value = ''; // explicit ensure empty
+      if(el && !el.value) el.value = '';
     });
   }catch(e){}
 
@@ -603,8 +562,8 @@ function renderTable(data){
     data, layout:'fitDataFill', responsiveLayout:false, height:'480px',
     movableColumns:true, pagination:false, columnDefaults:{ resizable:true },
     columns:[
-      {title:'Call', field:'number', formatter:cell=>`<a href="tel:${cell.getValue()}" style="color:var(--blue);font-size:20px;">📞</a>`},
-      {title:'Time ▼', field:'ts', sorter:'datetime', headerFilter:'input'},
+      {title:'Call', field:'number', formatter:function(cell){ return `<a href="tel:${cell.getValue()}" style="color:var(--blue);font-size:20px;">📞</a>` }},
+      {title:'Time ▼', field:'ts', sorter:'datetime', headerFilter:'input', hozAlign:'left'},
       {title:'Name ▼', field:'name', sorter:'string', headerFilter:'input'},
       {title:'Number ▼', field:'number', sorter:'number', headerFilter:'input'},
       {title:'Age ▼', field:'age', sorter:'number', headerFilter:'input'},
@@ -615,36 +574,161 @@ function renderTable(data){
       {title:'Channel ▼', field:'channel', sorter:'string', headerFilter:'input'},
       {title:'Status ▼', field:'callStatus', sorter:'string', headerFilter:'input'},
       {title:'Remarks ▼', field:'remarks', sorter:'string', headerFilter:'input'},
-      // Edit column - opens record in form for editing (safe)
-      {title:'Edit', hozAlign:'center', headerSort:false, formatter: function(cell, formatterParams){
-         return "<button class='blueBtn' style='padding:6px 8px; font-size:13px;'>Edit</button>";
+      // Inline Edit/Save button - toggles row edit mode
+      {title:'', hozAlign:'center', headerSort:false, width:100, formatter: function(cell, formatterParams){
+         // initial state shows Edit button
+         return "<button class='rowEditBtn blueBtn' style='padding:6px 8px; font-size:13px;'>Edit</button>";
       }, cellClick:function(e, cell){
-         const row = cell.getRow().getData();
-         startEdit(row);
+         const rowComp = cell.getRow();
+         toggleRowInlineEdit(rowComp);
       }},
     ]
   });
 }
 
-/* start edit from table row - populates form and sets editingDocId */
-function startEdit(row){
-  if(!row || !row.id) return;
-  editingDocId = row.id;
+/* Toggle inline editing for a Tabulator RowComponent */
+async function toggleRowInlineEdit(rowComp){
+  if(!rowComp) return;
+  const el = rowComp.getElement();
+  const isEditing = el.classList.contains('row-editing');
 
-  document.getElementById('nameInput').value = row.name || '';
-  document.getElementById('numberInput').value = row.number || '';
-  document.getElementById('ageInput').value = row.age || '';
-  document.getElementById('expInput').value = row.exp || '';
-  document.getElementById('ctcInput').value = row.ctc || '';
-  document.getElementById('locInput').value = row.loc || '';
-  document.getElementById('compInput').value = row.comp || '';
-  document.getElementById('channelInput').value = row.channel || '';
-  document.getElementById('statusInput').value = row.callStatus || '';
-  document.getElementById('remarkInput').value = row.remarks || '';
+  if(!isEditing){
+    // Enter edit mode: replace text in cells with inputs
+    el.classList.add('row-editing');
+    // change button appearance
+    const btn = el.querySelector('.rowEditBtn');
+    if(btn){ btn.textContent = 'Save'; btn.classList.remove('blueBtn'); btn.classList.add('greyBtn'); }
 
-  dupHint.textContent = `Editing existing entry (will update record id ${editingDocId}).`;
-  // scroll to form top for user convenience
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+    // add an inline error placeholder
+    let errEl = el.querySelector('.inlineError');
+    if(!errEl){
+      errEl = document.createElement('div');
+      errEl.className = 'inlineError';
+      errEl.style.display = 'none';
+      // place below row (Tabulator wraps cells). Insert at end of row element
+      el.appendChild(errEl);
+    }
+
+    // create inputs for editable fields: name, number, age, exp, loc, ctc, comp, channel, callStatus, remarks
+    const editableFields = ['name','number','age','exp','loc','ctc','comp','channel','callStatus','remarks'];
+    const cells = rowComp.getCells(); // array of CellComponent in column order
+    // Map field->cell for quick lookup
+    const fieldCellMap = {};
+    cells.forEach(c => { const f = c.getField(); if(f) fieldCellMap[f]=c; });
+    editableFields.forEach(field => {
+      const c = fieldCellMap[field];
+      if(!c) return;
+      const val = rowComp.getData()[field] || '';
+      // create input/select depending on field
+      let input;
+      if(field === 'channel'){
+        input = document.createElement('select');
+        ['','Banca','Agency','Direct','Tele calling','Other'].forEach(opt=>{
+          const o = document.createElement('option'); o.value = opt; o.text = opt || 'Select Channel'; if(opt===val) o.selected=true; input.appendChild(o);
+        });
+      } else if(field === 'callStatus'){
+        input = document.createElement('select');
+        ['','Interested','Not Interested','Not Answered'].forEach(opt=>{
+          const o = document.createElement('option'); o.value = opt; o.text = opt || 'Call Status'; if(opt===val) o.selected=true; input.appendChild(o);
+        });
+      } else {
+        input = document.createElement('input');
+        input.value = val;
+        input.type = (field==='number' || field==='age' || field==='exp' || field==='ctc') ? 'text' : 'text';
+        input.style.padding = '6px';
+        input.style.borderRadius = '6px';
+        input.style.width = '100%';
+        // numeric enforcement for numeric fields
+        if(field==='number') input.pattern='[0-9]*';
+      }
+      // attach data-attr to know which field this input is for
+      input.setAttribute('data-edit-field', field);
+      // replace cell content
+      const cellEl = c.getElement();
+      // keep small padding consistent
+      cellEl.innerHTML = '';
+      cellEl.appendChild(input);
+    });
+
+    // focus first input (name)
+    const firstInput = el.querySelector('input[data-edit-field="name"], select[data-edit-field="name"]');
+    if(firstInput) firstInput.focus();
+
+  } else {
+    // Save mode: gather inputs and write to Firestore
+    const errEl = el.querySelector('.inlineError');
+    if(errEl) errEl.style.display='none';
+
+    const inputs = el.querySelectorAll('[data-edit-field]');
+    const updated = {};
+    inputs.forEach(inp => {
+      const f = inp.getAttribute('data-edit-field');
+      let v = inp.value !== undefined ? inp.value.trim() : '';
+      updated[f] = v;
+    });
+
+    // validation: name and number required; number = 10 digits
+    if(!updated.name){
+      if(errEl){ errEl.textContent = 'Name cannot be empty.'; errEl.style.display='block'; }
+      // keep in edit mode; do not revert button
+      return;
+    }
+    if(!/^[0-9]{10}$/.test(updated.number)){
+      if(errEl){ errEl.textContent = 'Enter valid 10 digit number.'; errEl.style.display='block'; }
+      return;
+    }
+
+    // Always update (even if identical) to meet requirement
+    try{
+      const rowData = rowComp.getData();
+      const docRef = doc(db, 'callLogs', rowData.id);
+      // include metadata
+      const payload = {
+        ...updated,
+        ts: formatTS(new Date()),
+        updatedBy: uid,
+        updatedAt: formatTS(new Date()),
+        empID: empID,
+        status: 'complete'
+      };
+      await updateDoc(docRef, payload);
+
+      // After successful update, revert cells back to text
+      const editableFields = ['name','number','age','exp','loc','ctc','comp','channel','callStatus','remarks'];
+      editableFields.forEach(field => {
+        const cellComp = rowComp.getCell(field);
+        if(!cellComp) return;
+        const cellEl = cellComp.getElement();
+        // set visible text
+        const txt = payload[field] || '';
+        cellEl.innerHTML = ''; // clear
+        // escape minimal HTML
+        const span = document.createElement('div');
+        span.textContent = txt;
+        cellEl.appendChild(span);
+      });
+
+      // revert button
+      const btn = el.querySelector('.rowEditBtn');
+      if(btn){ btn.textContent = 'Edit'; btn.classList.remove('greyBtn'); btn.classList.add('blueBtn'); }
+
+      // remove editing class and any error
+      el.classList.remove('row-editing');
+      if(errEl) errEl.style.display='none';
+
+      // optionally refresh internal data (rowComp.update could be used)
+      // update local row data to match updated fields
+      rowComp.update(updated);
+
+    }catch(err){
+      console.error('inline save error', err);
+      if(el.querySelector('.inlineError')){
+        el.querySelector('.inlineError').textContent = 'Save failed. Try again.';
+        el.querySelector('.inlineError').style.display = 'block';
+      }
+      return;
+    }
+  }
 }
 
 /* expose small set for debug/inline */
