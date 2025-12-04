@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -127,24 +128,27 @@ auth.onAuthStateChanged(async u => {
     }
 
     let uid = u.uid;
-    let userRef = doc(db,"users",uid);
-    // perform a quick existence check by querying users collection by uid
-    // (original relied on getDoc which needed doc path; here we do a safer read)
-    // We'll simply load users and then check role
-    let snap = await getDocs(collection(db,"users"));
-    let isAdmin = false;
-    snap.forEach(d=>{
-        if(d.id === uid && d.data().role === "admin") isAdmin = true;
-    });
+    // safer check: load users collection and verify role for this uid
+    try{
+        let snap = await getDocs(collection(db,"users"));
+        let isAdmin = false;
+        snap.forEach(d=>{
+            if(d.id === uid && d.data().role === "admin") isAdmin = true;
+        });
 
-    if(!isAdmin){
-        alert("Access denied. Admin only.");
+        if(!isAdmin){
+            alert("Access denied. Admin only.");
+            location.href = "login.html";
+            return;
+        }
+
+        // load users for table
+        loadUsers();
+    }catch(err){
+        console.error("Error checking admin role:", err);
+        alert("Error checking access: " + (err.message || JSON.stringify(err)));
         location.href = "login.html";
-        return;
     }
-
-    // load users for table
-    loadUsers();
 });
 
 /* CREATE RECRUITER */
@@ -168,7 +172,7 @@ async function createRecruiter(){
             email: email,
             empID: email.split("@")[0],
             role: "recruiter",
-            fullName: nameVal || ""   // new name field
+            fullName: nameVal || ""
         });
 
         alert("Recruiter Created");
@@ -178,66 +182,87 @@ async function createRecruiter(){
         loadUsers();
 
     }catch(e){
-        alert("Error: " + e.message);
+        // improved error visibility without changing UI design or data
+        console.error("createRecruiter error:", e);
+        // try to extract common Firebase fields safely
+        const code = e && e.code ? e.code : "";
+        const msg = e && e.message ? e.message : JSON.stringify(e);
+        alert("Error creating recruiter:\n" + code + " - " + msg);
     }
 }
 
 /* LOAD USERS */
 async function loadUsers(){
-    let snap = await getDocs(collection(db,"users"));
-    userBody.innerHTML = "";
+    try{
+        let snap = await getDocs(collection(db,"users"));
+        const userBody = document.getElementById("userBody");
+        userBody.innerHTML = "";
 
-    snap.forEach(u=>{
-        let d = u.data();
-        const full = d.fullName || "";
-        userBody.innerHTML += `
-        <tr>
-            <td>${d.empID}</td>
-            <td id="name_${u.id}">${full}</td>
-            <td>${d.email}</td>
-            <td>${d.role}</td>
-            <td>${u.id}</td>
+        snap.forEach(u=>{
+            let d = u.data();
+            const full = d.fullName || "";
+            userBody.innerHTML += `
+            <tr>
+                <td>${d.empID}</td>
+                <td id="name_${u.id}">${escapeHtml(full)}</td>
+                <td>${d.email}</td>
+                <td>${d.role}</td>
+                <td>${u.id}</td>
 
-            <td>
-                <button class="blueBtn" onclick="resetPass('${d.email}')">
-                    Reset
-                </button>
-            </td>
+                <td>
+                    <button class="blueBtn" onclick="resetPass('${d.email}')">
+                        Reset
+                    </button>
+                </td>
 
-            <td>
-                <button class="greyBtn" onclick="editNamePrompt('${u.id}', '${escapeHtml(full)}')">Edit</button>
-            </td>
+                <td>
+                    <button class="greyBtn" onclick="editNamePrompt('${u.id}', '${escapeHtml(full)}')">Edit</button>
+                </td>
 
-            <td>
-                <button class="redBtn" onclick="deleteUserRecord('${u.id}')">
-                    Delete
-                </button>
-            </td>
-        </tr>`;
-    });
+                <td>
+                    <button class="redBtn" onclick="deleteUserRecord('${u.id}')">
+                        Delete
+                    </button>
+                </td>
+            </tr>`;
+        });
+    }catch(err){
+        console.error("loadUsers error:", err);
+        alert("Error loading users: " + (err.message || JSON.stringify(err)));
+    }
 }
 
 /* RESET PASSWORD */
 async function resetPass(email){
-    await sendPasswordResetEmail(auth, email);
-    alert("Reset link sent to " + email);
+    if(!email){
+        alert("No email available for this user.");
+        return;
+    }
+    try{
+        await sendPasswordResetEmail(auth, email);
+        alert("Reset link sent to " + email);
+    }catch(err){
+        console.error("resetPass error:", err);
+        const code = err && err.code ? err.code : "";
+        const msg = err && err.message ? err.message : JSON.stringify(err);
+        alert("Error sending reset link:\n" + code + " - " + msg);
+    }
 }
 
 /* EDIT NAME (prompt) */
 async function editNamePrompt(uid, currentName){
-    // unescape currentName for prompt
     const cur = currentName || "";
     const newName = prompt("Enter full name for this user:", cur);
     if(newName === null) return; // cancelled
     const ref = doc(db,"users",uid);
     try{
         await updateDoc(ref, { fullName: newName.trim() });
-        // update UI cell
         const cell = document.getElementById(`name_${uid}`);
         if(cell) cell.textContent = newName.trim();
         alert("Name updated");
     }catch(err){
-        alert("Error updating name: " + err.message);
+        console.error("editName error:", err);
+        alert("Error updating name: " + (err.message || JSON.stringify(err)));
     }
 }
 
@@ -251,7 +276,8 @@ async function deleteUserRecord(uid){
         loadUsers();
 
     }catch(err){
-        alert("Error: " + err.message);
+        console.error("deleteUserRecord error:", err);
+        alert("Error deleting user: " + (err.message || JSON.stringify(err)));
     }
 }
 
@@ -271,7 +297,6 @@ function toggleTheme(){
 }
 
 function logout(){
-    // mark logout time so next login shows full-screen welcome
     try{ localStorage.setItem("recruita_lastLogout", Date.now().toString()); }catch(e){}
     auth.signOut();
     location.href = "login.html";
@@ -291,3 +316,4 @@ window.goBack = goBack;
 
 </body>
 </html>
+```
