@@ -54,11 +54,6 @@ button[disabled]{ opacity:0.6; transform:none; cursor:default; }
 
 <body>
 
-<!-- Calm chime (base64). Small, reliable. -->
-<audio id="loginSound" preload="auto">
-  <source src="data:audio/mp3;base64,//uQxAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAACcQCAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA=" type="audio/mp3">
-</audio>
-
 <div class="box" role="main" aria-labelledby="loginHeading">
   <h2 id="loginHeading">Login</h2>
 
@@ -95,7 +90,6 @@ const btnContent = document.getElementById("btnContent");
 const togglePass = document.getElementById("togglePass");
 const rememberEl = document.getElementById("rememberMe");
 const errorEl = document.getElementById("errorMsg");
-const loginAudio = document.getElementById("loginSound");
 
 emailEl.focus();
 
@@ -113,9 +107,6 @@ togglePass.addEventListener("click", () => {
   passEl.type = passEl.type === "password" ? "text" : "password";
   togglePass.textContent = passEl.type === "password" ? "👁" : "🙈";
 });
-
-/* Submit on Enter */
-passEl.addEventListener("keydown", e => { if (e.key === "Enter") login(); });
 
 function setLoading(state){
   if(state){
@@ -136,30 +127,10 @@ function clearError(){
   errorEl.style.display="none";
 }
 
-/* Play sound but never block longer than ms (timeout fallback).
-   This function ensures the login flow never gets stuck. */
-async function playLoginSoundWithTimeout(ms = 700){
-  try{
-    if(!loginAudio) return;
-    loginAudio.volume = 0.5;
-    const p = loginAudio.play();
-
-    // Normalize play promise to a promise that always resolves (ignore rejects)
-    const playPromise = (p && typeof p.then === "function")
-      ? p.then(()=>{}).catch(()=>{})
-      : Promise.resolve();
-
-    // race play start vs timeout so we don't wait forever
-    await Promise.race([playPromise, new Promise(r=>setTimeout(r, ms))]);
-  }catch(e){
-    // swallow errors so user flow is never blocked
-    console.info("playLoginSoundWithTimeout error", e);
-  }
-}
-
 /* MAIN LOGIN */
 async function login(){
   clearError();
+
   const email = emailEl.value.trim();
   const pass  = passEl.value.trim();
 
@@ -170,10 +141,11 @@ async function login(){
 
   setLoading(true);
 
-  try{
-    if(rememberEl.checked) localStorage.setItem("recruita_remember_email", email);
+  /* Save remembered email */
+  try {
+    if (rememberEl.checked) localStorage.setItem("recruita_remember_email", email);
     else localStorage.removeItem("recruita_remember_email");
-  }catch(e){}
+  } catch(e){}
 
   try{
     const res = await signInWithEmailAndPassword(auth,email,pass);
@@ -187,25 +159,20 @@ async function login(){
     }
 
     const data = snap.data();
-    try {
-      localStorage.setItem("empID", data.empID || "");
-      localStorage.setItem("role", data.role || "");
-    } catch(e){}
+    localStorage.setItem("empID", data.empID || "");
+    localStorage.setItem("role", data.role || "");
 
-    try { localStorage.removeItem("recruita_welcome_date"); } catch(e){}
+    /* FORCE welcome interface to always appear */
+    localStorage.setItem("recruita_show_welcome", "yes");
 
-    // Play the login sound but guarantee we never wait longer than 700ms.
-    // This prevents "Signing in..." from getting stuck.
-    playLoginSoundWithTimeout(700).catch(()=>{});
-
-    // redirect after initiating sound — we do not await indefinitely.
+    /* Redirect */
     if(data.role === "admin") window.location="admin.html";
     else window.location="recruiter.html";
 
   }catch(err){
     setLoading(false);
-    let msg = err && err.code === "auth/wrong-password" ? "Incorrect password."
-            : err && err.code === "auth/user-not-found" ? "Account not found."
+    let msg = err.code === "auth/wrong-password" ? "Incorrect password."
+            : err.code === "auth/user-not-found" ? "Account not found."
             : "Login failed.";
     showError(msg);
   }
